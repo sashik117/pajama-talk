@@ -76,6 +76,21 @@ export type SpeakingRoomDto = {
   accent_color: string;
 };
 export type SpeakingHintsDto = { simple: string; conversational: string; spicy: string };
+export type LearningPathDto = {
+  language_code: string;
+  language_name: string;
+  level: string;
+  assistant_role: string;
+  next_room_prompt: string;
+  steps: Array<{
+    id: string;
+    title: string;
+    goal: string;
+    teacher_note: string;
+    micro_task: string;
+    examples: Array<{ phrase: string; pronunciation: string; meaning: string }>;
+  }>;
+};
 
 type ApiOptions = RequestInit & { token?: string };
 
@@ -119,8 +134,10 @@ export const api = {
   updateProfile: (token: string, payload: Partial<Record<string, string | number>>) =>
     request<UserDto>("/auth/me", { method: "PATCH", token, body: JSON.stringify(payload) }),
   stats: (token: string) => request<StatsDto>("/stats/me", { token }),
-  grammarDrops: (token: string) => request<GrammarDropDto[]>("/grammar/drops", { token }),
-  grammarTopics: (token: string) => request<GrammarTopicDto[]>("/grammar/topics", { token }),
+  grammarDrops: (token: string, languageCode?: string) =>
+    request<GrammarDropDto[]>(`/grammar/drops${languageCode ? `?language_code=${languageCode}` : ""}`, { token }),
+  grammarTopics: (token: string, languageCode?: string) =>
+    request<GrammarTopicDto[]>(`/grammar/topics${languageCode ? `?language_code=${languageCode}` : ""}`, { token }),
   checkGrammar: (token: string, topicId: string, exerciseId: string, answer: string) =>
     request<GrammarCheckDto>("/grammar/check", {
       method: "POST",
@@ -151,6 +168,8 @@ export const api = {
     }),
   speakingRooms: (token: string, languageCode: string) =>
     request<SpeakingRoomDto[]>(`/speaking/rooms?language_code=${languageCode}`, { token }),
+  learningPath: (token: string, languageCode: string) =>
+    request<LearningPathDto>(`/learning/path?language_code=${languageCode}`, { token }),
   speakingHints: (token: string, roomId: string, lastMessage: string, languageCode: string) =>
     request<SpeakingHintsDto>("/speaking/hints", {
       method: "POST",

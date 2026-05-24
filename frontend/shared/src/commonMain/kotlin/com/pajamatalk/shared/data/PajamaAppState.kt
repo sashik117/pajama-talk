@@ -35,6 +35,8 @@ class PajamaAppState(
         private set
     var grammarTopics by mutableStateOf<List<GrammarTopicDto>>(emptyList())
         private set
+    var learningPath by mutableStateOf<LearningPathDto?>(null)
+        private set
     var isGrammarLoading by mutableStateOf(false)
         private set
     var words by mutableStateOf<List<WordDto>>(emptyList())
@@ -108,6 +110,7 @@ class PajamaAppState(
         stats = null
         grammarDrops = emptyList()
         grammarTopics = emptyList()
+        learningPath = null
         words = emptyList()
         dueWords = emptyList()
         speakingRooms = emptyList()
@@ -146,6 +149,7 @@ class PajamaAppState(
         loadWords()
         loadDueWords()
         loadGrammarDrops()
+        loadLearningPath()
         loadStats()
     }
 
@@ -158,6 +162,7 @@ class PajamaAppState(
         loadWords()
         loadDueWords()
         loadGrammarDrops()
+        loadLearningPath()
         runCatching {
             user = requireClient().me(requireToken())
             speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
@@ -199,12 +204,20 @@ class PajamaAppState(
         isGrammarLoading = true
         errorMessage = null
         runCatching {
-            grammarDrops = requireClient().grammarDrops(requireToken())
-            grammarTopics = requireClient().grammarTopics(requireToken())
+            grammarDrops = requireClient().grammarDrops(requireToken(), selectedLanguage.code)
+            grammarTopics = requireClient().grammarTopics(requireToken(), selectedLanguage.code)
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
         isGrammarLoading = false
+    }
+
+    suspend fun loadLearningPath() {
+        runCatching {
+            learningPath = requireClient().learningPath(requireToken(), selectedLanguage.code)
+        }.onFailure {
+            errorMessage = it.friendlyMessage()
+        }
     }
 
     suspend fun addWord(term: String, sourceContext: String = "") {
@@ -290,11 +303,11 @@ class PajamaAppState(
         speakingHints = null
     }
 
-    fun startSpeakingConversation(character: String) {
+    fun startSpeakingConversation(prompt: String) {
         speakingHints = null
         speakingMessages = listOf(
             SpeakingChatMessage(
-                text = "Hey, I am $character. Send me one tiny line and I will keep the scene moving.",
+                text = prompt,
                 incoming = true,
             ),
         )
@@ -348,6 +361,7 @@ class PajamaAppState(
         speakingMessages = emptyList()
         grammarDrops = emptyList()
         grammarTopics = emptyList()
+        learningPath = null
         words = emptyList()
         dueWords = emptyList()
         if (activeClient != null && token != null) {
@@ -356,6 +370,7 @@ class PajamaAppState(
             loadWords()
             loadDueWords()
             loadGrammarDrops()
+            loadLearningPath()
             loadStats()
         }
     }

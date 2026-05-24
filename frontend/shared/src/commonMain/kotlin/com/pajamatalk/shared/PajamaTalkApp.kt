@@ -449,6 +449,25 @@ private fun AuraScreen() {
             SoftAction("Enter room", Icons.Rounded.Coffee, Peach, onClick = {})
         }
 
+        appState.learningPath?.let { path ->
+            CozyCard(background = Mint.copy(alpha = 0.36f)) {
+                Text("${path.languageName}: starter path", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
+                Spacer(Modifier.height(6.dp))
+                Text(path.assistantRole, color = InkMuted, fontSize = 13.sp)
+                path.steps.firstOrNull()?.let { step ->
+                    Spacer(Modifier.height(12.dp))
+                    Text(step.title, color = Graphite, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(4.dp))
+                    Text(step.microTask, color = InkMuted)
+                    step.examples.firstOrNull()?.let { phrase ->
+                        Spacer(Modifier.height(10.dp))
+                        Text(phrase.phrase, color = Graphite, fontWeight = FontWeight.Medium)
+                        Text(phrase.meaning, color = InkMuted, fontSize = 13.sp)
+                    }
+                }
+            }
+        }
+
         CozyCard(background = Lavender.copy(alpha = 0.72f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = Graphite)
@@ -869,7 +888,7 @@ private fun SpeakingRoomsScreen() {
                         room = room,
                         onClick = {
                             activeRoom = room
-                            appState.startSpeakingConversation(room.character)
+                            appState.startSpeakingConversation(room.prompt)
                         },
                     )
                 }
@@ -1442,6 +1461,7 @@ private data class Room(
     val title: String,
     val character: String,
     val vibe: String,
+    val prompt: String,
     val icon: ImageVector,
     val color: Color,
 )
@@ -1454,6 +1474,7 @@ private fun SpeakingRoomDto.toRoom(): Room {
             title = title,
             character = character,
             vibe = vibe,
+            prompt = prompt,
             icon = Icons.Rounded.FlightTakeoff,
             color = Mint,
         )
@@ -1462,6 +1483,7 @@ private fun SpeakingRoomDto.toRoom(): Room {
             title = title,
             character = character,
             vibe = vibe,
+            prompt = prompt,
             icon = Icons.Rounded.Work,
             color = Lavender,
         )
@@ -1470,6 +1492,7 @@ private fun SpeakingRoomDto.toRoom(): Room {
             title = title,
             character = character,
             vibe = vibe,
+            prompt = prompt,
             icon = Icons.Rounded.Coffee,
             color = Peach,
         )
@@ -1477,7 +1500,7 @@ private fun SpeakingRoomDto.toRoom(): Room {
 }
 
 private fun fallbackRooms(): List<Room> = listOf(
-    Room("coffee-alex", "Lo-fi Coffee", "Alex", "barista with soft sarcasm", Icons.Rounded.Coffee, Peach),
-    Room("airport-nova", "Gate B12", "Nova", "calm airport helper", Icons.Rounded.FlightTakeoff, Mint),
-    Room("interview-jules", "IT Interview", "Jules", "friendly tech lead", Icons.Rounded.Work, Lavender),
+    Room("coffee-alex", "Lo-fi Coffee", "Alex", "barista with soft sarcasm", "Teacher mode. Say one tiny line.", Icons.Rounded.Coffee, Peach),
+    Room("airport-nova", "Gate B12", "Nova", "calm airport helper", "Teacher mode. Ask for help.", Icons.Rounded.FlightTakeoff, Mint),
+    Room("interview-jules", "IT Interview", "Jules", "friendly tech lead", "Teacher mode. Introduce yourself.", Icons.Rounded.Work, Lavender),
 )

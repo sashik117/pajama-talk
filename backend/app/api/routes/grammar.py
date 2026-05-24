@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -13,6 +13,7 @@ router = APIRouter(prefix="/grammar", tags=["grammar"])
 
 @router.get("/drops", response_model=list[GrammarDrop])
 def grammar_drops(
+    language_code: str | None = Query(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> list[GrammarDrop]:
@@ -24,11 +25,12 @@ def grammar_drops(
         .all()
     )
     tags = {row[0] for row in recent_mistakes}
-    return drops_for_tags(tags)
+    return drops_for_tags(tags, language_code or user.active_language_code)
 
 
 @router.get("/topics", response_model=list[GrammarTopic])
 def grammar_topics(
+    language_code: str | None = Query(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> list[GrammarTopic]:
@@ -40,12 +42,12 @@ def grammar_topics(
         .all()
     )
     tags = {row[0] for row in recent_mistakes}
-    return grammar_topics_for_tags(tags)
+    return grammar_topics_for_tags(tags, language_code or user.active_language_code)
 
 
 @router.post("/check", response_model=GrammarCheckResponse)
 def grammar_check(
     payload: GrammarCheckRequest,
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> GrammarCheckResponse:
-    return check_grammar_answer(payload.topic_id, payload.exercise_id, payload.answer)
+    return check_grammar_answer(payload.topic_id, payload.exercise_id, payload.answer, user.active_language_code)

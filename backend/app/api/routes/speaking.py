@@ -11,6 +11,7 @@ from app.models.word import Word
 from app.schemas.speaking import SpeakingHintsRequest, SpeakingHintsResponse, SpeakingRoom
 from app.services.ai_service import generate_speaking_hints, stream_roleplay_reply
 from app.services.grammar import detect_mistake_tag
+from app.services.language_course import starter_pack
 
 router = APIRouter(prefix="/speaking", tags=["speaking"])
 
@@ -45,12 +46,20 @@ ROOMS = [
 @router.get("/rooms", response_model=list[SpeakingRoom])
 def speaking_rooms(
     language_code: str | None = Query(default=None),
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> list[SpeakingRoom]:
-    code = normalize_language_code(language_code)
+    code = normalize_language_code(language_code or user.active_language_code)
     name = language_name(code)
+    pack = starter_pack(code)
     return [
-        room.model_copy(update={"prompt": f"{room.prompt} Keep the practice in {name}."})
+        room.model_copy(
+            update={
+                "prompt": (
+                    f"AI-вчитель для {name}. Почни коротко: {pack['hello'][0]} "
+                    f"Потім спробуй: {pack['want'][0]}"
+                )
+            },
+        )
         for room in ROOMS
     ]
 
@@ -125,6 +134,7 @@ async def speaking_ws(websocket: WebSocket) -> None:
                 room_id=room_id,
                 user_text=message,
                 tone=user.ai_tone,
+                language_code=user.active_language_code,
                 learning_terms=learning_terms,
             ):
                 reply_parts.append(token_text)

@@ -63,14 +63,20 @@ class PajamaApiClient(
             bearerAuth(token)
         }.body()
 
-    suspend fun grammarDrops(token: String): List<GrammarDropDto> =
+    suspend fun grammarDrops(token: String, languageCode: String? = null): List<GrammarDropDto> =
         client.get("$baseUrl/grammar/drops") {
             bearerAuth(token)
+            if (languageCode != null) {
+                parameter("language_code", languageCode)
+            }
         }.body()
 
-    suspend fun grammarTopics(token: String): List<GrammarTopicDto> =
+    suspend fun grammarTopics(token: String, languageCode: String? = null): List<GrammarTopicDto> =
         client.get("$baseUrl/grammar/topics") {
             bearerAuth(token)
+            if (languageCode != null) {
+                parameter("language_code", languageCode)
+            }
         }.body()
 
     suspend fun checkGrammar(token: String, topicId: String, exerciseId: String, answer: String): GrammarCheckDto =
@@ -124,6 +130,14 @@ class PajamaApiClient(
 
     suspend fun speakingRooms(token: String, languageCode: String? = null): List<SpeakingRoomDto> =
         client.get("$baseUrl/speaking/rooms") {
+            bearerAuth(token)
+            if (languageCode != null) {
+                parameter("language_code", languageCode)
+            }
+        }.body()
+
+    suspend fun learningPath(token: String, languageCode: String? = null): LearningPathDto =
+        client.get("$baseUrl/learning/path") {
             bearerAuth(token)
             if (languageCode != null) {
                 parameter("language_code", languageCode)
@@ -377,6 +391,33 @@ data class SpeakingHintsDto(
     val simple: String,
     val conversational: String,
     val spicy: String,
+)
+
+@Serializable
+data class LearningPhraseDto(
+    val phrase: String,
+    val pronunciation: String = "",
+    val meaning: String,
+)
+
+@Serializable
+data class LearningStepDto(
+    val id: String,
+    val title: String,
+    val goal: String,
+    @SerialName("teacher_note") val teacherNote: String,
+    @SerialName("micro_task") val microTask: String,
+    val examples: List<LearningPhraseDto>,
+)
+
+@Serializable
+data class LearningPathDto(
+    @SerialName("language_code") val languageCode: String,
+    @SerialName("language_name") val languageName: String,
+    val level: String,
+    @SerialName("assistant_role") val assistantRole: String,
+    @SerialName("next_room_prompt") val nextRoomPrompt: String,
+    val steps: List<LearningStepDto>,
 )
 
 @Serializable

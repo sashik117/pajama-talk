@@ -27,6 +27,7 @@ import {
   GrammarCheckDto,
   GrammarDropDto,
   GrammarTopicDto,
+  LearningPathDto,
   SpeakingHintsDto,
   SpeakingRoomDto,
   StatsDto,
@@ -69,7 +70,19 @@ const grammarTopics = [
   }
 ];
 
-const contextExamples = ["no worries, I got you", "it hits different", "I'm down for it"];
+const contextExamplesByLanguage: Record<string, string[]> = {
+  en: ["no worries, I got you", "it hits different", "I'm down for it"],
+  sk: ["Ahoj, som Sasha.", "Prosím si kávu.", "Môžete mi pomôcť?"],
+  pl: ["Cześć, jestem Sasha.", "Poproszę kawę.", "Możesz mi pomóc?"],
+  cs: ["Ahoj, jsem Sasha.", "Prosím kávu.", "Můžete mi pomoct?"],
+  fr: ["Salut, je suis Sasha.", "Je voudrais un café.", "Vous pouvez m'aider ?"],
+  es: ["Hola, soy Sasha.", "Quiero un café, por favor.", "¿Puedes ayudarme?"],
+  it: ["Ciao, sono Sasha.", "Vorrei un caffè.", "Puoi aiutarmi?"],
+  ko: ["안녕하세요, 저는 Sasha예요.", "커피 주세요.", "도와줄 수 있어요?"],
+  ja: ["こんにちは、Sashaです。", "コーヒーをください。", "手伝ってくれますか？"],
+  zh: ["你好，我是Sasha。", "请给我一杯咖啡。", "你可以帮我吗？"],
+  tr: ["Merhaba, ben Sasha.", "Bir kahve istiyorum, lütfen.", "Bana yardım eder misin?"]
+};
 
 function getSpeechLang(code: string) {
   return (
@@ -100,6 +113,7 @@ export function App() {
   const [rooms, setRooms] = useState<SpeakingRoomDto[]>([]);
   const [grammarDrops, setGrammarDrops] = useState<GrammarDropDto[]>([]);
   const [grammarTopics, setGrammarTopics] = useState<GrammarTopicDto[]>([]);
+  const [learningPath, setLearningPath] = useState<LearningPathDto | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("aura");
   const [learningCode, setLearningCode] = useState("en");
   const [contextText, setContextText] = useState("");
@@ -148,13 +162,14 @@ export function App() {
 
   async function loadData(nextToken = token, languageCode = learningCode) {
     if (!nextToken) return;
-    const [nextStats, nextWords, nextDue, nextRooms, nextDrops, nextTopics] = await Promise.all([
+    const [nextStats, nextWords, nextDue, nextRooms, nextDrops, nextTopics, nextPath] = await Promise.all([
       api.stats(nextToken),
       api.words(nextToken, languageCode),
       api.dueWords(nextToken, languageCode),
       api.speakingRooms(nextToken, languageCode),
-      api.grammarDrops(nextToken),
-      api.grammarTopics(nextToken)
+      api.grammarDrops(nextToken, languageCode),
+      api.grammarTopics(nextToken, languageCode),
+      api.learningPath(nextToken, languageCode)
     ]);
     setStats(nextStats);
     setWords(nextWords);
@@ -162,6 +177,7 @@ export function App() {
     setRooms(nextRooms);
     setGrammarDrops(nextDrops);
     setGrammarTopics(nextTopics);
+    setLearningPath(nextPath);
   }
 
   async function login(email: string, password: string, displayName?: string) {
@@ -293,7 +309,7 @@ export function App() {
       window.speechSynthesis.speak(new SpeechSynthesisUtterance(finalReply));
     }
     if (token) {
-      const [nextDrops, nextTopics] = await Promise.all([api.grammarDrops(token), api.grammarTopics(token)]);
+      const [nextDrops, nextTopics] = await Promise.all([api.grammarDrops(token, learningCode), api.grammarTopics(token, learningCode)]);
       setGrammarDrops(nextDrops);
       setGrammarTopics(nextTopics);
     }
@@ -315,6 +331,7 @@ export function App() {
     setChat([]);
     setGrammarDrops([]);
     setGrammarTopics([]);
+    setLearningPath(null);
   }
 
   if (!user) {
@@ -364,6 +381,8 @@ export function App() {
             copy={copy}
             activeDrop={activeDrop}
             grammarTopics={grammarTopics}
+            learningPath={learningPath}
+            learningCode={learningCode}
             contextText={contextText}
             setContextText={setContextText}
             contextResult={contextResult}
@@ -388,7 +407,7 @@ export function App() {
             setActiveRoom={(room) => {
               setActiveRoom(room);
               setHints(null);
-              setChat([{ role: "assistant", text: `Hey, I am ${room.character}. Press mic and answer in ${selectedLanguage.label}.` }]);
+              setChat([{ role: "assistant", text: room.prompt }]);
             }}
             back={() => {
               setActiveRoom(null);
@@ -528,6 +547,8 @@ function HomeScreen({
   copy,
   activeDrop,
   grammarTopics,
+  learningPath,
+  learningCode,
   contextText,
   setContextText,
   contextResult,
@@ -542,6 +563,8 @@ function HomeScreen({
   copy: (key: Parameters<typeof t>[1]) => string;
   activeDrop?: GrammarDropDto;
   grammarTopics: GrammarTopicDto[];
+  learningPath: LearningPathDto | null;
+  learningCode: string;
   contextText: string;
   setContextText: (value: string) => void;
   contextResult: ContextAnalyzeDto | null;
@@ -553,6 +576,7 @@ function HomeScreen({
   openSpeak: () => void;
   openReview: () => void;
 }) {
+  const contextExamples = contextExamplesByLanguage[learningCode] ?? contextExamplesByLanguage.en;
   return (
     <>
       <section className="home-summary">
@@ -572,6 +596,8 @@ function HomeScreen({
           </div>
         </div>
       </section>
+
+      {learningPath && <LearningPathPanel path={learningPath} openSpeak={openSpeak} />}
 
       <section className="card context-card">
         <div className="section-title">
@@ -616,6 +642,58 @@ function HomeScreen({
 
       <GrammarLab copy={copy} drop={activeDrop} topics={grammarTopics} checkGrammar={checkGrammar} />
     </>
+  );
+}
+
+function LearningPathPanel({ path, openSpeak }: { path: LearningPathDto; openSpeak: () => void }) {
+  const [activeStep, setActiveStep] = useState(path.steps[0]?.id ?? "");
+  const step = path.steps.find((item) => item.id === activeStep) ?? path.steps[0];
+
+  useEffect(() => {
+    setActiveStep(path.steps[0]?.id ?? "");
+  }, [path.language_code, path.steps]);
+
+  if (!step) return null;
+
+  return (
+    <section className="card learning-path-card">
+      <div className="section-title learning-head">
+        <div>
+          <small>{path.level}</small>
+          <h2>{path.language_name}: стартова система</h2>
+          <p>{path.assistant_role}</p>
+        </div>
+        <button className="soft-action" onClick={openSpeak}>
+          <Mic size={17} />
+          Спікінг
+        </button>
+      </div>
+      <div className="path-steps">
+        {path.steps.map((item, index) => (
+          <button key={item.id} className={item.id === step.id ? "selected" : ""} onClick={() => setActiveStep(item.id)}>
+            {index + 1}
+          </button>
+        ))}
+      </div>
+      <article className="learning-step">
+        <strong>{step.title}</strong>
+        <p>{step.goal}</p>
+        <p>{step.teacher_note}</p>
+        <div className="phrase-stack">
+          {step.examples.map((example) => (
+            <div key={example.phrase} className="phrase-card">
+              <strong>{example.phrase}</strong>
+              <span>{example.pronunciation}</span>
+              <p>{example.meaning}</p>
+            </div>
+          ))}
+        </div>
+        <div className="micro-task">
+          <Sparkles size={16} />
+          <span>{step.micro_task}</span>
+        </div>
+      </article>
+    </section>
   );
 }
 

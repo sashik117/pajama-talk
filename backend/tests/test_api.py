@@ -245,6 +245,60 @@ def test_grammar_topics_prioritize_speaking_mistakes(client: TestClient) -> None
     assert body[0]["recommended"] is True
 
 
+def test_learning_path_and_grammar_follow_selected_language(client: TestClient) -> None:
+    headers = auth_headers(client)
+    client.patch("/auth/me", headers=headers, json={"active_language_code": "pl"})
+
+    path = client.get("/learning/path?language_code=pl", headers=headers)
+    assert path.status_code == 200
+    path_body = path.json()
+    assert path_body["language_code"] == "pl"
+    assert "Poproszę kawę" in path_body["next_room_prompt"]
+
+    topics = client.get("/grammar/topics?language_code=pl", headers=headers)
+    assert topics.status_code == 200
+    topic_body = topics.json()
+    assert topic_body[0]["id"].startswith("pl-")
+    assert "Poproszę kawę." in str(topic_body)
+
+    check = client.post(
+        "/grammar/check",
+        headers=headers,
+        json={"topic_id": "pl-requests", "exercise_id": "pl-request-1", "answer": "Poproszę kawę."},
+    )
+    assert check.status_code == 200
+    assert check.json()["correct"] is True
+
+
+def test_speaking_uses_selected_language_starter_pack(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+    client.patch("/auth/me", headers=headers, json={"active_language_code": "es"})
+
+    rooms = client.get("/speaking/rooms?language_code=es", headers=headers)
+    assert rooms.status_code == 200
+    assert "Quiero un café" in rooms.json()[0]["prompt"]
+
+    hints = client.post(
+        "/speaking/hints",
+        headers=headers,
+        json={"room_id": "coffee-alex", "last_message": "Hola", "language_code": "es"},
+    )
+    assert hints.status_code == 200
+    assert hints.json()["simple"] == "Gracias, suena bien."
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex") as websocket:
+        websocket.send_text("Hola")
+        tokens: list[str] = []
+        while True:
+            event = websocket.receive_json()
+            if event["type"] == "done":
+                break
+            tokens.append(event["value"])
+
+    assert "Quiero un café" in "".join(tokens)
+
+
 def test_review_due_queue_returns_due_words_and_removes_reviewed(client: TestClient) -> None:
     headers = auth_headers(client)
     created = client.post(

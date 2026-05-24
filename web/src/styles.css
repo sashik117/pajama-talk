@@ -471,6 +471,68 @@ textarea {
   gap: 10px;
 }
 
+.learning-path-card,
+.learning-step {
+  display: grid;
+  gap: 12px;
+}
+
+.learning-head {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.learning-head p {
+  margin-top: 5px;
+}
+
+.path-steps {
+  display: flex;
+  gap: 8px;
+}
+
+.path-steps button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  color: #292632;
+  background: rgba(247, 241, 255, 0.82);
+  font-weight: 620;
+}
+
+.path-steps button.selected {
+  background: rgba(157, 206, 192, 0.68);
+}
+
+.phrase-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.phrase-card,
+.micro-task {
+  border-radius: 16px;
+  padding: 11px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.phrase-card {
+  display: grid;
+  gap: 4px;
+}
+
+.phrase-card span {
+  color: #8a7f91;
+  font-size: 12px;
+}
+
+.micro-task {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .grammar-lab {
   background: rgba(255, 255, 255, 0.88);
 }

@@ -8,6 +8,7 @@ from app.schemas.speaking import SpeakingHintsResponse
 from app.schemas.word import WordCreate
 from app.services.ai_prompts import context_analysis_prompt, speaking_hints_prompt, word_enrichment_prompt
 from app.services.ai_provider import get_ai_provider
+from app.services.language_course import starter_pack
 
 
 def enrich_word(
@@ -35,14 +36,15 @@ def enrich_word(
 
     source_language = language_name(language_code)
     translation = _mock_translate(clean_term, target_language)
+    pack = starter_pack(normalized_code)
     return WordCreate(
         term=clean_term,
         language_code=normalized_code,
         translation=translation,
         transcription=f"/{clean_term.lower()}/",
         meme=f"Коли '{clean_term}' заходить у {source_language} sentence і все раптом звучить живіше.",
-        example_one=f"I keep seeing '{clean_term}' in {source_language} conversations, so it is worth saving.",
-        example_two=f"That {source_language} moment felt very '{clean_term}', but in the best possible way.",
+        example_one=f"{pack['hello'][0]} / слово для контексту: {clean_term}",
+        example_two=f"{pack['want'][0]} / спробуй додати '{clean_term}' у живу фразу.",
         source_context=source_context,
     )
 
@@ -103,19 +105,30 @@ async def stream_roleplay_reply(
     room_id: str,
     user_text: str,
     tone: str,
+    language_code: str = "en",
     learning_terms: list[str] | None = None,
 ) -> AsyncIterator[str]:
-    reply = _roleplay_reply(room_id, user_text, tone, learning_terms or [])
+    reply = _roleplay_reply(room_id, user_text, tone, language_code, learning_terms or [])
     for word in reply.split(" "):
         await asyncio.sleep(0.03)
         yield word + " "
 
 
-def _roleplay_reply(room_id: str, user_text: str, tone: str, learning_terms: list[str]) -> str:
+def _roleplay_reply(room_id: str, user_text: str, tone: str, language_code: str, learning_terms: list[str]) -> str:
+    pack = starter_pack(language_code)
     learning_hook = ""
     if learning_terms:
         term = learning_terms[0]
-        learning_hook = f" Try using '{term}' in your answer if it fits."
+        learning_hook = f" Спробуй використати '{term}' у відповіді, якщо підходить."
+
+    if language_code != "en":
+        if "coffee" in room_id:
+            return f"{pack['thanks'][0]} Тепер як teacher: спробуй відповісти фразою '{pack['want'][0]}'.{learning_hook}"
+        if "airport" in room_id:
+            return f"{pack['question'][0]} Добре для ситуації в аеропорту. Скажи коротко і я продовжу діалог.{learning_hook}"
+        if "interview" in room_id:
+            return f"{pack['hello'][0]} Почни з представлення, потім додай одну просту фразу про себе.{learning_hook}"
+        return f"{pack['question'][0]} Я як teacher підкину опору, а ти відповідай коротко.{learning_hook}"
 
     if "coffee" in room_id:
         return f"Nice choice. Want it iced, hot, or emotionally supportive with oat milk?{learning_hook}"
@@ -144,6 +157,14 @@ def generate_speaking_hints(
         )
 
     source_language = language_name(normalized_code)
+    pack = starter_pack(normalized_code)
+    if normalized_code != "en":
+        return SpeakingHintsResponse(
+            simple=pack["thanks"][0],
+            conversational=f"{pack['want'][0]} {pack['thanks'][0]}",
+            spicy=f"{pack['question'][0]}",
+        )
+
     return SpeakingHintsResponse(
         simple="Yeah, that sounds good.",
         conversational=f"That sounds good, and I would like to try saying it in {source_language}.",

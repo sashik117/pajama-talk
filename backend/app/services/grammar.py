@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
+from app.core.languages import language_name, normalize_language_code
 from app.schemas.grammar import GrammarCheckResponse, GrammarDrop, GrammarExample, GrammarExercise, GrammarTopic
+from app.services.language_course import starter_pack
 
 
 @dataclass(frozen=True)
@@ -213,6 +215,93 @@ TOPICS: tuple[GrammarTopicSpec, ...] = (
 )
 
 
+def beginner_topics(language_code: str) -> tuple[GrammarTopicSpec, ...]:
+    code = normalize_language_code(language_code)
+    if code == "en":
+        return TOPICS
+
+    name = language_name(code)
+    pack = starter_pack(code)
+    hello, want, question, thanks = pack["hello"], pack["want"], pack["question"], pack["thanks"]
+    return (
+        GrammarTopicSpec(
+            id=f"{code}-starter-phrases",
+            tag="starter_phrases",
+            title=f"{name}: перші фрази",
+            level="A0",
+            summary=f"Стартуємо {name} з готових живих фраз, а не з таблиці правил.",
+            micro_lesson=(
+                "Новачку спочатку потрібні мовні блоки: привітатись, попросити щось, подякувати. "
+                "Граматика підтягується після того, як фраза вже звучить у роті."
+            ),
+            rules=(
+                "Не перекладай слово в слово, бери фразу як готовий шаблон.",
+                "Повтори фразу вголос 2-3 рази, навіть якщо вимова ще не ідеальна.",
+                "У спікінгу AI буде відповідати цією ж мовою і просити коротку реакцію.",
+            ),
+            examples=(
+                GrammarExample(wrong=None, right=hello[0], note=f"Вимова: {hello[1]}. Значення: {hello[2]}"),
+                GrammarExample(wrong=None, right=thanks[0], note=f"Вимова: {thanks[1]}. Значення: {thanks[2]}"),
+            ),
+            exercises=(
+                GrammarExerciseSpec(
+                    id=f"{code}-starter-1",
+                    type="choice",
+                    prompt="Обери фразу для: «Привіт, я Саша».",
+                    answer=hello[0],
+                    options=(hello[0], want[0], question[0]),
+                    explanation=f"Це базове представлення у {name}: {hello[0]}",
+                ),
+                GrammarExerciseSpec(
+                    id=f"{code}-starter-2",
+                    type="choice",
+                    prompt="Обери фразу, яка звучить як ввічливе «дякую / добре».",
+                    answer=thanks[0],
+                    options=(question[0], thanks[0], want[0]),
+                    explanation=f"Ця фраза закриває міні-діалог: {thanks[0]}",
+                ),
+            ),
+            reason=f"Ти вчиш {name}, тому починаємо з готових фраз для першої розмови.",
+        ),
+        GrammarTopicSpec(
+            id=f"{code}-requests",
+            tag="requests",
+            title=f"{name}: попросити щось",
+            level="A0-A1",
+            summary="Перша практична конструкція: як попросити каву, допомогу або повторення.",
+            micro_lesson="У більшості мов ввічливість живе не в одному слові, а у всій фразі. Запам'ятай її блоком.",
+            rules=(
+                f"Фраза-заготовка: {want[0]}",
+                "Після неї можна міняти предмет: кава, вода, квиток, допомога.",
+                "Якщо зависла, попроси допомогу готовим питанням.",
+            ),
+            examples=(
+                GrammarExample(wrong=None, right=want[0], note=f"Значення: {want[2]}"),
+                GrammarExample(wrong=None, right=question[0], note=f"Значення: {question[2]}"),
+            ),
+            exercises=(
+                GrammarExerciseSpec(
+                    id=f"{code}-request-1",
+                    type="choice",
+                    prompt="Що сказати, якщо хочеш каву?",
+                    answer=want[0],
+                    options=(thanks[0], want[0], hello[0]),
+                    explanation=f"Для прохання використовуй: {want[0]}",
+                ),
+                GrammarExerciseSpec(
+                    id=f"{code}-request-2",
+                    type="choice",
+                    prompt="Що сказати, коли треба попросити допомогу?",
+                    answer=question[0],
+                    options=(question[0], thanks[0], want[0]),
+                    explanation=f"Це готове питання для допомоги: {question[0]}",
+                ),
+            ),
+            reason=f"AI-тьютор буде тренувати прохання у {name}, бо це найшвидше дає відчуття «я можу говорити».",
+        ),
+    )
+
+
 def detect_mistake_tag(text: str) -> str | None:
     clean = f" {text.lower()} "
     past_markers = (" yesterday", " last night", " last week", " in 202", " ago")
@@ -232,12 +321,13 @@ def detect_mistake_tag(text: str) -> str | None:
     return None
 
 
-def grammar_topics_for_tags(tags: set[str]) -> list[GrammarTopic]:
-    return [_to_topic(topic, topic.tag in tags) for topic in sorted(TOPICS, key=lambda item: (item.tag not in tags, item.id))]
+def grammar_topics_for_tags(tags: set[str], language_code: str = "en") -> list[GrammarTopic]:
+    topics = beginner_topics(language_code)
+    return [_to_topic(topic, topic.tag in tags) for topic in sorted(topics, key=lambda item: (item.tag not in tags, item.id))]
 
 
-def check_grammar_answer(topic_id: str, exercise_id: str, answer: str) -> GrammarCheckResponse:
-    topic = next((item for item in TOPICS if item.id == topic_id), None)
+def check_grammar_answer(topic_id: str, exercise_id: str, answer: str, language_code: str = "en") -> GrammarCheckResponse:
+    topic = next((item for item in beginner_topics(language_code) if item.id == topic_id), None)
     if topic is None:
         return GrammarCheckResponse(correct=False, expected="", feedback="Topic not found.", score_delta=0)
 
@@ -256,7 +346,21 @@ def check_grammar_answer(topic_id: str, exercise_id: str, answer: str) -> Gramma
     )
 
 
-def drops_for_tags(tags: set[str]) -> list[GrammarDrop]:
+def drops_for_tags(tags: set[str], language_code: str = "en") -> list[GrammarDrop]:
+    code = normalize_language_code(language_code)
+    if code != "en":
+        pack = starter_pack(code)
+        name = language_name(code)
+        return [
+            GrammarDrop(
+                id=f"{code}-starter-drop",
+                title=f"{name} Starter",
+                nudge=f"Починаємо {name} з фрази, яку реально можна сказати вголос.",
+                tiny_explanation=f"Скажи: {pack['hello'][0]} Потім попроси щось: {pack['want'][0]}",
+                quests=[pack["hello"][0], pack["want"][0], pack["question"][0]],
+            ),
+        ]
+
     if "past_simple_vs_present_perfect" in tags:
         return [
             GrammarDrop(
