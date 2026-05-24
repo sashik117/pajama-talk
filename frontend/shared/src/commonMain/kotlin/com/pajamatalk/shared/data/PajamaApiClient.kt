@@ -26,6 +26,9 @@ class PajamaApiClient(
         install(WebSockets)
     },
 ) {
+    suspend fun health(): HealthResponse =
+        client.get("$baseUrl/health").body()
+
     suspend fun register(email: String, password: String, displayName: String): TokenResponse =
         client.post("$baseUrl/auth/register") {
             contentType(ContentType.Application.Json)
@@ -122,6 +125,11 @@ enum class ReviewGrade(val value: String) {
     Remember("remember"),
     Forgot("forgot"),
 }
+
+@Serializable
+data class HealthResponse(
+    val status: String,
+)
 
 @Serializable
 data class RegisterRequest(

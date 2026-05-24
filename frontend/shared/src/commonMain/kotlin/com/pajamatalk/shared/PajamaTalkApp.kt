@@ -89,10 +89,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
 import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
@@ -143,23 +146,33 @@ fun PajamaTalkApp() {
             color = MaterialTheme.colorScheme.background,
         ) {
             CompositionLocalProvider(LocalPajamaState provides appState) {
-                TabNavigator(AuraTab) {
-                    Scaffold(
-                        contentWindowInsets = WindowInsets(0.dp),
-                        bottomBar = { PajamaBottomBar() },
-                    ) { padding ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(padding)
-                                .background(
-                                    Brush.verticalGradient(
-                                        listOf(Color(0xFFFFFBFF), Color(0xFFF8F1FF), Color(0xFFFFF4EE)),
-                                    ),
-                                )
-                                .imePadding(),
-                        ) {
-                            CurrentTab()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFFFFFBFF), Color(0xFFF8F1FF), Color(0xFFFFF4EE)),
+                            ),
+                        )
+                        .imePadding(),
+                ) {
+                    if (appState.user == null) {
+                        AuthScreen(appState)
+                    } else {
+                        TabNavigator(AuraTab) {
+                            Scaffold(
+                                contentWindowInsets = WindowInsets(0.dp),
+                                bottomBar = { PajamaBottomBar() },
+                                containerColor = Color.Transparent,
+                            ) { padding ->
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(padding),
+                                ) {
+                                    CurrentTab()
+                                }
+                            }
                         }
                     }
                 }
@@ -250,6 +263,133 @@ private fun ScreenFrame(content: @Composable ColumnScope.() -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                     content = content,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AuthScreen(appState: PajamaAppState) {
+    val scope = rememberCoroutineScope()
+    var isRegister by remember { mutableStateOf(false) }
+    var displayName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    val canSubmit = email.trim().length >= 5 && password.length >= 8 && !appState.isAuthenticating && !appState.isBooting
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+    ) {
+        val horizontal = if (maxWidth < 420.dp) 18.dp else 32.dp
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = horizontal),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 32.dp, bottom = 32.dp),
+        ) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = 560.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    Column {
+                        Text("PajamaTalk", fontSize = 34.sp, fontWeight = FontWeight.Black, color = Graphite)
+                        Text("Soft language practice, your pace.", color = InkMuted, fontWeight = FontWeight.Medium)
+                    }
+
+                    AuraHero()
+                    ConnectionStatus(appState)
+
+                    CozyCard(background = Color.White.copy(alpha = 0.88f)) {
+                        Text(
+                            if (isRegister) "Create your space" else "Welcome back",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Graphite,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        AnimatedVisibility(isRegister) {
+                            Column {
+                                OutlinedTextField(
+                                    value = displayName,
+                                    onValueChange = { displayName = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(24.dp),
+                                    singleLine = true,
+                                    label = { Text("Name") },
+                                )
+                                Spacer(Modifier.height(10.dp))
+                            }
+                        }
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            label = { Text("Email") },
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            label = { Text("Password") },
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        SoftAction(
+                            text = when {
+                                appState.isAuthenticating -> "Opening"
+                                isRegister -> "Create account"
+                                else -> "Log in"
+                            },
+                            icon = Icons.Rounded.Person,
+                            color = Mint,
+                            enabled = canSubmit,
+                            onClick = {
+                                scope.launch {
+                                    if (isRegister) {
+                                        appState.register(email, password, displayName)
+                                    } else {
+                                        appState.login(email, password)
+                                    }
+                                }
+                            },
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        TextButton(
+                            onClick = { isRegister = !isRegister },
+                            enabled = !appState.isAuthenticating,
+                            colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
+                        ) {
+                            Text(if (isRegister) "I already have an account" else "Create a new account")
+                        }
+                    }
+
+                    CozyCard(background = Lavender.copy(alpha = 0.62f)) {
+                        Text("Demo profile", fontWeight = FontWeight.Bold, color = Graphite)
+                        Spacer(Modifier.height(10.dp))
+                        SoftAction(
+                            text = if (appState.isAuthenticating) "Opening" else "Continue demo",
+                            icon = Icons.Rounded.AutoAwesome,
+                            color = Peach,
+                            enabled = !appState.isAuthenticating && !appState.isBooting,
+                            onClick = { scope.launch { appState.continueAsDemo() } },
+                        )
+                    }
+                }
             }
         }
     }
@@ -965,6 +1105,13 @@ private fun VibeScreen() {
         }
         CozyCard(background = Peach.copy(alpha = 0.34f)) {
             Text(user?.displayName ?: "Dreamer", fontWeight = FontWeight.Bold, color = Graphite)
+            Spacer(Modifier.height(12.dp))
+            SoftAction(
+                text = "Log out",
+                icon = Icons.Rounded.Person,
+                color = Color.White.copy(alpha = 0.7f),
+                onClick = { appState.logout() },
+            )
             Spacer(Modifier.height(6.dp))
             Text("Native: ${(user?.nativeLanguageCode ?: "uk").uppercase()} · ${user?.email ?: "dev user"}", color = InkMuted)
         }

@@ -77,7 +77,7 @@ PajamaTalk/
 
 The shared Compose app now talks to FastAPI in dev mode:
 
-- Auto-registers/logs in as a development user.
+- Shows a mobile-first auth gate with login, registration, and a one-tap demo profile.
 - Loads real words from `GET /words`.
 - Adds enriched words through `POST /words/enrich`.
 - Reviews cards through `POST /words/{id}/review`.

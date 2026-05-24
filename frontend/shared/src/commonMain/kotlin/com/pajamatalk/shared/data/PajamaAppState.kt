@@ -13,6 +13,8 @@ class PajamaAppState(
 ) {
     var isBooting by mutableStateOf(true)
         private set
+    var isAuthenticating by mutableStateOf(false)
+        private set
     var isWordsLoading by mutableStateOf(false)
         private set
     var isAddingWord by mutableStateOf(false)
@@ -52,28 +54,85 @@ class PajamaAppState(
     suspend fun boot() {
         isBooting = true
         errorMessage = null
-        val login = findWorkingLogin()
-        if (login == null) {
+        val client = findWorkingClient()
+        if (client == null) {
             isBooting = false
             errorMessage = "Backend is offline. Start FastAPI and tap Refresh."
             return
         }
 
-        activeClient = login.client
-        token = login.token
-        activeBaseUrl = login.client.baseUrl
-
-        runCatching {
-            val profile = login.client.me(login.token)
-            user = profile
-            selectedLanguage = languageByCode(profile.activeLanguageCode)
-            speakingRooms = login.client.speakingRooms(login.token, selectedLanguage.code)
-            loadWords()
-            loadDueWords()
-            loadStats()
-        }.onFailure { errorMessage = it.friendlyMessage() }
-
+        activeClient = client
+        activeBaseUrl = client.baseUrl
         isBooting = false
+    }
+
+    suspend fun login(email: String, password: String) {
+        authenticate {
+            it.login(email.trim(), password)
+        }
+    }
+
+    suspend fun register(email: String, password: String, displayName: String) {
+        authenticate {
+            it.register(email.trim(), password, displayName.trim().ifBlank { "Dreamer" })
+        }
+    }
+
+    suspend fun continueAsDemo() {
+        authenticate {
+            runCatching {
+                it.register(DEV_EMAIL, DEV_PASSWORD, "Dreamer")
+            }.recoverCatching { error ->
+                if (error is ClientRequestException && error.response.status.value == 409) {
+                    it.login(DEV_EMAIL, DEV_PASSWORD)
+                } else {
+                    throw error
+                }
+            }.getOrThrow()
+        }
+    }
+
+    fun logout() {
+        token = null
+        user = null
+        stats = null
+        words = emptyList()
+        dueWords = emptyList()
+        speakingRooms = emptyList()
+        speakingHints = null
+        contextResult = null
+        errorMessage = null
+    }
+
+    private suspend fun authenticate(block: suspend (PajamaApiClient) -> TokenResponse) {
+        isAuthenticating = true
+        errorMessage = null
+        val client = activeClient ?: findWorkingClient()
+        if (client == null) {
+            errorMessage = "Backend is offline. Start FastAPI and tap Refresh."
+            isAuthenticating = false
+            return
+        }
+        activeClient = client
+        activeBaseUrl = client.baseUrl
+        runCatching {
+            val session = block(client)
+            openSession(client, session.accessToken)
+        }.onFailure { errorMessage = it.friendlyMessage() }
+        isAuthenticating = false
+    }
+
+    private suspend fun openSession(client: PajamaApiClient, accessToken: String) {
+        activeClient = client
+        token = accessToken
+        activeBaseUrl = client.baseUrl
+        val profile = client.me(accessToken)
+        user = profile
+        selectedLanguage = languageByCode(profile.activeLanguageCode)
+        speakingRooms = client.speakingRooms(accessToken, selectedLanguage.code)
+        loadWords()
+        loadDueWords()
+        loadStats()
     }
 
     suspend fun refreshAll() {
@@ -243,20 +302,11 @@ class PajamaAppState(
         }
     }
 
-    private suspend fun findWorkingLogin(): LoginSession? {
+    private suspend fun findWorkingClient(): PajamaApiClient? {
         for (client in clients) {
-            val registered = runCatching {
-                client.register(DEV_EMAIL, DEV_PASSWORD, "Dreamer")
-            }.recoverCatching { error ->
-                if (error is ClientRequestException && error.response.status.value == 409) {
-                    client.login(DEV_EMAIL, DEV_PASSWORD)
-                } else {
-                    throw error
-                }
-            }.getOrNull()
-
-            if (registered != null) {
-                return LoginSession(client, registered.accessToken)
+            val isHealthy = runCatching { client.health() }.getOrNull()?.status == "ok"
+            if (isHealthy) {
+                return client
             }
         }
         return null
@@ -269,12 +319,16 @@ class PajamaAppState(
         token ?: error("Pajama API token is not ready yet.")
 
     private fun Throwable.friendlyMessage(): String =
-        message?.takeIf { it.isNotBlank() } ?: "Something went soft-sideways."
-
-    private data class LoginSession(
-        val client: PajamaApiClient,
-        val token: String,
-    )
+        if (this is ClientRequestException) {
+            when (response.status.value) {
+                401 -> "Wrong email or password."
+                409 -> "That email already has a PajamaTalk space."
+                422 -> "Check the email and password fields."
+                else -> message
+            }
+        } else {
+            message
+        }?.takeIf { it.isNotBlank() } ?: "Something went soft-sideways."
 
     private companion object {
         const val DEV_EMAIL = "dreamer@pajamatalk.dev"
