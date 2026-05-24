@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -99,9 +100,11 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.pajamatalk.shared.data.ContextAnalyzeDto
+import com.pajamatalk.shared.data.LearningLanguage
 import com.pajamatalk.shared.data.PajamaAppState
 import com.pajamatalk.shared.data.ReviewGrade
 import com.pajamatalk.shared.data.SpeakingRoomDto
+import com.pajamatalk.shared.data.SupportedLearningLanguages
 import com.pajamatalk.shared.data.WordDto
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -268,6 +271,10 @@ private fun AuraScreen() {
         }
 
         ConnectionStatus(appState)
+        LanguagePicker(
+            selected = appState.selectedLanguage,
+            onSelect = { language -> scope.launch { appState.selectLanguage(language) } },
+        )
         AuraHero()
 
         CozyCard(background = Color.White.copy(alpha = 0.84f)) {
@@ -420,6 +427,34 @@ private fun ConnectionStatus(appState: PajamaAppState) {
         }
         appState.activeBaseUrl != null -> CozyCard(background = Mint.copy(alpha = 0.28f)) {
             Text("Live API connected", color = Graphite, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun LanguagePicker(
+    selected: LearningLanguage,
+    onSelect: (LearningLanguage) -> Unit,
+) {
+    CozyCard(background = Color.White.copy(alpha = 0.72f)) {
+        Text("Learning language", fontWeight = FontWeight.Bold, color = Graphite)
+        Spacer(Modifier.height(10.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(SupportedLearningLanguages) { language ->
+                val isSelected = language.code == selected.code
+                TextButton(
+                    onClick = { onSelect(language) },
+                    modifier = Modifier
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(if (isSelected) Lavender else SoftLilac),
+                    colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
+                ) {
+                    Text(language.shortLabel, fontWeight = FontWeight.Black)
+                    Spacer(Modifier.width(6.dp))
+                    Text(language.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
     }
 }
@@ -609,6 +644,7 @@ private fun WaveMicButton() {
 
 @Composable
 private fun AddWordCard(
+    selectedLanguage: LearningLanguage,
     isAdding: Boolean,
     onAdd: (String) -> Unit,
 ) {
@@ -623,7 +659,7 @@ private fun AddWordCard(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(24.dp),
                 singleLine = true,
-                placeholder = { Text("cozy") },
+                placeholder = { Text(selectedLanguage.sampleWord) },
             )
             SoftAction(
                 text = if (isAdding) "..." else "Add",
@@ -648,7 +684,12 @@ private fun StorageScreen() {
     ScreenFrame {
         Text("My Storage", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
         ConnectionStatus(appState)
+        LanguagePicker(
+            selected = appState.selectedLanguage,
+            onSelect = { language -> scope.launch { appState.selectLanguage(language) } },
+        )
         AddWordCard(
+            selectedLanguage = appState.selectedLanguage,
             isAdding = appState.isAddingWord,
             onAdd = { term -> scope.launch { appState.addWord(term) } },
         )

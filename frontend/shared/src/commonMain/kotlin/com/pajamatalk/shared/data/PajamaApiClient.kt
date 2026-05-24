@@ -6,6 +6,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -41,16 +42,24 @@ class PajamaApiClient(
             bearerAuth(token)
         }.body()
 
-    suspend fun words(token: String): List<WordDto> =
+    suspend fun words(token: String, languageCode: String? = null): List<WordDto> =
         client.get("$baseUrl/words") {
             bearerAuth(token)
+            if (languageCode != null) {
+                parameter("language_code", languageCode)
+            }
         }.body()
 
-    suspend fun enrichWord(token: String, term: String, sourceContext: String = ""): WordDto =
+    suspend fun enrichWord(
+        token: String,
+        term: String,
+        sourceContext: String = "",
+        languageCode: String = "en",
+    ): WordDto =
         client.post("$baseUrl/words/enrich") {
             bearerAuth(token)
             contentType(ContentType.Application.Json)
-            setBody(WordEnrichRequest(term, sourceContext))
+            setBody(WordEnrichRequest(term, languageCode, sourceContext))
         }.body()
 
     suspend fun reviewWord(token: String, wordId: Int, grade: ReviewGrade): ReviewDto =
@@ -60,11 +69,11 @@ class PajamaApiClient(
             setBody(ReviewRequest(grade.value))
         }.body()
 
-    suspend fun analyzeContext(token: String, text: String): ContextAnalyzeDto =
+    suspend fun analyzeContext(token: String, text: String, languageCode: String = "en"): ContextAnalyzeDto =
         client.post("$baseUrl/context/analyze") {
             bearerAuth(token)
             contentType(ContentType.Application.Json)
-            setBody(ContextAnalyzeRequest(text))
+            setBody(ContextAnalyzeRequest(text, languageCode))
         }.body()
 
     suspend fun speakingRooms(token: String): List<SpeakingRoomDto> =
@@ -109,6 +118,7 @@ data class UserDto(
 @Serializable
 data class WordEnrichRequest(
     val term: String,
+    @SerialName("language_code") val languageCode: String = "en",
     @SerialName("source_context") val sourceContext: String = "",
     @SerialName("target_language") val targetLanguage: String = "Ukrainian",
 )
@@ -116,6 +126,7 @@ data class WordEnrichRequest(
 @Serializable
 data class WordDto(
     val id: Int,
+    @SerialName("language_code") val languageCode: String = "en",
     val term: String,
     val translation: String,
     val transcription: String,
@@ -146,6 +157,7 @@ data class ReviewDto(
 @Serializable
 data class ContextAnalyzeRequest(
     val text: String,
+    @SerialName("language_code") val languageCode: String = "en",
     @SerialName("target_language") val targetLanguage: String = "Ukrainian",
 )
 

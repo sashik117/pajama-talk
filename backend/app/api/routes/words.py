@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.languages import normalize_language_code
 from app.db.session import get_db
 from app.models.user import User
 from app.models.word import ReviewGrade, SrsData, Word
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/words", tags=["words"])
 def to_word_response(word: Word) -> WordResponse:
     return WordResponse(
         id=word.id,
+        language_code=word.language_code,
         term=word.term,
         translation=word.translation,
         transcription=word.transcription,
@@ -29,10 +31,14 @@ def to_word_response(word: Word) -> WordResponse:
 
 @router.get("", response_model=list[WordResponse])
 def list_words(
+    language_code: str | None = Query(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> list[WordResponse]:
-    words = db.query(Word).filter(Word.owner_id == user.id).order_by(Word.created_at.desc()).all()
+    query = db.query(Word).filter(Word.owner_id == user.id)
+    if language_code is not None:
+        query = query.filter(Word.language_code == normalize_language_code(language_code))
+    words = query.order_by(Word.created_at.desc()).all()
     return [to_word_response(word) for word in words]
 
 
@@ -56,7 +62,12 @@ def enrich_and_create_word(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> WordResponse:
-    enriched = enrich_word(payload.term, payload.source_context, payload.target_language)
+    enriched = enrich_word(
+        term=payload.term,
+        source_context=payload.source_context,
+        target_language=payload.target_language,
+        language_code=payload.language_code,
+    )
     word = Word(owner_id=user.id, **enriched.model_dump())
     word.srs = SrsData()
     db.add(word)

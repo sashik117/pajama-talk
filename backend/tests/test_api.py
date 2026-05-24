@@ -34,10 +34,15 @@ def test_health(client: TestClient) -> None:
 
 def test_word_enrichment_and_review(client: TestClient) -> None:
     headers = auth_headers(client)
-    created = client.post("/words/enrich", headers=headers, json={"term": "cozy", "source_context": "a cozy night"})
+    created = client.post(
+        "/words/enrich",
+        headers=headers,
+        json={"term": "cozy", "language_code": "en", "source_context": "a cozy night"},
+    )
     assert created.status_code == 201
     word = created.json()
     assert word["term"] == "cozy"
+    assert word["language_code"] == "en"
     assert word["translation"] == "затишний"
 
     reviewed = client.post(f"/words/{word['id']}/review", headers=headers, json={"grade": "remember"})
@@ -55,3 +60,26 @@ def test_context_buddy(client: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert "deadline" in body["suggested_words"]
+
+
+def test_words_can_be_filtered_by_learning_language(client: TestClient) -> None:
+    headers = auth_headers(client)
+    english = client.post(
+        "/words/enrich",
+        headers=headers,
+        json={"term": "cozy", "language_code": "en"},
+    )
+    polish = client.post(
+        "/words/enrich",
+        headers=headers,
+        json={"term": "spoko", "language_code": "pl"},
+    )
+
+    assert english.status_code == 201
+    assert polish.status_code == 201
+
+    response = client.get("/words?language_code=pl", headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert [word["term"] for word in body] == ["spoko"]
+    assert body[0]["language_code"] == "pl"

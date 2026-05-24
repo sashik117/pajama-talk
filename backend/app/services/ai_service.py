@@ -2,26 +2,43 @@ from collections.abc import AsyncIterator
 import asyncio
 import re
 
+from app.core.languages import language_name, normalize_language_code
 from app.schemas.context import ContextAnalyzeResponse, ContextHighlight
 from app.schemas.word import WordCreate
 
 
-def enrich_word(term: str, source_context: str = "", target_language: str = "Ukrainian") -> WordCreate:
+def enrich_word(
+    term: str,
+    source_context: str = "",
+    target_language: str = "Ukrainian",
+    language_code: str = "en",
+) -> WordCreate:
     clean_term = term.strip()
+    source_language = language_name(language_code)
     translation = _mock_translate(clean_term, target_language)
     return WordCreate(
         term=clean_term,
+        language_code=normalize_language_code(language_code),
         translation=translation,
         transcription=f"/{clean_term.lower()}/",
-        meme=f"When '{clean_term}' enters the chat and suddenly the sentence has main-character energy.",
-        example_one=f"I keep seeing '{clean_term}' in real conversations, so it is worth saving.",
-        example_two=f"That moment felt very '{clean_term}', but in the best possible way.",
+        meme=f"When '{clean_term}' enters the {source_language} chat and suddenly the sentence has main-character energy.",
+        example_one=f"I keep seeing '{clean_term}' in {source_language} conversations, so it is worth saving.",
+        example_two=f"That {source_language} moment felt very '{clean_term}', but in the best possible way.",
         source_context=source_context,
     )
 
 
-def analyze_context(text: str, target_language: str = "Ukrainian") -> ContextAnalyzeResponse:
-    words = [word.lower() for word in re.findall(r"[A-Za-z][A-Za-z'-]{2,}", text)]
+def analyze_context(
+    text: str,
+    target_language: str = "Ukrainian",
+    language_code: str = "en",
+) -> ContextAnalyzeResponse:
+    source_language = language_name(language_code)
+    words = [
+        word.lower()
+        for word in re.findall(r"[^\W\d_][^\W\d_'-]*", text, flags=re.UNICODE)
+        if len(word.strip()) >= 2
+    ]
     unique_words = list(dict.fromkeys(words))[:8]
     highlights = [
         ContextHighlight(
@@ -32,7 +49,7 @@ def analyze_context(text: str, target_language: str = "Ukrainian") -> ContextAna
         for word in unique_words[:3]
     ]
     return ContextAnalyzeResponse(
-        summary="Текст виглядає як живий шматок мови, не підручниковий приклад.",
+        summary=f"Це схоже на живий шматок {source_language}, не підручниковий приклад.",
         hidden_meaning="Тут важливі не лише слова, а тон: він звучить розмовно, трохи емоційно і дуже контекстно.",
         highlights=highlights,
         suggested_words=unique_words,
@@ -63,5 +80,12 @@ def _mock_translate(term: str, target_language: str) -> str:
         "deadline": "дедлайн",
         "crush": "краш",
         "vibe": "вайб",
+        "ahoj": "привіт",
+        "spoko": "окей / спокійно",
+        "pohoda": "спокій / норм",
+        "coucou": "привітулі",
+        "vale": "добре / окей",
+        "allora": "ну / отже",
+        "merhaba": "привіт",
     }
     return dictionary.get(term.lower(), f"{term} ({target_language})")

@@ -85,3 +85,9 @@ The shared Compose app now talks to FastAPI in dev mode:
 - Loads speaking rooms through `GET /speaking/rooms`.
 
 The frontend tries `http://127.0.0.1:8000` first, then `http://127.0.0.1:8001`.
+
+## Multi-Language Core
+
+PajamaTalk is not English-only. Words are stored with `language_code`, and the frontend can switch between:
+
+`English`, `Slovak`, `Polish`, `Czech`, `French`, `Spanish`, `Italian`, `Korean`, `Japanese`, `Chinese`, and `Turkish`.

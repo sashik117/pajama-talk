@@ -17,6 +17,7 @@ class Word(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    language_code: Mapped[str] = mapped_column(String(12), default="en", index=True)
     term: Mapped[str] = mapped_column(String(120), index=True)
     translation: Mapped[str] = mapped_column(String(255), default="")
     transcription: Mapped[str] = mapped_column(String(120), default="")

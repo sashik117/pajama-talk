@@ -33,6 +33,8 @@ class PajamaAppState(
         private set
     var contextResult by mutableStateOf<ContextAnalyzeDto?>(null)
         private set
+    var selectedLanguage by mutableStateOf(SupportedLearningLanguages.first())
+        private set
 
     private var activeClient: PajamaApiClient? = null
     private var token: String? = null
@@ -76,7 +78,7 @@ class PajamaAppState(
         isWordsLoading = true
         errorMessage = null
         runCatching {
-            words = requireClient().words(requireToken())
+            words = requireClient().words(requireToken(), selectedLanguage.code)
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
@@ -90,7 +92,12 @@ class PajamaAppState(
         isAddingWord = true
         errorMessage = null
         runCatching {
-            val created = requireClient().enrichWord(requireToken(), cleanTerm, sourceContext)
+            val created = requireClient().enrichWord(
+                token = requireToken(),
+                term = cleanTerm,
+                sourceContext = sourceContext,
+                languageCode = selectedLanguage.code,
+            )
             words = listOf(created) + words.filterNot { it.id == created.id }
         }.onFailure {
             errorMessage = it.friendlyMessage()
@@ -105,7 +112,7 @@ class PajamaAppState(
         isAnalyzingContext = true
         errorMessage = null
         runCatching {
-            contextResult = requireClient().analyzeContext(requireToken(), cleanText)
+            contextResult = requireClient().analyzeContext(requireToken(), cleanText, selectedLanguage.code)
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
@@ -135,6 +142,16 @@ class PajamaAppState(
 
     fun clearContextResult() {
         contextResult = null
+    }
+
+    suspend fun selectLanguage(language: LearningLanguage) {
+        if (language.code == selectedLanguage.code) return
+        selectedLanguage = language
+        contextResult = null
+        words = emptyList()
+        if (activeClient != null && token != null) {
+            loadWords()
+        }
     }
 
     private suspend fun findWorkingLogin(): LoginSession? {

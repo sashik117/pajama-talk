@@ -13,4 +13,4 @@ def context_buddy(
     payload: ContextAnalyzeRequest,
     _: User = Depends(get_current_user),
 ) -> ContextAnalyzeResponse:
-    return analyze_context(payload.text, payload.target_language)
+    return analyze_context(payload.text, payload.target_language, payload.language_code)
