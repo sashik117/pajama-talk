@@ -105,6 +105,7 @@ import com.pajamatalk.shared.data.ContextAnalyzeDto
 import com.pajamatalk.shared.data.LearningLanguage
 import com.pajamatalk.shared.data.PajamaAppState
 import com.pajamatalk.shared.data.ReviewGrade
+import com.pajamatalk.shared.data.SpeakingChatMessage
 import com.pajamatalk.shared.data.SpeakingHintsDto
 import com.pajamatalk.shared.data.SpeakingRoomDto
 import com.pajamatalk.shared.data.SupportedLearningLanguages
@@ -669,7 +670,13 @@ private fun SpeakingRoomsScreen() {
         AnimatedVisibility(activeRoom == null) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 rooms.forEach { room ->
-                    RoomCard(room = room, onClick = { activeRoom = room })
+                    RoomCard(
+                        room = room,
+                        onClick = {
+                            activeRoom = room
+                            appState.startSpeakingConversation(room.character)
+                        },
+                    )
                 }
             }
         }
@@ -677,15 +684,19 @@ private fun SpeakingRoomsScreen() {
             val room = activeRoom ?: rooms.first()
             DialoguePreview(
                 room = room,
+                messages = appState.speakingMessages,
                 hints = appState.speakingHints,
                 isLoadingHints = appState.isLoadingHints,
+                isStreaming = appState.isSpeakingStreaming,
                 onHints = {
                     scope.launch {
-                        appState.loadSpeakingHints(room.id, "I want to keep this conversation going.")
+                        val lastLine = appState.speakingMessages.lastOrNull { it.incoming }?.text
+                        appState.loadSpeakingHints(room.id, lastLine.orEmpty().ifBlank { "I want to keep this conversation going." })
                     }
                 },
+                onSend = { message -> scope.launch { appState.sendSpeakingMessage(room.id, message) } },
                 onBack = {
-                    appState.clearSpeakingHints()
+                    appState.clearSpeakingConversation()
                     activeRoom = null
                 },
             )
@@ -721,11 +732,16 @@ private fun RoomCard(room: Room, onClick: () -> Unit) {
 @Composable
 private fun DialoguePreview(
     room: Room,
+    messages: List<SpeakingChatMessage>,
     hints: SpeakingHintsDto?,
     isLoadingHints: Boolean,
+    isStreaming: Boolean,
     onHints: () -> Unit,
+    onSend: (String) -> Unit,
     onBack: () -> Unit,
 ) {
+    var draft by remember(room.id) { mutableStateOf("") }
+
     CozyCard(background = Color.White.copy(alpha = 0.9f)) {
         TextButton(onClick = onBack, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
             Text("Rooms")
@@ -747,14 +763,17 @@ private fun DialoguePreview(
             }
         }
         Spacer(Modifier.height(22.dp))
-        ChatBubble("Hey, want to practice a tiny real-life scene?", incoming = true)
-        ChatBubble("Yes, but keep it chill.", incoming = false)
+        messages.ifEmpty {
+            listOf(SpeakingChatMessage("Hey, want to practice a tiny real-life scene?", incoming = true))
+        }.forEach { message ->
+            ChatBubble(message.text.ifBlank { "..." }, incoming = message.incoming)
+        }
         Spacer(Modifier.height(4.dp))
         SoftAction(
             text = if (isLoadingHints) "Thinking" else "Hints",
             icon = Icons.Rounded.AutoAwesome,
             color = Mint,
-            enabled = !isLoadingHints,
+            enabled = !isLoadingHints && !isStreaming,
             onClick = onHints,
         )
         hints?.let { hintSet ->
@@ -762,6 +781,28 @@ private fun DialoguePreview(
             HintBubble("Simple", hintSet.simple)
             HintBubble("Natural", hintSet.conversational)
             HintBubble("Spicy", hintSet.spicy)
+        }
+        Spacer(Modifier.height(20.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = draft,
+                onValueChange = { draft = it },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(24.dp),
+                singleLine = true,
+                placeholder = { Text("Reply to ${room.character}") },
+            )
+            SoftAction(
+                text = if (isStreaming) "..." else "Send",
+                icon = Icons.Rounded.AutoAwesome,
+                color = Peach,
+                enabled = !isStreaming && draft.trim().isNotBlank(),
+                onClick = {
+                    val message = draft
+                    draft = ""
+                    onSend(message)
+                },
+            )
         }
         Spacer(Modifier.height(20.dp))
         WaveMicButton()

@@ -43,6 +43,10 @@ class PajamaAppState(
         private set
     var isLoadingHints by mutableStateOf(false)
         private set
+    var speakingMessages by mutableStateOf<List<SpeakingChatMessage>>(emptyList())
+        private set
+    var isSpeakingStreaming by mutableStateOf(false)
+        private set
     var contextResult by mutableStateOf<ContextAnalyzeDto?>(null)
         private set
     var selectedLanguage by mutableStateOf(SupportedLearningLanguages.first())
@@ -100,6 +104,7 @@ class PajamaAppState(
         dueWords = emptyList()
         speakingRooms = emptyList()
         speakingHints = null
+        speakingMessages = emptyList()
         contextResult = null
         errorMessage = null
     }
@@ -263,11 +268,61 @@ class PajamaAppState(
         speakingHints = null
     }
 
+    fun startSpeakingConversation(character: String) {
+        speakingHints = null
+        speakingMessages = listOf(
+            SpeakingChatMessage(
+                text = "Hey, I am $character. Send me one tiny line and I will keep the scene moving.",
+                incoming = true,
+            ),
+        )
+    }
+
+    fun clearSpeakingConversation() {
+        speakingHints = null
+        speakingMessages = emptyList()
+        isSpeakingStreaming = false
+    }
+
+    suspend fun sendSpeakingMessage(roomId: String, message: String) {
+        val cleanMessage = message.trim()
+        if (cleanMessage.isBlank() || isSpeakingStreaming) return
+
+        speakingHints = null
+        speakingMessages = speakingMessages +
+            SpeakingChatMessage(cleanMessage, incoming = false) +
+            SpeakingChatMessage("", incoming = true)
+        isSpeakingStreaming = true
+        errorMessage = null
+
+        var assistantReply = ""
+        runCatching {
+            requireClient().streamSpeakingReply(
+                token = requireToken(),
+                roomId = roomId,
+                message = cleanMessage,
+            ) { tokenText ->
+                assistantReply += tokenText
+                replaceStreamingReply(assistantReply.trimStart())
+            }
+        }.onFailure {
+            replaceStreamingReply("I lost the connection for a second. Try one more line.")
+            errorMessage = it.friendlyMessage()
+        }
+
+        isSpeakingStreaming = false
+    }
+
+    private fun replaceStreamingReply(text: String) {
+        speakingMessages = speakingMessages.dropLast(1) + SpeakingChatMessage(text, incoming = true)
+    }
+
     suspend fun selectLanguage(language: LearningLanguage) {
         if (language.code == selectedLanguage.code) return
         selectedLanguage = language
         contextResult = null
         speakingHints = null
+        speakingMessages = emptyList()
         words = emptyList()
         dueWords = emptyList()
         if (activeClient != null && token != null) {
@@ -335,3 +390,8 @@ class PajamaAppState(
         const val DEV_PASSWORD = "pajama-dev-secret"
     }
 }
+
+data class SpeakingChatMessage(
+    val text: String,
+    val incoming: Boolean,
+)

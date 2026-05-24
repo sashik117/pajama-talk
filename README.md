@@ -116,6 +116,10 @@ The backend now has an AI provider layer:
 
 The Speaking Rooms UI exposes this through the hints button in the dialog preview.
 
+## Speaking WebSocket
+
+The Speaking Rooms UI now sends practice lines through `WS /speaking/ws`. FastAPI streams assistant tokens back in real time and persists both sides of the room chat in `chat_history`.
+
 ## SRS Review Queue
 
 `GET /words/review-due` returns only words that are due for the active language. The review screen now consumes that due queue instead of showing the first dictionary item.

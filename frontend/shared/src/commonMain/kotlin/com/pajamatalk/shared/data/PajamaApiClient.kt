@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -13,6 +14,8 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -26,6 +29,8 @@ class PajamaApiClient(
         install(WebSockets)
     },
 ) {
+    private val json = Json { ignoreUnknownKeys = true }
+
     suspend fun health(): HealthResponse =
         client.get("$baseUrl/health").body()
 
@@ -119,6 +124,38 @@ class PajamaApiClient(
             contentType(ContentType.Application.Json)
             setBody(SpeakingHintsRequest(roomId, lastMessage, languageCode))
         }.body()
+
+    suspend fun streamSpeakingReply(
+        token: String,
+        roomId: String,
+        message: String,
+        onToken: (String) -> Unit,
+    ): String {
+        val reply = StringBuilder()
+        client.webSocket("$webSocketBaseUrl/speaking/ws?token=$token&room_id=$roomId") {
+            send(Frame.Text(message))
+            for (frame in incoming) {
+                if (frame !is Frame.Text) continue
+                val event = json.decodeFromString<SpeakingStreamEvent>(frame.readText())
+                when (event.type) {
+                    "token" -> {
+                        val value = event.value.orEmpty()
+                        reply.append(value)
+                        onToken(value)
+                    }
+                    "done" -> break
+                }
+            }
+        }
+        return reply.toString().trim()
+    }
+
+    private val webSocketBaseUrl: String
+        get() = when {
+            baseUrl.startsWith("https://") -> baseUrl.replaceFirst("https://", "wss://")
+            baseUrl.startsWith("http://") -> baseUrl.replaceFirst("http://", "ws://")
+            else -> "ws://$baseUrl"
+        }.trimEnd('/')
 }
 
 enum class ReviewGrade(val value: String) {
@@ -267,4 +304,10 @@ data class SpeakingHintsDto(
     val simple: String,
     val conversational: String,
     val spicy: String,
+)
+
+@Serializable
+private data class SpeakingStreamEvent(
+    val type: String,
+    val value: String? = null,
 )

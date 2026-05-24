@@ -147,6 +147,23 @@ def test_speaking_hints_use_active_language_context(client: TestClient) -> None:
     assert body["simple"]
 
 
+def test_speaking_websocket_streams_reply(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex") as websocket:
+        websocket.send_text("Could I get a latte?")
+        tokens: list[str] = []
+        while True:
+            event = websocket.receive_json()
+            if event["type"] == "done":
+                break
+            assert event["type"] == "token"
+            tokens.append(event["value"])
+
+    assert "".join(tokens).strip().startswith("Nice choice")
+
+
 def test_review_due_queue_returns_due_words_and_removes_reviewed(client: TestClient) -> None:
     headers = auth_headers(client)
     created = client.post(
