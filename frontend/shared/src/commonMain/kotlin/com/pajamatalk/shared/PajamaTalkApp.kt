@@ -306,8 +306,8 @@ private fun AuthScreen(appState: PajamaAppState) {
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
                     Column {
-                        Text("PajamaTalk", fontSize = 34.sp, fontWeight = FontWeight.Black, color = Graphite)
-                        Text("Soft language practice, your pace.", color = InkMuted, fontWeight = FontWeight.Medium)
+                        Text("PajamaTalk", fontSize = 34.sp, fontWeight = FontWeight.Bold, color = Graphite)
+                        Text("Soft language practice, your pace.", color = InkMuted, fontWeight = FontWeight.Normal)
                     }
 
                     AuraHero()
@@ -317,7 +317,7 @@ private fun AuthScreen(appState: PajamaAppState) {
                         Text(
                             if (isRegister) "Create your space" else "Welcome back",
                             fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.SemiBold,
                             color = Graphite,
                         )
                         Spacer(Modifier.height(12.dp))
@@ -385,7 +385,7 @@ private fun AuthScreen(appState: PajamaAppState) {
                     }
 
                     CozyCard(background = Lavender.copy(alpha = 0.62f)) {
-                        Text("Demo profile", fontWeight = FontWeight.Bold, color = Graphite)
+                        Text("Demo profile", fontWeight = FontWeight.SemiBold, color = Graphite)
                         Spacer(Modifier.height(10.dp))
                         SoftAction(
                             text = if (appState.isAuthenticating) "Opening" else "Continue demo",
@@ -415,7 +415,7 @@ private fun AuraScreen() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Text("Головна", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Graphite)
+                Text("Головна", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
                 Text(
                     "${appState.stats?.dailyVibeMinutes ?: 5} min ${appState.selectedLanguage.label}",
                     color = InkMuted,
@@ -442,7 +442,7 @@ private fun AuraScreen() {
         }
 
         CozyCard(background = Color.White.copy(alpha = 0.84f)) {
-            Text("Alex is waiting in ${appState.selectedLanguage.label}", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Graphite)
+            Text("Alex is waiting in ${appState.selectedLanguage.label}", fontSize = 21.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
             Spacer(Modifier.height(8.dp))
             Text("Five calm minutes, one real conversation, zero pressure.", color = InkMuted, fontSize = 13.sp)
             Spacer(Modifier.height(14.dp))
@@ -453,7 +453,7 @@ private fun AuraScreen() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = Graphite)
                 Spacer(Modifier.width(10.dp))
-                Text("Context Buddy", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Graphite)
+                Text("Context Buddy", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
             }
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
@@ -511,7 +511,7 @@ private fun AuraHero() {
                     .align(Alignment.BottomStart)
                     .padding(24.dp),
             ) {
-                Text("Aura of Knowledge", color = Graphite, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text("Aura of Knowledge", color = Graphite, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
                 Text("calm, growing, no shame", color = Graphite.copy(alpha = 0.72f))
             }
         }
@@ -565,7 +565,7 @@ private fun CandleBadge(days: Int) {
             drawPath(flame, Butter)
         }
         Spacer(Modifier.width(6.dp))
-        Text("$days", fontWeight = FontWeight.Bold, color = Graphite)
+        Text("$days", fontWeight = FontWeight.SemiBold, color = Graphite)
     }
 }
 
@@ -587,13 +587,13 @@ private fun GrammarNudge(drop: GrammarDropDto?, isLoading: Boolean) {
     var completedQuest by remember(activeDrop.id) { mutableStateOf<String?>(null) }
 
     CozyCard(background = Mint.copy(alpha = 0.46f)) {
-        Text(activeDrop.title, fontWeight = FontWeight.Bold, color = Graphite)
+        Text(activeDrop.title, fontWeight = FontWeight.SemiBold, color = Graphite)
         Spacer(Modifier.height(6.dp))
         Text(activeDrop.nudge, color = InkMuted)
         AnimatedVisibility(expanded) {
             Column {
                 Spacer(Modifier.height(10.dp))
-                Text(activeDrop.tinyExplanation, color = Graphite, fontWeight = FontWeight.Medium)
+                Text(activeDrop.tinyExplanation, color = Graphite, fontWeight = FontWeight.Normal)
                 Spacer(Modifier.height(12.dp))
                 activeDrop.quests.forEach { quest ->
                     val isDone = completedQuest == quest
@@ -613,7 +613,7 @@ private fun GrammarNudge(drop: GrammarDropDto?, isLoading: Boolean) {
                                 .background(if (isDone) Mint else InkMuted.copy(alpha = 0.24f)),
                         )
                         Spacer(Modifier.width(10.dp))
-                        Text(quest, color = Graphite, fontWeight = if (isDone) FontWeight.Bold else FontWeight.Normal)
+                        Text(quest, color = Graphite, fontWeight = if (isDone) FontWeight.SemiBold else FontWeight.Normal)
                     }
                     Spacer(Modifier.height(8.dp))
                 }
@@ -635,7 +635,7 @@ private fun ConnectionStatus(appState: PajamaAppState) {
     when {
         appState.isBooting -> LoadingCard("Connecting")
         appState.errorMessage != null -> CozyCard(background = Peach.copy(alpha = 0.44f)) {
-            Text(appState.errorMessage ?: "API is resting.", color = Graphite, fontWeight = FontWeight.Bold)
+            Text(appState.errorMessage ?: "API is resting.", color = Graphite, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
             SoftAction(
                 text = "Refresh",
@@ -662,11 +662,11 @@ private fun LanguageHeaderChip(
             .border(1.dp, Color.White.copy(alpha = 0.42f), RoundedCornerShape(24.dp)),
         colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
     ) {
-        Text(selected.shortLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Text(selected.shortLabel, fontWeight = FontWeight.Medium, fontSize = 13.sp)
         Spacer(Modifier.width(6.dp))
         Text("→", color = InkMuted, fontSize = 13.sp)
         Spacer(Modifier.width(6.dp))
-        Text(native.shortLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Text(native.shortLabel, fontWeight = FontWeight.Medium, fontSize = 13.sp)
     }
 }
 
@@ -689,7 +689,7 @@ private fun LanguagePicker(
                         .background(if (isSelected) Lavender else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
                 ) {
-                    Text(language.shortLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 13.sp)
                     Spacer(Modifier.width(6.dp))
                     Text(language.label, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -717,7 +717,7 @@ private fun NativeLanguagePicker(
                         .background(if (isSelected) Mint.copy(alpha = 0.62f) else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
                 ) {
-                    Text(language.shortLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 13.sp)
                     Spacer(Modifier.width(6.dp))
                     Text(language.label, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -735,12 +735,12 @@ private fun ContextResultCard(
     onClear: () -> Unit,
 ) {
     CozyCard(background = Color.White.copy(alpha = 0.76f)) {
-        Text(result.summary, color = Graphite, fontWeight = FontWeight.Bold)
+        Text(result.summary, color = Graphite, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         Text(result.hiddenMeaning, color = InkMuted)
         Spacer(Modifier.height(12.dp))
         result.highlights.take(3).forEach { highlight ->
-            Text(highlight.phrase, color = Graphite, fontWeight = FontWeight.Bold)
+            Text(highlight.phrase, color = Graphite, fontWeight = FontWeight.SemiBold)
             Text(highlight.explanation, color = InkMuted)
             Spacer(Modifier.height(8.dp))
         }
@@ -791,7 +791,7 @@ private fun LoadingCard(text: String) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Graphite, strokeWidth = 2.dp)
             Spacer(Modifier.width(10.dp))
-            Text(text, color = InkMuted, fontWeight = FontWeight.Medium)
+            Text(text, color = InkMuted, fontWeight = FontWeight.Normal)
         }
     }
 }
@@ -804,7 +804,7 @@ private fun SpeakingRoomsScreen() {
     var activeRoom by remember { mutableStateOf<Room?>(null) }
 
     ScreenFrame {
-        Text("Speaking Rooms", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
+        Text("Speaking Rooms", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
         ConnectionStatus(appState)
         AnimatedVisibility(activeRoom == null) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -861,7 +861,7 @@ private fun RoomCard(room: Room, onClick: () -> Unit) {
             }
             Spacer(Modifier.width(18.dp))
             Column(Modifier.weight(1f)) {
-                Text(room.title, fontWeight = FontWeight.Bold, fontSize = 19.sp, color = Graphite)
+                Text(room.title, fontWeight = FontWeight.SemiBold, fontSize = 19.sp, color = Graphite)
                 Text("${room.character} · ${room.vibe}", color = InkMuted, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
@@ -897,7 +897,7 @@ private fun DialoguePreview(
             }
             Spacer(Modifier.width(14.dp))
             Column {
-                Text(room.character, fontWeight = FontWeight.Black, fontSize = 24.sp, color = Graphite)
+                Text(room.character, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, color = Graphite)
                 Text(room.title, color = InkMuted)
             }
         }
@@ -962,7 +962,7 @@ private fun HintBubble(label: String, text: String) {
             .background(Lavender.copy(alpha = 0.42f))
             .padding(14.dp),
     ) {
-        Text(label, color = Graphite, fontWeight = FontWeight.Bold)
+        Text(label, color = Graphite, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(4.dp))
         Text(text, color = InkMuted)
     }
@@ -1031,7 +1031,7 @@ private fun AddWordCard(
 ) {
     var term by remember { mutableStateOf("") }
     CozyCard(background = Lavender.copy(alpha = 0.48f)) {
-        Text("New word", fontWeight = FontWeight.Bold, fontSize = 19.sp, color = Graphite)
+        Text("New word", fontWeight = FontWeight.SemiBold, fontSize = 19.sp, color = Graphite)
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
@@ -1063,7 +1063,7 @@ private fun StorageScreen() {
     var tab by remember { mutableIntStateOf(0) }
 
     ScreenFrame {
-        Text("My Storage", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
+        Text("My Storage", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
         ConnectionStatus(appState)
         LanguagePicker(
             selected = appState.selectedLanguage,
@@ -1106,7 +1106,7 @@ private fun WordList(
             LoadingCard("Loading words")
         } else if (words.isEmpty()) {
             CozyCard(background = Color.White.copy(alpha = 0.86f)) {
-                Text("Storage is waiting for its first word", fontWeight = FontWeight.Bold, color = Graphite)
+                Text("Storage is waiting for its first word", fontWeight = FontWeight.SemiBold, color = Graphite)
                 Spacer(Modifier.height(10.dp))
                 SoftAction("Refresh", Icons.Rounded.AutoAwesome, Mint, onClick = onRefresh)
             }
@@ -1120,10 +1120,10 @@ private fun WordList(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(word.term, fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Graphite)
+                            Text(word.term, fontSize = 21.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
                             Text("${word.translation} · ${word.transcription}", color = InkMuted)
                         }
-                        Text("${word.colorLevel}/5", color = Graphite, fontWeight = FontWeight.Bold)
+                        Text("${word.colorLevel}/5", color = Graphite, fontWeight = FontWeight.Medium)
                     }
                     AnimatedVisibility(expanded) {
                         Column {
@@ -1156,7 +1156,7 @@ private fun SrsSwipeCard(
 
     if (word == null) {
         CozyCard(background = Color.White.copy(alpha = 0.86f)) {
-            Text("Review deck is calm", fontWeight = FontWeight.Bold, color = Graphite)
+            Text("Review deck is calm", fontWeight = FontWeight.SemiBold, color = Graphite)
             Spacer(Modifier.height(6.dp))
             Text("Add a word and it will show up here.", color = InkMuted)
         }
@@ -1200,7 +1200,7 @@ private fun SrsSwipeCard(
             background = Color.White.copy(alpha = 0.94f),
         ) {
             Spacer(Modifier.height(24.dp))
-            Text(word.term, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Graphite)
+            Text(word.term, fontSize = 38.sp, fontWeight = FontWeight.Bold, color = Graphite)
             Spacer(Modifier.height(10.dp))
             Text(word.transcription.ifBlank { word.translation }, color = InkMuted)
             Spacer(Modifier.height(24.dp))
@@ -1237,7 +1237,7 @@ private fun VibeScreen() {
     val tones = listOf("chill-bro from California", "strict British aristocrat", "soft sitcom bestie")
 
     ScreenFrame {
-        Text("Vibe Check", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
+        Text("Vibe Check", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
         ConnectionStatus(appState)
         CozyCard(background = Color.White.copy(alpha = 0.86f)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -1255,7 +1255,7 @@ private fun VibeScreen() {
             onSelect = { language -> scope.launch { appState.selectNativeLanguage(language) } },
         )
         CozyCard(background = Mint.copy(alpha = 0.42f)) {
-            Text("Vibe mode", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Graphite)
+            Text("Vibe mode", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = Graphite)
             Spacer(Modifier.height(12.dp))
             vibeModes.forEach { (mode, minutes) ->
                 val selected = user?.learningVibe == mode
@@ -1275,13 +1275,13 @@ private fun VibeScreen() {
                             .background(if (selected) Mint else InkMuted.copy(alpha = 0.24f)),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text("$mode · $minutes min/day", color = Graphite, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                    Text("$mode · $minutes min/day", color = Graphite, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
                 }
                 Spacer(Modifier.height(8.dp))
             }
         }
         CozyCard(background = Lavender.copy(alpha = 0.64f)) {
-            Text("AI tone", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Graphite)
+            Text("AI tone", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = Graphite)
             Spacer(Modifier.height(12.dp))
             tones.forEach { tone ->
                 val selected = user?.aiTone == tone
@@ -1301,13 +1301,13 @@ private fun VibeScreen() {
                             .background(if (selected) Mint else InkMuted.copy(alpha = 0.24f)),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text(tone, color = Graphite, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                    Text(tone, color = Graphite, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
                 }
                 Spacer(Modifier.height(8.dp))
             }
         }
         CozyCard(background = Peach.copy(alpha = 0.34f)) {
-            Text(user?.displayName ?: "Dreamer", fontWeight = FontWeight.Bold, color = Graphite)
+            Text(user?.displayName ?: "Dreamer", fontWeight = FontWeight.SemiBold, color = Graphite)
             Spacer(Modifier.height(12.dp))
             SoftAction(
                 text = "Log out",
@@ -1324,7 +1324,7 @@ private fun VibeScreen() {
 @Composable
 private fun Stat(value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Graphite)
+        Text(value, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
         Text(label, color = InkMuted, fontSize = 12.sp, fontWeight = FontWeight.Normal)
     }
 }

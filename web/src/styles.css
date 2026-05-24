@@ -47,13 +47,18 @@ h1 {
   font-size: 29px;
   line-height: 1.05;
   letter-spacing: 0;
-  font-weight: 800;
+  font-weight: 680;
 }
 
 h2 {
   font-size: 18px;
   letter-spacing: 0;
-  font-weight: 750;
+  font-weight: 620;
+}
+
+strong,
+b {
+  font-weight: 640;
 }
 
 p,
@@ -237,7 +242,7 @@ textarea {
   justify-content: center;
   gap: 8px;
   padding: 0 14px;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .primary-action {
@@ -247,7 +252,7 @@ textarea {
 
 .soft-action {
   background: rgba(232, 222, 248, 0.82);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .soft-action.peach,
@@ -346,7 +351,7 @@ textarea {
   border-radius: 999px;
   color: #292632;
   background: rgba(247, 241, 255, 0.76);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .mini-options button.selected {
@@ -356,7 +361,7 @@ textarea {
 .notice {
   border-radius: 16px;
   padding: 12px 14px;
-  font-weight: 700;
+  font-weight: 600;
   background: rgba(243, 182, 168, 0.44);
 }
 
@@ -412,7 +417,7 @@ textarea {
 .tone-list button {
   min-height: 38px;
   background: rgba(247, 241, 255, 0.92);
-  font-weight: 650;
+  font-weight: 560;
 }
 
 .select-menu button {
@@ -425,7 +430,7 @@ textarea {
 
 .select-menu button span {
   color: #292632;
-  font-weight: 900;
+  font-weight: 650;
 }
 
 .select-menu button.selected,
@@ -454,7 +459,7 @@ textarea {
   padding: 0 11px;
   white-space: nowrap;
   background: rgba(247, 241, 255, 0.96);
-  font-weight: 800;
+  font-weight: 620;
 }
 
 .context-result,
@@ -486,7 +491,7 @@ textarea {
   min-height: 38px;
   padding: 0 12px;
   background: rgba(247, 241, 255, 0.9);
-  font-weight: 800;
+  font-weight: 620;
 }
 
 .topic-tabs button.selected {
@@ -535,7 +540,7 @@ textarea {
 
 .room-card strong {
   font-size: 17px;
-  font-weight: 750;
+  font-weight: 650;
 }
 
 .room-card small {
@@ -628,7 +633,7 @@ textarea {
 
 .hint small {
   color: #292632;
-  font-weight: 800;
+  font-weight: 650;
 }
 
 .hint span {
@@ -723,7 +728,7 @@ textarea {
 
 .segmented button {
   min-height: 40px;
-  font-weight: 800;
+  font-weight: 620;
   background: transparent;
 }
 
@@ -807,7 +812,7 @@ textarea {
   gap: 2px;
   background: transparent;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 620;
 }
 
 .bottom-nav button.active {
