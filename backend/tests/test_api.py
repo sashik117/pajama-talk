@@ -164,6 +164,21 @@ def test_speaking_websocket_streams_reply(client: TestClient) -> None:
     assert "".join(tokens).strip().startswith("Nice choice")
 
 
+def test_grammar_drop_responds_to_speaking_mistake(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex") as websocket:
+        websocket.send_text("Yesterday I have went to the cafe.")
+        while websocket.receive_json()["type"] != "done":
+            pass
+
+    response = client.get("/grammar/drops", headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body[0]["id"] == "present-perfect-rescue"
+
+
 def test_review_due_queue_returns_due_words_and_removes_reviewed(client: TestClient) -> None:
     headers = auth_headers(client)
     created = client.post(

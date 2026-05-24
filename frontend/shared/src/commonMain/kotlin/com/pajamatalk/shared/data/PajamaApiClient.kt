@@ -63,6 +63,11 @@ class PajamaApiClient(
             bearerAuth(token)
         }.body()
 
+    suspend fun grammarDrops(token: String): List<GrammarDropDto> =
+        client.get("$baseUrl/grammar/drops") {
+            bearerAuth(token)
+        }.body()
+
     suspend fun words(token: String, languageCode: String? = null): List<WordDto> =
         client.get("$baseUrl/words") {
             bearerAuth(token)
@@ -219,6 +224,15 @@ data class ProfileStatsDto(
     @SerialName("daily_vibe_minutes") val dailyVibeMinutes: Int,
     @SerialName("learning_vibe") val learningVibe: String,
     @SerialName("ai_tone") val aiTone: String,
+)
+
+@Serializable
+data class GrammarDropDto(
+    val id: String,
+    val title: String,
+    val nudge: String,
+    @SerialName("tiny_explanation") val tinyExplanation: String,
+    val quests: List<String>,
 )
 
 @Serializable

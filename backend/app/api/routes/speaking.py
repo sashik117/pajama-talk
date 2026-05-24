@@ -9,6 +9,7 @@ from app.models.chat import ChatMessage
 from app.models.user import User
 from app.schemas.speaking import SpeakingHintsRequest, SpeakingHintsResponse, SpeakingRoom
 from app.services.ai_service import generate_speaking_hints, stream_roleplay_reply
+from app.services.grammar import detect_mistake_tag
 
 router = APIRouter(prefix="/speaking", tags=["speaking"])
 
@@ -92,7 +93,15 @@ async def speaking_ws(websocket: WebSocket) -> None:
     try:
         while True:
             message = await websocket.receive_text()
-            db.add(ChatMessage(owner_id=user.id, room_id=room_id, role="user", content=message))
+            db.add(
+                ChatMessage(
+                    owner_id=user.id,
+                    room_id=room_id,
+                    role="user",
+                    content=message,
+                    mistake_tag=detect_mistake_tag(message),
+                )
+            )
             db.commit()
 
             reply_parts: list[str] = []

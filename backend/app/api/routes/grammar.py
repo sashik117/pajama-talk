@@ -6,6 +6,7 @@ from app.db.session import get_db
 from app.models.chat import ChatMessage
 from app.models.user import User
 from app.schemas.grammar import GrammarDrop
+from app.services.grammar import drops_for_tags
 
 router = APIRouter(prefix="/grammar", tags=["grammar"])
 
@@ -23,32 +24,4 @@ def grammar_drops(
         .all()
     )
     tags = {row[0] for row in recent_mistakes}
-
-    if "past_simple_vs_present_perfect" not in tags:
-        return [
-            GrammarDrop(
-                id="soft-past-simple",
-                title="Past Simple",
-                nudge="Йоу, Past Simple сьогодні тихенько проситься на 30 секунд.",
-                tiny_explanation="Якщо час закінчився і ти знаєш коли, англійська майже завжди тягнеться до Past Simple.",
-                quests=[
-                    "I watched it yesterday",
-                    "She called me last night",
-                    "We met in 2024",
-                ],
-            )
-        ]
-
-    return [
-        GrammarDrop(
-            id="present-perfect-rescue",
-            title="Perfect Rescue",
-            nudge="Present Perfect трохи бунтує. Розберемо без драми?",
-            tiny_explanation="Коли важливий результат зараз, а не точний момент у минулому, ставимо have або has плюс третю форму.",
-            quests=[
-                "I have already seen it",
-                "She has lost her keys",
-                "They have just arrived",
-            ],
-        )
-    ]
+    return drops_for_tags(tags)

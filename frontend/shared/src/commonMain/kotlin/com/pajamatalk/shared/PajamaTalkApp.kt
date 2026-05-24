@@ -102,6 +102,7 @@ import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.pajamatalk.shared.data.ContextAnalyzeDto
+import com.pajamatalk.shared.data.GrammarDropDto
 import com.pajamatalk.shared.data.LearningLanguage
 import com.pajamatalk.shared.data.PajamaAppState
 import com.pajamatalk.shared.data.ReviewGrade
@@ -471,7 +472,10 @@ private fun AuraScreen() {
             }
         }
 
-        GrammarNudge()
+        GrammarNudge(
+            drop = appState.grammarDrops.firstOrNull(),
+            isLoading = appState.isGrammarLoading,
+        )
     }
 }
 
@@ -551,11 +555,62 @@ private fun CandleBadge(days: Int) {
 }
 
 @Composable
-private fun GrammarNudge() {
+private fun GrammarNudge(drop: GrammarDropDto?, isLoading: Boolean) {
+    if (isLoading && drop == null) {
+        LoadingCard("Checking grammar drops")
+        return
+    }
+
+    val activeDrop = drop ?: GrammarDropDto(
+        id = "soft-past-simple",
+        title = "Past Simple",
+        nudge = "Past Simple is tapping the window for 30 seconds.",
+        tinyExplanation = "Finished time, finished action. Keep it small and clean.",
+        quests = listOf("I watched it yesterday", "She called me last night", "We met in 2024"),
+    )
+    var expanded by remember(activeDrop.id) { mutableStateOf(false) }
+    var completedQuest by remember(activeDrop.id) { mutableStateOf<String?>(null) }
+
     CozyCard(background = Mint.copy(alpha = 0.46f)) {
-        Text("Past Simple is tapping the window", fontWeight = FontWeight.Bold, color = Graphite)
+        Text(activeDrop.title, fontWeight = FontWeight.Bold, color = Graphite)
         Spacer(Modifier.height(6.dp))
-        Text("30 seconds, three tiny quests, zero judgment.", color = InkMuted)
+        Text(activeDrop.nudge, color = InkMuted)
+        AnimatedVisibility(expanded) {
+            Column {
+                Spacer(Modifier.height(10.dp))
+                Text(activeDrop.tinyExplanation, color = Graphite, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(12.dp))
+                activeDrop.quests.forEach { quest ->
+                    val isDone = completedQuest == quest
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.White.copy(alpha = if (isDone) 0.82f else 0.46f))
+                            .clickable { completedQuest = quest }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(if (isDone) Mint else InkMuted.copy(alpha = 0.24f)),
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(quest, color = Graphite, fontWeight = if (isDone) FontWeight.Bold else FontWeight.Normal)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        SoftAction(
+            text = if (expanded) "Fold" else "Open drop",
+            icon = Icons.Rounded.Psychology,
+            color = Color.White.copy(alpha = 0.78f),
+            onClick = { expanded = !expanded },
+        )
     }
 }
 

@@ -31,6 +31,10 @@ class PajamaAppState(
         private set
     var stats by mutableStateOf<ProfileStatsDto?>(null)
         private set
+    var grammarDrops by mutableStateOf<List<GrammarDropDto>>(emptyList())
+        private set
+    var isGrammarLoading by mutableStateOf(false)
+        private set
     var words by mutableStateOf<List<WordDto>>(emptyList())
         private set
     var dueWords by mutableStateOf<List<WordDto>>(emptyList())
@@ -100,6 +104,7 @@ class PajamaAppState(
         token = null
         user = null
         stats = null
+        grammarDrops = emptyList()
         words = emptyList()
         dueWords = emptyList()
         speakingRooms = emptyList()
@@ -137,6 +142,7 @@ class PajamaAppState(
         speakingRooms = client.speakingRooms(accessToken, selectedLanguage.code)
         loadWords()
         loadDueWords()
+        loadGrammarDrops()
         loadStats()
     }
 
@@ -148,6 +154,7 @@ class PajamaAppState(
         errorMessage = null
         loadWords()
         loadDueWords()
+        loadGrammarDrops()
         runCatching {
             user = requireClient().me(requireToken())
             speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
@@ -183,6 +190,17 @@ class PajamaAppState(
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
+    }
+
+    suspend fun loadGrammarDrops() {
+        isGrammarLoading = true
+        errorMessage = null
+        runCatching {
+            grammarDrops = requireClient().grammarDrops(requireToken())
+        }.onFailure {
+            errorMessage = it.friendlyMessage()
+        }
+        isGrammarLoading = false
     }
 
     suspend fun addWord(term: String, sourceContext: String = "") {
@@ -310,6 +328,7 @@ class PajamaAppState(
             errorMessage = it.friendlyMessage()
         }
 
+        loadGrammarDrops()
         isSpeakingStreaming = false
     }
 
@@ -323,6 +342,7 @@ class PajamaAppState(
         contextResult = null
         speakingHints = null
         speakingMessages = emptyList()
+        grammarDrops = emptyList()
         words = emptyList()
         dueWords = emptyList()
         if (activeClient != null && token != null) {
@@ -330,6 +350,7 @@ class PajamaAppState(
             speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
             loadWords()
             loadDueWords()
+            loadGrammarDrops()
             loadStats()
         }
     }

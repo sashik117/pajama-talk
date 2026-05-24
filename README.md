@@ -120,6 +120,10 @@ The Speaking Rooms UI exposes this through the hints button in the dialog previe
 
 The Speaking Rooms UI now sends practice lines through `WS /speaking/ws`. FastAPI streams assistant tokens back in real time and persists both sides of the room chat in `chat_history`.
 
+## Micro-Grammar Drops
+
+`GET /grammar/drops` returns a soft grammar nudge based on recent chat mistake tags. The Aura screen renders the active drop with a tiny explanation and tap-to-complete quests.
+
 ## SRS Review Queue
 
 `GET /words/review-due` returns only words that are due for the active language. The review screen now consumes that due queue instead of showing the first dictionary item.
