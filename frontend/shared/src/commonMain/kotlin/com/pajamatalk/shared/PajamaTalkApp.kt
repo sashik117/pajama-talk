@@ -466,6 +466,7 @@ private fun AuraScreen() {
                 ContextResultCard(
                     result = result,
                     isAdding = appState.isAddingWord,
+                    onAddWord = { word -> scope.launch { appState.addWord(word, result.summary) } },
                     onAddAll = { scope.launch { appState.addContextSuggestions() } },
                     onClear = { appState.clearContextResult() },
                 )
@@ -664,6 +665,7 @@ private fun LanguagePicker(
 private fun ContextResultCard(
     result: ContextAnalyzeDto,
     isAdding: Boolean,
+    onAddWord: (String) -> Unit,
     onAddAll: () -> Unit,
     onClear: () -> Unit,
 ) {
@@ -678,7 +680,24 @@ private fun ContextResultCard(
             Spacer(Modifier.height(8.dp))
         }
         if (result.suggestedWords.isNotEmpty()) {
-            Text(result.suggestedWords.take(6).joinToString(" · "), color = Graphite)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(result.suggestedWords.take(8)) { suggested ->
+                    TextButton(
+                        onClick = { onAddWord(suggested) },
+                        enabled = !isAdding,
+                        modifier = Modifier
+                            .height(42.dp)
+                            .clip(RoundedCornerShape(21.dp))
+                            .background(Peach.copy(alpha = 0.42f)),
+                        colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
+                    ) {
+                        Icon(Icons.Rounded.Bookmarks, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(suggested, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SoftAction(
@@ -1023,14 +1042,28 @@ private fun WordList(
             }
         } else {
             words.forEach { word ->
+                var expanded by remember(word.id) { mutableStateOf(false) }
                 val alpha = 0.28f + word.colorLevel.coerceIn(0, 5) * 0.09f
-                CozyCard(background = Lavender.copy(alpha = alpha)) {
+                CozyCard(
+                    modifier = Modifier.clickable { expanded = !expanded },
+                    background = Lavender.copy(alpha = alpha),
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(word.term, fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Graphite)
                             Text("${word.translation} · ${word.transcription}", color = InkMuted)
                         }
                         Text("${word.colorLevel}/5", color = Graphite, fontWeight = FontWeight.Bold)
+                    }
+                    AnimatedVisibility(expanded) {
+                        Column {
+                            Spacer(Modifier.height(12.dp))
+                            Text(word.meme.ifBlank { "No meme yet, but the word has entered storage." }, color = Graphite)
+                            Spacer(Modifier.height(10.dp))
+                            Text(word.exampleOne, color = InkMuted)
+                            Spacer(Modifier.height(6.dp))
+                            Text(word.exampleTwo, color = InkMuted)
+                        }
                     }
                 }
             }
