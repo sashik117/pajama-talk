@@ -731,16 +731,13 @@ private fun LanguageHeaderChip(
     TextButton(
         onClick = onClick,
         modifier = Modifier
-            .height(50.dp)
+            .height(42.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(Color.White.copy(alpha = 0.54f))
             .border(1.dp, Color.White.copy(alpha = 0.42f), RoundedCornerShape(24.dp)),
         colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("${selected.flag} ${selected.shortLabel} → ${native.flag} ${native.shortLabel}", fontWeight = FontWeight.Medium, fontSize = 12.sp)
-            Text("${selected.label} / ${native.label}", color = InkMuted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
+        Text("${selected.flag} ${selected.shortLabel} → ${native.flag} ${native.shortLabel}", fontWeight = FontWeight.Medium, fontSize = 12.sp)
     }
 }
 
@@ -765,10 +762,7 @@ private fun LanguagePicker(
                 ) {
                     Text(language.flag, fontSize = 15.sp)
                     Spacer(Modifier.width(6.dp))
-                    Column {
-                        Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 12.sp)
-                        Text(language.label, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = InkMuted)
-                    }
+                    Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 12.sp)
                 }
             }
         }
@@ -796,10 +790,7 @@ private fun NativeLanguagePicker(
                 ) {
                     Text(language.flag, fontSize = 15.sp)
                     Spacer(Modifier.width(6.dp))
-                    Column {
-                        Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 12.sp)
-                        Text(language.label, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = InkMuted)
-                    }
+                    Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 12.sp)
                 }
             }
         }
@@ -1335,7 +1326,7 @@ private fun VibeScreen() {
                 fontSize = 13.sp,
             )
             Spacer(Modifier.height(8.dp))
-            Text("Explanation: ${nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").flag} ${nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").label}", color = Graphite, fontWeight = FontWeight.Medium)
+            Text("Explanation: ${nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").flag} ${nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").shortLabel}", color = Graphite, fontWeight = FontWeight.Medium)
         }
         LanguagePicker(
             selected = appState.selectedLanguage,

@@ -1,5 +1,6 @@
 export type UiLocale =
   | "uk"
+  | "ru"
   | "en"
   | "pl"
   | "sk"
@@ -76,6 +77,7 @@ export type LearningLanguageOption = LanguageOption & {
 
 export const uiLocales: Array<LanguageOption<UiLocale>> = [
   { code: "uk", label: "Українська", short: "UK", flag: "🇺🇦" },
+  { code: "ru", label: "Русский", short: "RU", flag: "🇷🇺" },
   { code: "en", label: "English", short: "EN", flag: "🇬🇧" },
   { code: "pl", label: "Polski", short: "PL", flag: "🇵🇱" },
   { code: "sk", label: "Slovenčina", short: "SK", flag: "🇸🇰" },
@@ -191,6 +193,55 @@ const copies: Record<UiLocale, Record<CopyKey, string>> = {
     learningVibe: "Вайб навчання",
     aiTone: "Тон ШІ",
     adaptiveDrop: "Адаптивна підказка"
+  },
+  ru: {
+    tagline: "Мягкая языковая практика в твоем темпе.",
+    email: "Почта",
+    password: "Пароль",
+    name: "Имя",
+    login: "Войти",
+    register: "Создать аккаунт",
+    create: "Создать",
+    demo: "Демо-вход",
+    aura: "Главная",
+    speak: "Спикинг",
+    storage: "Словарь",
+    vibe: "Профиль",
+    learningLanguage: "Язык обучения",
+    uiLanguage: "Язык интерфейса",
+    nativeLanguage: "Язык объяснений",
+    contextTitle: "Контекст",
+    contextPlaceholder: "Вставь фразу, субтитр, пост, комментарий или строку из песни",
+    analyze: "Разобрать",
+    addWords: "Добавить слова",
+    newWord: "Новое слово",
+    add: "Добавить",
+    myWords: "Слова",
+    review: "Повторение",
+    forgot: "Забыла",
+    remember: "Помню",
+    rooms: "Комнаты",
+    hints: "Подсказки",
+    send: "Отправить",
+    stats: "Стата",
+    logOut: "Выйти",
+    grammar: "Грамматика",
+    due: "к повторению",
+    learned: "выучено",
+    today: "Сегодня",
+    dailyFocus: "Маленькая полезная практика",
+    dailyFocusSub: "Скажи одну фразу голосом, повтори слова или разбери реальный текст.",
+    voicePrimary: "Голосовой режим. Нажми микрофон и отвечай вслух.",
+    tapToSpeak: "Нажми и говори",
+    listening: "Слушаю",
+    speechUnsupported: "Браузер не дал распознавание голоса. Пока есть текстовый fallback.",
+    speechError: "Не услышала фразу. Попробуй еще раз.",
+    textFallback: "Текстовый fallback",
+    reviewEmpty: "Сейчас нечего повторять.",
+    profile: "Профиль",
+    learningVibe: "Вайб обучения",
+    aiTone: "Тон AI",
+    adaptiveDrop: "Адаптивная подсказка"
   },
   pl: {
     tagline: "Miękka praktyka języka w twoim tempie.",

@@ -364,7 +364,7 @@ export function App() {
           <div className="topbar-title">
             <h1>{copy(activeTab)}</h1>
             <p>
-              PajamaTalk · {selectedLanguage.flag} {selectedLanguage.label} · {stats?.daily_vibe_minutes ?? 5} min
+              PajamaTalk · {selectedLanguage.flag} {selectedLanguage.short} · {stats?.daily_vibe_minutes ?? 5} min
             </p>
           </div>
           <div className="topbar-actions">
@@ -1113,13 +1113,13 @@ function ProfileScreen({
           <span>
             <small>{copy("learningLanguage")}</small>
             <strong>
-              {learning.flag} {learning.label}
+              {learning.flag} {learning.short}
             </strong>
           </span>
           <span>
             <small>{copy("nativeLanguage")}</small>
             <strong>
-              {native.flag} {native.label}
+              {native.flag} {native.short}
             </strong>
           </span>
         </div>
@@ -1203,9 +1203,6 @@ function HeaderLanguageChip({
               {native.flag} {native.short}
             </strong>
           </span>
-          <small>
-            {learning.label} / {native.label}
-          </small>
         </span>
         <ChevronDown size={15} />
       </button>
@@ -1224,10 +1221,7 @@ function HeaderLanguageChip({
                   }}
                 >
                   <span className="flag">{option.flag}</span>
-                  <span className="option-copy">
-                    <strong>{option.short}</strong>
-                    <small>{option.label}</small>
-                  </span>
+                  <strong>{option.short}</strong>
                 </button>
               ))}
             </div>
@@ -1245,10 +1239,7 @@ function HeaderLanguageChip({
                   }}
                 >
                   <span className="flag">{option.flag}</span>
-                  <span className="option-copy">
-                    <strong>{option.short}</strong>
-                    <small>{option.label}</small>
-                  </span>
+                  <strong>{option.short}</strong>
                 </button>
               ))}
             </div>
@@ -1281,7 +1272,6 @@ function DropdownSelect({
             <span className="flag">{selected.flag}</span>
             {selected.short}
           </strong>
-          <small className="select-label">{selected.label}</small>
         </span>
         <ChevronDown size={18} />
       </button>
@@ -1297,10 +1287,7 @@ function DropdownSelect({
               }}
             >
               <span className="flag">{option.flag}</span>
-              <span className="option-copy">
-                <strong>{option.short}</strong>
-                <small>{option.label}</small>
-              </span>
+              <strong>{option.short}</strong>
             </button>
           ))}
         </div>

@@ -296,7 +296,7 @@ textarea {
 }
 
 .language-pill {
-  min-height: 48px;
+  min-height: 42px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -314,8 +314,7 @@ textarea {
 }
 
 .language-pair {
-  display: grid;
-  gap: 1px;
+  display: flex;
   min-width: 0;
 }
 
@@ -327,15 +326,6 @@ textarea {
 
 .language-pair strong {
   color: #292632;
-}
-
-.language-pair small {
-  max-width: 145px;
-  overflow: hidden;
-  font-size: 10px;
-  line-height: 1.1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .language-pill span,
@@ -387,6 +377,13 @@ textarea {
 
 .mini-options button.selected {
   background: rgba(157, 206, 192, 0.78);
+}
+
+.mini-options button strong,
+.select-menu button strong {
+  color: #292632;
+  font-size: 12px;
+  font-weight: 610;
 }
 
 .notice {
@@ -446,10 +443,6 @@ textarea {
   line-height: 1;
 }
 
-.select-label {
-  font-size: 11px;
-}
-
 .select-menu {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -471,25 +464,6 @@ textarea {
   gap: 7px;
   padding: 7px 9px;
   text-align: left;
-}
-
-.option-copy {
-  min-width: 0;
-  display: grid;
-  gap: 1px;
-}
-
-.option-copy strong {
-  color: #292632;
-  font-size: 12px;
-  font-weight: 610;
-}
-
-.option-copy small {
-  overflow: hidden;
-  font-size: 10.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .select-menu button.selected,
