@@ -202,6 +202,49 @@ def test_grammar_drop_responds_to_speaking_mistake(client: TestClient) -> None:
     assert body[0]["id"] == "present-perfect-rescue"
 
 
+def test_grammar_topics_and_checker(client: TestClient) -> None:
+    headers = auth_headers(client)
+
+    topics = client.get("/grammar/topics", headers=headers)
+    assert topics.status_code == 200
+    body = topics.json()
+    assert body[0]["id"] == "articles-a-an-the"
+    assert body[0]["exercises"][0]["options"]
+
+    correct = client.post(
+        "/grammar/check",
+        headers=headers,
+        json={"topic_id": "articles-a-an-the", "exercise_id": "art-1", "answer": "an"},
+    )
+    assert correct.status_code == 200
+    assert correct.json()["correct"] is True
+
+    wrong = client.post(
+        "/grammar/check",
+        headers=headers,
+        json={"topic_id": "articles-a-an-the", "exercise_id": "art-1", "answer": "a"},
+    )
+    assert wrong.status_code == 200
+    assert wrong.json()["correct"] is False
+    assert wrong.json()["expected"] == "an"
+
+
+def test_grammar_topics_prioritize_speaking_mistakes(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex") as websocket:
+        websocket.send_text("If I will finish early, I will text you.")
+        while websocket.receive_json()["type"] != "done":
+            pass
+
+    topics = client.get("/grammar/topics", headers=headers)
+    assert topics.status_code == 200
+    body = topics.json()
+    assert body[0]["id"] == "conditionals-real-future"
+    assert body[0]["recommended"] is True
+
+
 def test_review_due_queue_returns_due_words_and_removes_reviewed(client: TestClient) -> None:
     headers = auth_headers(client)
     created = client.post(

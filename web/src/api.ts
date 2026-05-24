@@ -48,6 +48,25 @@ export type GrammarDropDto = {
   tiny_explanation: string;
   quests: string[];
 };
+export type GrammarTopicDto = {
+  id: string;
+  tag: string;
+  title: string;
+  level: string;
+  summary: string;
+  micro_lesson: string;
+  rules: string[];
+  examples: Array<{ wrong: string | null; right: string; note: string }>;
+  exercises: Array<{ id: string; type: string; prompt: string; options: string[]; explanation: string }>;
+  recommended: boolean;
+  reason: string;
+};
+export type GrammarCheckDto = {
+  correct: boolean;
+  expected: string;
+  feedback: string;
+  score_delta: number;
+};
 export type SpeakingRoomDto = {
   id: string;
   title: string;
@@ -101,6 +120,13 @@ export const api = {
     request<UserDto>("/auth/me", { method: "PATCH", token, body: JSON.stringify(payload) }),
   stats: (token: string) => request<StatsDto>("/stats/me", { token }),
   grammarDrops: (token: string) => request<GrammarDropDto[]>("/grammar/drops", { token }),
+  grammarTopics: (token: string) => request<GrammarTopicDto[]>("/grammar/topics", { token }),
+  checkGrammar: (token: string, topicId: string, exerciseId: string, answer: string) =>
+    request<GrammarCheckDto>("/grammar/check", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ topic_id: topicId, exercise_id: exerciseId, answer })
+    }),
   words: (token: string, languageCode: string) => request<WordDto[]>(`/words?language_code=${languageCode}`, { token }),
   dueWords: (token: string, languageCode: string) =>
     request<WordDto[]>(`/words/review-due?language_code=${languageCode}`, { token }),

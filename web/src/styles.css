@@ -475,6 +475,23 @@ textarea {
   background: rgba(255, 255, 255, 0.88);
 }
 
+.grammar-title {
+  align-items: flex-start;
+}
+
+.grammar-title p {
+  margin-top: 4px;
+}
+
+.grammar-score {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: #31534d;
+  background: rgba(157, 206, 192, 0.46);
+  font-weight: 620;
+}
+
 .topic-tabs {
   display: flex;
   gap: 8px;
@@ -489,6 +506,9 @@ textarea {
 .topic-tabs button {
   flex: 0 0 auto;
   min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 0 12px;
   background: rgba(247, 241, 255, 0.9);
   font-weight: 620;
@@ -502,6 +522,101 @@ textarea {
   border-radius: 16px;
   padding: 12px;
   background: rgba(232, 222, 248, 0.52);
+}
+
+.lesson-card,
+.exercise-card,
+.mini-example {
+  display: grid;
+  gap: 10px;
+}
+
+.lesson-head {
+  display: grid;
+  gap: 3px;
+}
+
+.lesson-head > span {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #6e6578;
+  background: rgba(247, 241, 255, 0.82);
+  font-size: 12px;
+}
+
+.rule-list {
+  display: grid;
+  gap: 7px;
+}
+
+.rule-list span {
+  border-radius: 14px;
+  padding: 9px 10px;
+  color: #4f4858;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.mini-example {
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.mini-example del {
+  color: #94736d;
+  font-size: 13px;
+}
+
+.exercise-card {
+  border-radius: 18px;
+  padding: 13px;
+  background: rgba(247, 241, 255, 0.74);
+}
+
+.exercise-card.correct {
+  background: rgba(157, 206, 192, 0.36);
+}
+
+.exercise-card.wrong {
+  background: rgba(243, 182, 168, 0.32);
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.option-grid button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  color: #292632;
+  background: rgba(255, 255, 255, 0.66);
+  font-weight: 560;
+}
+
+.option-grid button.selected {
+  background: rgba(157, 206, 192, 0.64);
+}
+
+.exercise-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.grammar-feedback {
+  border-radius: 15px;
+  padding: 11px;
+  background: rgba(255, 255, 255, 0.56);
 }
 
 .room-grid,
@@ -858,6 +973,11 @@ textarea {
 
   .stats-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .example-grid,
+  .option-grid {
+    grid-template-columns: 1fr;
   }
 }
 

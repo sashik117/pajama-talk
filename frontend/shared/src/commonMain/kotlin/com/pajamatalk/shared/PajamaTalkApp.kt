@@ -571,6 +571,8 @@ private fun CandleBadge(days: Int) {
 
 @Composable
 private fun GrammarNudge(drop: GrammarDropDto?, isLoading: Boolean) {
+    val appState = LocalPajamaState.current
+    val scope = rememberCoroutineScope()
     if (isLoading && drop == null) {
         LoadingCard("Checking grammar drops")
         return
@@ -583,18 +585,72 @@ private fun GrammarNudge(drop: GrammarDropDto?, isLoading: Boolean) {
         tinyExplanation = "Finished time, finished action. Keep it small and clean.",
         quests = listOf("I watched it yesterday", "She called me last night", "We met in 2024"),
     )
+    val topic = appState.grammarTopics.firstOrNull()
+    val exercise = topic?.exercises?.firstOrNull()
     var expanded by remember(activeDrop.id) { mutableStateOf(false) }
     var completedQuest by remember(activeDrop.id) { mutableStateOf<String?>(null) }
+    var selectedAnswer by remember(topic?.id, exercise?.id) { mutableStateOf("") }
+    var feedback by remember(topic?.id, exercise?.id) { mutableStateOf<String?>(null) }
 
     CozyCard(background = Mint.copy(alpha = 0.46f)) {
-        Text(activeDrop.title, fontWeight = FontWeight.SemiBold, color = Graphite)
+        Text(topic?.title ?: activeDrop.title, fontWeight = FontWeight.SemiBold, color = Graphite)
         Spacer(Modifier.height(6.dp))
-        Text(activeDrop.nudge, color = InkMuted)
+        Text(topic?.reason?.ifBlank { activeDrop.nudge } ?: activeDrop.nudge, color = InkMuted)
         AnimatedVisibility(expanded) {
             Column {
                 Spacer(Modifier.height(10.dp))
-                Text(activeDrop.tinyExplanation, color = Graphite, fontWeight = FontWeight.Normal)
+                Text(topic?.microLesson ?: activeDrop.tinyExplanation, color = Graphite, fontWeight = FontWeight.Normal)
                 Spacer(Modifier.height(12.dp))
+                topic?.rules?.take(3)?.forEach { rule ->
+                    Text("• $rule", color = InkMuted, fontSize = 13.sp)
+                    Spacer(Modifier.height(6.dp))
+                }
+                exercise?.let { currentExercise ->
+                    Spacer(Modifier.height(8.dp))
+                    Text(currentExercise.prompt, color = Graphite, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    currentExercise.options.forEach { option ->
+                        val isSelected = selectedAnswer == option
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color.White.copy(alpha = if (isSelected) 0.82f else 0.46f))
+                                .clickable {
+                                    selectedAnswer = option
+                                    feedback = null
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isSelected) Mint else InkMuted.copy(alpha = 0.24f)),
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(option, color = Graphite)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    SoftAction(
+                        text = "Check",
+                        icon = Icons.Rounded.AutoAwesome,
+                        color = Color.White.copy(alpha = 0.78f),
+                        enabled = selectedAnswer.isNotBlank(),
+                        onClick = {
+                            scope.launch {
+                                feedback = appState.checkGrammar(topic.id, currentExercise.id, selectedAnswer)?.feedback
+                            }
+                        },
+                    )
+                    feedback?.let {
+                        Spacer(Modifier.height(8.dp))
+                        Text(it, color = InkMuted, fontSize = 13.sp)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                }
                 activeDrop.quests.forEach { quest ->
                     val isDone = completedQuest == quest
                     Row(

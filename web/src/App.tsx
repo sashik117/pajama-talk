@@ -21,7 +21,18 @@ import {
   WandSparkles,
   X
 } from "lucide-react";
-import { api, ContextAnalyzeDto, GrammarDropDto, SpeakingHintsDto, SpeakingRoomDto, StatsDto, UserDto, WordDto } from "./api";
+import {
+  api,
+  ContextAnalyzeDto,
+  GrammarCheckDto,
+  GrammarDropDto,
+  GrammarTopicDto,
+  SpeakingHintsDto,
+  SpeakingRoomDto,
+  StatsDto,
+  UserDto,
+  WordDto
+} from "./api";
 import { languageName, learningLanguages, nativeLanguages, t, UiLocale, uiLocales } from "./i18n";
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
@@ -88,6 +99,7 @@ export function App() {
   const [dueWords, setDueWords] = useState<WordDto[]>([]);
   const [rooms, setRooms] = useState<SpeakingRoomDto[]>([]);
   const [grammarDrops, setGrammarDrops] = useState<GrammarDropDto[]>([]);
+  const [grammarTopics, setGrammarTopics] = useState<GrammarTopicDto[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("aura");
   const [learningCode, setLearningCode] = useState("en");
   const [contextText, setContextText] = useState("");
@@ -136,18 +148,20 @@ export function App() {
 
   async function loadData(nextToken = token, languageCode = learningCode) {
     if (!nextToken) return;
-    const [nextStats, nextWords, nextDue, nextRooms, nextDrops] = await Promise.all([
+    const [nextStats, nextWords, nextDue, nextRooms, nextDrops, nextTopics] = await Promise.all([
       api.stats(nextToken),
       api.words(nextToken, languageCode),
       api.dueWords(nextToken, languageCode),
       api.speakingRooms(nextToken, languageCode),
-      api.grammarDrops(nextToken)
+      api.grammarDrops(nextToken),
+      api.grammarTopics(nextToken)
     ]);
     setStats(nextStats);
     setWords(nextWords);
     setDueWords(nextDue);
     setRooms(nextRooms);
     setGrammarDrops(nextDrops);
+    setGrammarTopics(nextTopics);
   }
 
   async function login(email: string, password: string, displayName?: string) {
@@ -278,7 +292,16 @@ export function App() {
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(new SpeechSynthesisUtterance(finalReply));
     }
-    if (token) setGrammarDrops(await api.grammarDrops(token));
+    if (token) {
+      const [nextDrops, nextTopics] = await Promise.all([api.grammarDrops(token), api.grammarTopics(token)]);
+      setGrammarDrops(nextDrops);
+      setGrammarTopics(nextTopics);
+    }
+  }
+
+  async function checkGrammar(topicId: string, exerciseId: string, answer: string): Promise<GrammarCheckDto> {
+    if (!token) throw new Error("No active session.");
+    return api.checkGrammar(token, topicId, exerciseId, answer);
   }
 
   function logout() {
@@ -290,6 +313,8 @@ export function App() {
     setStats(null);
     setContextResult(null);
     setChat([]);
+    setGrammarDrops([]);
+    setGrammarTopics([]);
   }
 
   if (!user) {
@@ -338,12 +363,14 @@ export function App() {
           <HomeScreen
             copy={copy}
             activeDrop={activeDrop}
+            grammarTopics={grammarTopics}
             contextText={contextText}
             setContextText={setContextText}
             contextResult={contextResult}
             busy={busy}
             analyzeContext={analyzeContext}
             addWord={addWord}
+            checkGrammar={checkGrammar}
             clearContext={() => setContextResult(null)}
             openSpeak={() => setActiveTab("speak")}
             openReview={() => setActiveTab("storage")}
@@ -500,24 +527,28 @@ function AuthScreen({
 function HomeScreen({
   copy,
   activeDrop,
+  grammarTopics,
   contextText,
   setContextText,
   contextResult,
   busy,
   analyzeContext,
   addWord,
+  checkGrammar,
   clearContext,
   openSpeak,
   openReview
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
   activeDrop?: GrammarDropDto;
+  grammarTopics: GrammarTopicDto[];
   contextText: string;
   setContextText: (value: string) => void;
   contextResult: ContextAnalyzeDto | null;
   busy: boolean;
   analyzeContext: () => void;
   addWord: (word: string, source?: string) => void;
+  checkGrammar: (topicId: string, exerciseId: string, answer: string) => Promise<GrammarCheckDto>;
   clearContext: () => void;
   openSpeak: () => void;
   openReview: () => void;
@@ -583,7 +614,7 @@ function HomeScreen({
         )}
       </section>
 
-      <GrammarLab copy={copy} drop={activeDrop} />
+      <GrammarLab copy={copy} drop={activeDrop} topics={grammarTopics} checkGrammar={checkGrammar} />
     </>
   );
 }
@@ -1033,10 +1064,25 @@ function DropdownSelect({
   );
 }
 
-function GrammarLab({ copy, drop }: { copy: (key: Parameters<typeof t>[1]) => string; drop?: GrammarDropDto }) {
-  const [activeTopic, setActiveTopic] = useState(grammarTopics[0].id);
-  const [done, setDone] = useState("");
-  const topic = grammarTopics.find((item) => item.id === activeTopic) ?? grammarTopics[0];
+function GrammarLab({
+  copy,
+  drop,
+  topics,
+  checkGrammar
+}: {
+  copy: (key: Parameters<typeof t>[1]) => string;
+  drop?: GrammarDropDto;
+  topics: GrammarTopicDto[];
+  checkGrammar: (topicId: string, exerciseId: string, answer: string) => Promise<GrammarCheckDto>;
+}) {
+  const [activeTopicId, setActiveTopicId] = useState("");
+  const [exerciseIndex, setExerciseIndex] = useState(0);
+  const [answer, setAnswer] = useState("");
+  const [result, setResult] = useState<GrammarCheckDto | null>(null);
+  const [score, setScore] = useState(0);
+  const [checking, setChecking] = useState(false);
+  const topic = topics.find((item) => item.id === activeTopicId) ?? topics[0];
+  const exercise = topic?.exercises[exerciseIndex] ?? topic?.exercises[0];
   const adaptive = drop ?? {
     title: "Past Simple",
     nudge: "Past Simple is tapping the window for 30 seconds.",
@@ -1044,36 +1090,144 @@ function GrammarLab({ copy, drop }: { copy: (key: Parameters<typeof t>[1]) => st
     quests: ["I watched it yesterday", "She called me last night"]
   };
 
+  useEffect(() => {
+    if (!activeTopicId && topics[0]) setActiveTopicId(topics[0].id);
+  }, [activeTopicId, topics]);
+
+  function selectTopic(nextTopicId: string) {
+    setActiveTopicId(nextTopicId);
+    setExerciseIndex(0);
+    setAnswer("");
+    setResult(null);
+  }
+
+  async function submitAnswer() {
+    if (!topic || !exercise || !answer.trim()) return;
+    setChecking(true);
+    try {
+      const nextResult = await checkGrammar(topic.id, exercise.id, answer);
+      setResult(nextResult);
+      setScore((current) => current + nextResult.score_delta);
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  function nextExercise() {
+    if (!topic) return;
+    setExerciseIndex((current) => (current + 1) % topic.exercises.length);
+    setAnswer("");
+    setResult(null);
+  }
+
+  if (!topic || !exercise) {
+    return (
+      <section className="card grammar-lab">
+        <div className="section-title">
+          <GraduationCap size={20} />
+          <h2>{copy("grammar")}</h2>
+        </div>
+        <p>Граматика завантажується. Якщо backend спить, натисни refresh.</p>
+      </section>
+    );
+  }
+
   return (
     <section className="card grammar-lab">
-      <div className="section-title">
-        <GraduationCap size={20} />
-        <h2>{copy("grammar")}</h2>
+      <div className="section-title grammar-title">
+        <div>
+          <h2>{copy("grammar")}</h2>
+          <p>Міні-урок, приклади і перевірка відповіді. Без полотна правил.</p>
+        </div>
+        <span className="grammar-score">{score} xp</span>
       </div>
+
+      <article className="adaptive-drop">
+        <small>{copy("adaptiveDrop")}</small>
+        <strong>{adaptive.title}</strong>
+        <p>{topic.recommended ? topic.reason : adaptive.nudge}</p>
+      </article>
+
       <div className="topic-tabs">
-        {grammarTopics.map((item) => (
-          <button key={item.id} className={item.id === activeTopic ? "selected" : ""} onClick={() => setActiveTopic(item.id)}>
+        {topics.map((item) => (
+          <button key={item.id} className={item.id === topic.id ? "selected" : ""} onClick={() => selectTopic(item.id)}>
+            {item.recommended && <Sparkles size={14} />}
             {item.title}
           </button>
         ))}
       </div>
-      <article className="grammar-topic">
-        <strong>{topic.title}</strong>
-        <p>{topic.rule}</p>
-        <div className="quest-list">
-          {topic.examples.map((example) => (
-            <button key={example} className={done === example ? "done" : ""} onClick={() => setDone(example)}>
-              {done === example ? <Check size={15} /> : <Sparkles size={15} />}
-              {example}
-            </button>
+
+      <article className="grammar-topic lesson-card">
+        <div className="lesson-head">
+          <span>{topic.level}</span>
+          <strong>{topic.title}</strong>
+        </div>
+        <p>{topic.summary}</p>
+        <p>{topic.micro_lesson}</p>
+        <div className="rule-list">
+          {topic.rules.map((rule) => (
+            <span key={rule}>{rule}</span>
           ))}
         </div>
       </article>
-      <article className="adaptive-drop">
-        <small>{copy("adaptiveDrop")}</small>
-        <strong>{adaptive.title}</strong>
-        <p>{adaptive.nudge}</p>
-        <p>{adaptive.tiny_explanation}</p>
+
+      <div className="example-grid">
+        {topic.examples.map((example) => (
+          <article key={`${example.right}-${example.wrong ?? "ok"}`} className="mini-example">
+            {example.wrong && <del>{example.wrong}</del>}
+            <strong>{example.right}</strong>
+            <p>{example.note}</p>
+          </article>
+        ))}
+      </div>
+
+      <article className={`exercise-card ${result ? (result.correct ? "correct" : "wrong") : ""}`}>
+        <div className="lesson-head">
+          <span>
+            {exerciseIndex + 1}/{topic.exercises.length}
+          </span>
+          <strong>{exercise.prompt}</strong>
+        </div>
+        {exercise.options.length > 0 ? (
+          <div className="option-grid">
+            {exercise.options.map((option) => (
+              <button
+                key={option}
+                className={answer === option ? "selected" : ""}
+                onClick={() => {
+                  setAnswer(option);
+                  setResult(null);
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <input
+            value={answer}
+            onChange={(event) => {
+              setAnswer(event.target.value);
+              setResult(null);
+            }}
+            placeholder="Впиши правильне речення"
+          />
+        )}
+        <div className="exercise-actions">
+          <button className="primary-action" disabled={checking || !answer.trim()} onClick={submitAnswer}>
+            <Check size={17} />
+            {checking ? "..." : "Перевірити"}
+          </button>
+          <button className="soft-action" onClick={nextExercise}>
+            Далі
+          </button>
+        </div>
+        {result && (
+          <div className="grammar-feedback">
+            <strong>{result.correct ? "Так, воно." : "Ще трошки."}</strong>
+            <p>{result.feedback}</p>
+          </div>
+        )}
       </article>
     </section>
   );

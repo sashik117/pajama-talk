@@ -68,6 +68,18 @@ class PajamaApiClient(
             bearerAuth(token)
         }.body()
 
+    suspend fun grammarTopics(token: String): List<GrammarTopicDto> =
+        client.get("$baseUrl/grammar/topics") {
+            bearerAuth(token)
+        }.body()
+
+    suspend fun checkGrammar(token: String, topicId: String, exerciseId: String, answer: String): GrammarCheckDto =
+        client.post("$baseUrl/grammar/check") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(GrammarCheckRequest(topicId, exerciseId, answer))
+        }.body()
+
     suspend fun words(token: String, languageCode: String? = null): List<WordDto> =
         client.get("$baseUrl/words") {
             bearerAuth(token)
@@ -233,6 +245,52 @@ data class GrammarDropDto(
     val nudge: String,
     @SerialName("tiny_explanation") val tinyExplanation: String,
     val quests: List<String>,
+)
+
+@Serializable
+data class GrammarExampleDto(
+    val wrong: String? = null,
+    val right: String,
+    val note: String,
+)
+
+@Serializable
+data class GrammarExerciseDto(
+    val id: String,
+    val type: String,
+    val prompt: String,
+    val options: List<String> = emptyList(),
+    val explanation: String,
+)
+
+@Serializable
+data class GrammarTopicDto(
+    val id: String,
+    val tag: String,
+    val title: String,
+    val level: String,
+    val summary: String,
+    @SerialName("micro_lesson") val microLesson: String,
+    val rules: List<String>,
+    val examples: List<GrammarExampleDto>,
+    val exercises: List<GrammarExerciseDto>,
+    val recommended: Boolean = false,
+    val reason: String = "",
+)
+
+@Serializable
+data class GrammarCheckRequest(
+    @SerialName("topic_id") val topicId: String,
+    @SerialName("exercise_id") val exerciseId: String,
+    val answer: String,
+)
+
+@Serializable
+data class GrammarCheckDto(
+    val correct: Boolean,
+    val expected: String,
+    val feedback: String,
+    @SerialName("score_delta") val scoreDelta: Int,
 )
 
 @Serializable

@@ -33,6 +33,8 @@ class PajamaAppState(
         private set
     var grammarDrops by mutableStateOf<List<GrammarDropDto>>(emptyList())
         private set
+    var grammarTopics by mutableStateOf<List<GrammarTopicDto>>(emptyList())
+        private set
     var isGrammarLoading by mutableStateOf(false)
         private set
     var words by mutableStateOf<List<WordDto>>(emptyList())
@@ -105,6 +107,7 @@ class PajamaAppState(
         user = null
         stats = null
         grammarDrops = emptyList()
+        grammarTopics = emptyList()
         words = emptyList()
         dueWords = emptyList()
         speakingRooms = emptyList()
@@ -197,6 +200,7 @@ class PajamaAppState(
         errorMessage = null
         runCatching {
             grammarDrops = requireClient().grammarDrops(requireToken())
+            grammarTopics = requireClient().grammarTopics(requireToken())
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
@@ -343,6 +347,7 @@ class PajamaAppState(
         speakingHints = null
         speakingMessages = emptyList()
         grammarDrops = emptyList()
+        grammarTopics = emptyList()
         words = emptyList()
         dueWords = emptyList()
         if (activeClient != null && token != null) {
@@ -354,6 +359,13 @@ class PajamaAppState(
             loadStats()
         }
     }
+
+    suspend fun checkGrammar(topicId: String, exerciseId: String, answer: String): GrammarCheckDto? =
+        runCatching {
+            requireClient().checkGrammar(requireToken(), topicId, exerciseId, answer)
+        }.onFailure {
+            errorMessage = it.friendlyMessage()
+        }.getOrNull()
 
     suspend fun selectNativeLanguage(language: NativeLanguage) {
         if (language.code == user?.nativeLanguageCode) return
