@@ -54,8 +54,10 @@ class PajamaAppState(
         activeBaseUrl = login.client.baseUrl
 
         runCatching {
-            user = login.client.me(login.token)
-            speakingRooms = login.client.speakingRooms(login.token)
+            val profile = login.client.me(login.token)
+            user = profile
+            selectedLanguage = languageByCode(profile.activeLanguageCode)
+            speakingRooms = login.client.speakingRooms(login.token, selectedLanguage.code)
             loadWords()
         }.onFailure { errorMessage = it.friendlyMessage() }
 
@@ -70,7 +72,8 @@ class PajamaAppState(
         errorMessage = null
         loadWords()
         runCatching {
-            speakingRooms = requireClient().speakingRooms(requireToken())
+            user = requireClient().me(requireToken())
+            speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
         }.onFailure { errorMessage = it.friendlyMessage() }
     }
 
@@ -150,7 +153,31 @@ class PajamaAppState(
         contextResult = null
         words = emptyList()
         if (activeClient != null && token != null) {
+            updateProfile(ProfileUpdateRequest(activeLanguageCode = language.code))
+            speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
             loadWords()
+        }
+    }
+
+    suspend fun setLearningVibe(vibe: String) {
+        val minutes = when (vibe) {
+            "Hardcore" -> 30
+            "Normal" -> 15
+            else -> 5
+        }
+        updateProfile(ProfileUpdateRequest(learningVibe = vibe, dailyVibeMinutes = minutes))
+    }
+
+    suspend fun setAiTone(tone: String) {
+        updateProfile(ProfileUpdateRequest(aiTone = tone))
+    }
+
+    private suspend fun updateProfile(payload: ProfileUpdateRequest) {
+        errorMessage = null
+        runCatching {
+            user = requireClient().updateProfile(requireToken(), payload)
+        }.onFailure {
+            errorMessage = it.friendlyMessage()
         }
     }
 

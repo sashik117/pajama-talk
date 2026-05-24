@@ -83,3 +83,29 @@ def test_words_can_be_filtered_by_learning_language(client: TestClient) -> None:
     body = response.json()
     assert [word["term"] for word in body] == ["spoko"]
     assert body[0]["language_code"] == "pl"
+
+
+def test_profile_update_persists_language_and_vibe(client: TestClient) -> None:
+    headers = auth_headers(client)
+    response = client.patch(
+        "/auth/me",
+        headers=headers,
+        json={
+            "active_language_code": "fr",
+            "native_language_code": "uk",
+            "learning_vibe": "Normal",
+            "daily_vibe_minutes": 15,
+            "ai_tone": "strict British aristocrat",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["active_language_code"] == "fr"
+    assert body["native_language_code"] == "uk"
+    assert body["learning_vibe"] == "Normal"
+    assert body["daily_vibe_minutes"] == 15
+    assert body["ai_tone"] == "strict British aristocrat"
+
+    profile = client.get("/auth/me", headers=headers)
+    assert profile.status_code == 200
+    assert profile.json()["active_language_code"] == "fr"

@@ -7,6 +7,7 @@ import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.patch
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -40,6 +41,13 @@ class PajamaApiClient(
     suspend fun me(token: String): UserDto =
         client.get("$baseUrl/auth/me") {
             bearerAuth(token)
+        }.body()
+
+    suspend fun updateProfile(token: String, payload: ProfileUpdateRequest): UserDto =
+        client.patch("$baseUrl/auth/me") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(payload)
         }.body()
 
     suspend fun words(token: String, languageCode: String? = null): List<WordDto> =
@@ -76,9 +84,12 @@ class PajamaApiClient(
             setBody(ContextAnalyzeRequest(text, languageCode))
         }.body()
 
-    suspend fun speakingRooms(token: String): List<SpeakingRoomDto> =
+    suspend fun speakingRooms(token: String, languageCode: String? = null): List<SpeakingRoomDto> =
         client.get("$baseUrl/speaking/rooms") {
             bearerAuth(token)
+            if (languageCode != null) {
+                parameter("language_code", languageCode)
+            }
         }.body()
 }
 
@@ -112,7 +123,20 @@ data class UserDto(
     val email: String,
     @SerialName("display_name") val displayName: String,
     @SerialName("learning_vibe") val learningVibe: String,
+    @SerialName("active_language_code") val activeLanguageCode: String,
+    @SerialName("native_language_code") val nativeLanguageCode: String,
+    @SerialName("daily_vibe_minutes") val dailyVibeMinutes: Int,
     @SerialName("ai_tone") val aiTone: String,
+)
+
+@Serializable
+data class ProfileUpdateRequest(
+    @SerialName("display_name") val displayName: String? = null,
+    @SerialName("learning_vibe") val learningVibe: String? = null,
+    @SerialName("active_language_code") val activeLanguageCode: String? = null,
+    @SerialName("native_language_code") val nativeLanguageCode: String? = null,
+    @SerialName("daily_vibe_minutes") val dailyVibeMinutes: Int? = null,
+    @SerialName("ai_tone") val aiTone: String? = null,
 )
 
 @Serializable

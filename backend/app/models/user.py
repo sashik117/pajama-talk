@@ -14,6 +14,9 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String(80), default="Dreamer")
     password_hash: Mapped[str] = mapped_column(String(255))
     learning_vibe: Mapped[str] = mapped_column(String(24), default="Chill")
+    active_language_code: Mapped[str] = mapped_column(String(12), default="en")
+    native_language_code: Mapped[str] = mapped_column(String(12), default="uk")
+    daily_vibe_minutes: Mapped[int] = mapped_column(Integer, default=5)
     ai_tone: Mapped[str] = mapped_column(String(80), default="chill-bro from California")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 

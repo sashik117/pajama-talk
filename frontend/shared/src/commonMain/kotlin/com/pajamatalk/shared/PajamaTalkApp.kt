@@ -828,24 +828,37 @@ private fun SrsSwipeCard(
 
 @Composable
 private fun VibeScreen() {
+    val appState = LocalPajamaState.current
+    val scope = rememberCoroutineScope()
+    val user = appState.user
+    val vibeModes = listOf("Chill" to 5, "Normal" to 15, "Hardcore" to 30)
+    val tones = listOf("chill-bro from California", "strict British aristocrat", "soft sitcom bestie")
+
     ScreenFrame {
         Text("Vibe Check", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
+        ConnectionStatus(appState)
         CozyCard(background = Color.White.copy(alpha = 0.86f)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Stat("128", "words")
-                Stat("46m", "spoken")
-                Stat("Chill", "mode")
+                Stat("${appState.words.size}", "words")
+                Stat("${user?.dailyVibeMinutes ?: 5}m", "daily")
+                Stat(appState.selectedLanguage.shortLabel, "language")
             }
         }
-        CozyCard(background = Lavender.copy(alpha = 0.64f)) {
-            Text("AI tone", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Graphite)
+        LanguagePicker(
+            selected = appState.selectedLanguage,
+            onSelect = { language -> scope.launch { appState.selectLanguage(language) } },
+        )
+        CozyCard(background = Mint.copy(alpha = 0.42f)) {
+            Text("Vibe mode", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Graphite)
             Spacer(Modifier.height(12.dp))
-            listOf("chill-bro from California", "strict British aristocrat", "soft sitcom bestie").forEach { tone ->
+            vibeModes.forEach { (mode, minutes) ->
+                val selected = user?.learningVibe == mode
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(22.dp))
-                        .background(Color.White.copy(alpha = 0.5f))
+                        .background(Color.White.copy(alpha = if (selected) 0.78f else 0.42f))
+                        .clickable { scope.launch { appState.setLearningVibe(mode) } }
                         .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -853,13 +866,44 @@ private fun VibeScreen() {
                         Modifier
                             .size(12.dp)
                             .clip(CircleShape)
-                            .background(if (tone.startsWith("chill")) Mint else InkMuted.copy(alpha = 0.24f)),
+                            .background(if (selected) Mint else InkMuted.copy(alpha = 0.24f)),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text(tone, color = Graphite)
+                    Text("$mode · $minutes min/day", color = Graphite, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
                 }
                 Spacer(Modifier.height(8.dp))
             }
+        }
+        CozyCard(background = Lavender.copy(alpha = 0.64f)) {
+            Text("AI tone", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Graphite)
+            Spacer(Modifier.height(12.dp))
+            tones.forEach { tone ->
+                val selected = user?.aiTone == tone
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(Color.White.copy(alpha = if (selected) 0.78f else 0.5f))
+                        .clickable { scope.launch { appState.setAiTone(tone) } }
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(if (selected) Mint else InkMuted.copy(alpha = 0.24f)),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(tone, color = Graphite, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+        }
+        CozyCard(background = Peach.copy(alpha = 0.34f)) {
+            Text("Profile sync", fontWeight = FontWeight.Bold, color = Graphite)
+            Spacer(Modifier.height(6.dp))
+            Text("Native: ${(user?.nativeLanguageCode ?: "uk").uppercase()} · ${user?.email ?: "dev user"}", color = InkMuted)
         }
     }
 }

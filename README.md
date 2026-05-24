@@ -86,6 +86,17 @@ The shared Compose app now talks to FastAPI in dev mode:
 
 The frontend tries `http://127.0.0.1:8000` first, then `http://127.0.0.1:8001`.
 
+## Sprint 3B Status
+
+Profile settings are now persisted through `PATCH /auth/me`:
+
+- Active learning language.
+- Native language.
+- Learning vibe and daily minutes.
+- AI tone.
+
+The `Vibe Check` tab now reflects live word counts for the selected language and lets the user update vibe/tone from the UI.
+
 ## Multi-Language Core
 
 PajamaTalk is not English-only. Words are stored with `language_code`, and the frontend can switch between:

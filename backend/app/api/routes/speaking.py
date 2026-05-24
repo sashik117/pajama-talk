@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.languages import language_name, normalize_language_code
 from app.core.security import decode_access_token
 from app.db.session import SessionLocal, get_db
 from app.models.chat import ChatMessage
@@ -40,8 +41,16 @@ ROOMS = [
 
 
 @router.get("/rooms", response_model=list[SpeakingRoom])
-def speaking_rooms(_: User = Depends(get_current_user)) -> list[SpeakingRoom]:
-    return ROOMS
+def speaking_rooms(
+    language_code: str | None = Query(default=None),
+    _: User = Depends(get_current_user),
+) -> list[SpeakingRoom]:
+    code = normalize_language_code(language_code)
+    name = language_name(code)
+    return [
+        room.model_copy(update={"prompt": f"{room.prompt} Keep the practice in {name}."})
+        for room in ROOMS
+    ]
 
 
 @router.websocket("/ws")

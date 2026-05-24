@@ -6,6 +6,23 @@ def ensure_dev_schema(engine: Engine) -> None:
         return
 
     with engine.begin() as connection:
+        user_columns = {
+            row[1]
+            for row in connection.exec_driver_sql("PRAGMA table_info(users)").all()
+        }
+        if "active_language_code" not in user_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE users ADD COLUMN active_language_code VARCHAR(12) NOT NULL DEFAULT 'en'",
+            )
+        if "native_language_code" not in user_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE users ADD COLUMN native_language_code VARCHAR(12) NOT NULL DEFAULT 'uk'",
+            )
+        if "daily_vibe_minutes" not in user_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE users ADD COLUMN daily_vibe_minutes INTEGER NOT NULL DEFAULT 5",
+            )
+
         word_columns = {
             row[1]
             for row in connection.exec_driver_sql("PRAGMA table_info(words)").all()

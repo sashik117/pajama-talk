@@ -5,9 +5,22 @@ from app.api.deps import get_current_user
 from app.core.security import create_access_token, hash_password, verify_password
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
+from app.schemas.auth import LoginRequest, ProfileUpdateRequest, RegisterRequest, TokenResponse, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def to_user_response(user: User) -> UserResponse:
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        display_name=user.display_name,
+        learning_vibe=user.learning_vibe,
+        active_language_code=user.active_language_code,
+        native_language_code=user.native_language_code,
+        daily_vibe_minutes=user.daily_vibe_minutes,
+        ai_tone=user.ai_tone,
+    )
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -37,10 +50,18 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
 
 @router.get("/me", response_model=UserResponse)
 def me(user: User = Depends(get_current_user)) -> UserResponse:
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        display_name=user.display_name,
-        learning_vibe=user.learning_vibe,
-        ai_tone=user.ai_tone,
-    )
+    return to_user_response(user)
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    payload: ProfileUpdateRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> UserResponse:
+    updates = payload.model_dump(exclude_none=True)
+    for field, value in updates.items():
+        setattr(user, field, value)
+    db.commit()
+    db.refresh(user)
+    return to_user_response(user)
