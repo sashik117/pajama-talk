@@ -741,6 +741,24 @@ private fun FlagBadge(code: String) {
                 )
             }
         }
+        fun drawStar(center: Offset, radius: Float, color: Color) {
+            drawPath(
+                Path().apply {
+                    moveTo(center.x, center.y - radius)
+                    lineTo(center.x + radius * 0.3f, center.y - radius * 0.25f)
+                    lineTo(center.x + radius, center.y - radius * 0.18f)
+                    lineTo(center.x + radius * 0.44f, center.y + radius * 0.18f)
+                    lineTo(center.x + radius * 0.6f, center.y + radius)
+                    lineTo(center.x, center.y + radius * 0.48f)
+                    lineTo(center.x - radius * 0.6f, center.y + radius)
+                    lineTo(center.x - radius * 0.44f, center.y + radius * 0.18f)
+                    lineTo(center.x - radius, center.y - radius * 0.18f)
+                    lineTo(center.x - radius * 0.3f, center.y - radius * 0.25f)
+                    close()
+                },
+                color,
+            )
+        }
 
         when (code) {
             "en" -> {
@@ -817,18 +835,21 @@ private fun FlagBadge(code: String) {
             "it" -> vertical(listOf(Color(0xFF009246), Color.White, Color(0xFFCE2B37)))
             "de" -> horizontal(listOf(Color.Black, Color(0xFFDD0000), Color(0xFFFFCE00)))
             "pt" -> {
-                drawRect(Color(0xFFFF0000))
-                drawRect(Color(0xFF006600), size = Size(size.width * 0.4f, size.height))
-                drawCircle(Color(0xFFF6D14A), radius = size.minDimension * 0.21f, center = Offset(size.width * 0.42f, size.height / 2f))
+                drawRect(Color(0xFFDA291C))
+                drawRect(Color(0xFF046A38), size = Size(size.width * 0.4f, size.height))
+                val emblem = Offset(size.width * 0.4f, size.height / 2f)
+                drawCircle(Color(0xFFFFCC00), radius = size.minDimension * 0.26f, center = emblem)
+                drawCircle(Color(0xFFDA291C), radius = size.minDimension * 0.19f, center = emblem)
+                drawCircle(Color(0xFFFFCC00), radius = size.minDimension * 0.08f, center = emblem)
                 drawRect(
                     color = Color.White,
-                    topLeft = Offset(size.width * 0.39f, size.height * 0.34f),
-                    size = Size(size.width * 0.06f, size.height * 0.32f),
+                    topLeft = Offset(emblem.x - size.width * 0.045f, emblem.y - size.height * 0.17f),
+                    size = Size(size.width * 0.09f, size.height * 0.34f),
                 )
                 drawRect(
-                    color = Color.White,
-                    topLeft = Offset(size.width * 0.33f, size.height * 0.47f),
-                    size = Size(size.width * 0.18f, size.height * 0.06f),
+                    color = Color(0xFF0055A4),
+                    topLeft = Offset(emblem.x - size.width * 0.03f, emblem.y - size.height * 0.06f),
+                    size = Size(size.width * 0.06f, size.height * 0.12f),
                 )
             }
             "ja" -> {
@@ -839,29 +860,20 @@ private fun FlagBadge(code: String) {
                 drawRect(Color.White)
                 drawCircle(Color(0xFFC60C30), radius = size.minDimension * 0.24f, center = Offset(size.width / 2, size.height * 0.42f))
                 drawCircle(Color(0xFF003478), radius = size.minDimension * 0.24f, center = Offset(size.width / 2, size.height * 0.58f))
-                val barW = size.width * 0.18f
-                val barH = size.height * 0.07f
-                listOf(
-                    Offset(size.width * 0.12f, size.height * 0.22f),
-                    Offset(size.width * 0.12f, size.height * 0.36f),
-                    Offset(size.width * 0.7f, size.height * 0.22f),
-                    Offset(size.width * 0.7f, size.height * 0.36f),
-                    Offset(size.width * 0.12f, size.height * 0.66f),
-                    Offset(size.width * 0.12f, size.height * 0.8f),
-                    Offset(size.width * 0.7f, size.height * 0.66f),
-                    Offset(size.width * 0.7f, size.height * 0.8f),
-                ).forEach { offset ->
-                    drawRect(Color(0xFF181818), topLeft = offset, size = Size(barW, barH))
-                }
             }
             "zh" -> {
                 drawRect(Color(0xFFDE2910))
-                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.13f, center = Offset(size.width * 0.28f, size.height * 0.36f))
+                drawStar(Offset(size.width * 0.26f, size.height * 0.34f), size.minDimension * 0.19f, Color(0xFFFFDE00))
+                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.04f, center = Offset(size.width * 0.56f, size.height * 0.24f))
+                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.04f, center = Offset(size.width * 0.66f, size.height * 0.42f))
+                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.04f, center = Offset(size.width * 0.66f, size.height * 0.62f))
+                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.04f, center = Offset(size.width * 0.56f, size.height * 0.78f))
             }
             "tr" -> {
                 drawRect(Color(0xFFE30A17))
                 drawCircle(Color.White, radius = size.minDimension * 0.18f, center = Offset(size.width * 0.42f, size.height / 2))
                 drawCircle(Color(0xFFE30A17), radius = size.minDimension * 0.14f, center = Offset(size.width * 0.48f, size.height / 2))
+                drawStar(Offset(size.width * 0.67f, size.height / 2), size.minDimension * 0.12f, Color.White)
             }
             else -> {
                 drawRect(Color(0xFF012169))

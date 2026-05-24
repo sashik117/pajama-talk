@@ -651,6 +651,89 @@ textarea {
   background: linear-gradient(#c60c30 0 50%, #003478 50% 100%);
 }
 
+.flag-pt {
+  background: linear-gradient(90deg, #046a38 0 40%, #da291c 40% 100%);
+}
+
+.flag-pt::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid #ffcc00;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(255, 204, 0, 0.45);
+}
+
+.flag-pt::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  width: 4px;
+  height: 6px;
+  border-radius: 1px 1px 2px 2px;
+  background: linear-gradient(#fff 0 28%, #0055a4 28% 70%, #fff 70% 100%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.75);
+}
+
+.flag-tr {
+  background:
+    radial-gradient(circle at 39% 50%, #fff 0 22%, transparent 23%),
+    radial-gradient(circle at 47% 50%, #e30a17 0 18%, transparent 19%),
+    #e30a17;
+}
+
+.flag-tr::after {
+  position: absolute;
+  content: "\2605";
+  color: #fff;
+  font-size: 8px;
+  line-height: 1;
+  left: 14px;
+  top: 4px;
+  transform: rotate(12deg);
+}
+
+.flag-zh {
+  background:
+    radial-gradient(circle at 56% 26%, #ffde00 0 3%, transparent 4%),
+    radial-gradient(circle at 66% 42%, #ffde00 0 3%, transparent 4%),
+    radial-gradient(circle at 66% 62%, #ffde00 0 3%, transparent 4%),
+    radial-gradient(circle at 56% 78%, #ffde00 0 3%, transparent 4%),
+    #de2910;
+}
+
+.flag-zh::after {
+  position: absolute;
+  content: "\2605";
+  color: #ffde00;
+  font-size: 11px;
+  line-height: 1;
+  left: 4px;
+  top: 2px;
+}
+
+.flag-ko::before {
+  content: none;
+  display: none;
+}
+
+.flag-ja::after,
+.flag-ko::after {
+  inset: 4px 7px;
+}
+
+.flag-ja::after {
+  background: #bc002d;
+}
+
+.flag-ko::after {
+  background: linear-gradient(#c60c30 0 50%, #003478 50% 100%);
+}
+
 .select-menu {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
