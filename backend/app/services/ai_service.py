@@ -40,7 +40,7 @@ def enrich_word(
         language_code=normalized_code,
         translation=translation,
         transcription=f"/{clean_term.lower()}/",
-        meme=f"When '{clean_term}' enters the {source_language} chat and suddenly the sentence has main-character energy.",
+        meme=f"Коли '{clean_term}' заходить у {source_language} sentence і все раптом звучить живіше.",
         example_one=f"I keep seeing '{clean_term}' in {source_language} conversations, so it is worth saving.",
         example_two=f"That {source_language} moment felt very '{clean_term}', but in the best possible way.",
         source_context=source_context,
@@ -83,14 +83,17 @@ def analyze_context(
     highlights = [
         ContextHighlight(
             phrase=word,
-            explanation=f"Ймовірно важливе слово у цьому контексті. Додай його, якщо воно чіпляє.",
+            explanation="Ймовірно важливе слово у цьому контексті. Додай його, якщо воно чіпляє.",
             addable_words=[word],
         )
         for word in unique_words[:3]
     ]
     return ContextAnalyzeResponse(
         summary=f"Це схоже на живий шматок {source_language}, не підручниковий приклад.",
-        hidden_meaning="Тут важливі не лише слова, а тон: він звучить розмовно, трохи емоційно і дуже контекстно.",
+        hidden_meaning=(
+            "Тут важливі не лише слова, а тон: він звучить розмовно, трохи емоційно "
+            "і дуже контекстно."
+        ),
         highlights=highlights,
         suggested_words=unique_words,
     )
@@ -132,9 +135,9 @@ def generate_speaking_hints(
 
     source_language = language_name(normalized_code)
     return SpeakingHintsResponse(
-        simple=f"Can you say that again, please?",
+        simple="Can you say that again, please?",
         conversational=f"That sounds good. I want to try it in {source_language}.",
-        spicy=f"Okay, I am in. Make it a tiny bit more fun.",
+        spicy="Okay, I am in. Make it a tiny bit more fun.",
     )
 
 
@@ -148,7 +151,7 @@ def _mock_translate(term: str, target_language: str) -> str:
         "ahoj": "привіт",
         "spoko": "окей / спокійно",
         "pohoda": "спокій / норм",
-        "coucou": "привітулі",
+        "coucou": "привітик",
         "vale": "добре / окей",
         "allora": "ну / отже",
         "merhaba": "привіт",
