@@ -355,6 +355,11 @@ class PajamaAppState(
         }
     }
 
+    suspend fun selectNativeLanguage(language: NativeLanguage) {
+        if (language.code == user?.nativeLanguageCode) return
+        updateProfile(ProfileUpdateRequest(nativeLanguageCode = language.code))
+    }
+
     suspend fun setLearningVibe(vibe: String) {
         val minutes = when (vibe) {
             "Hardcore" -> 30

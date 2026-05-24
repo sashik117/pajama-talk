@@ -146,3 +146,5 @@ The Speaking Rooms UI now sends practice lines through `WS /speaking/ws`. FastAP
 PajamaTalk is not English-only. Words are stored with `language_code`, and the frontend can switch between:
 
 `English`, `Slovak`, `Polish`, `Czech`, `French`, `Spanish`, `Italian`, `Korean`, `Japanese`, `Chinese`, and `Turkish`.
+
+The Vibe Check tab also lets the user choose the explanation/native language, including Ukrainian and Russian, so AI enrichment and hints can target the learner's real comfort language.

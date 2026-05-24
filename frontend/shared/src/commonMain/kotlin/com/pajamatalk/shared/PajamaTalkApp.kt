@@ -104,13 +104,16 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import com.pajamatalk.shared.data.ContextAnalyzeDto
 import com.pajamatalk.shared.data.GrammarDropDto
 import com.pajamatalk.shared.data.LearningLanguage
+import com.pajamatalk.shared.data.NativeLanguage
 import com.pajamatalk.shared.data.PajamaAppState
 import com.pajamatalk.shared.data.ReviewGrade
 import com.pajamatalk.shared.data.SpeakingChatMessage
 import com.pajamatalk.shared.data.SpeakingHintsDto
 import com.pajamatalk.shared.data.SpeakingRoomDto
 import com.pajamatalk.shared.data.SupportedLearningLanguages
+import com.pajamatalk.shared.data.SupportedNativeLanguages
 import com.pajamatalk.shared.data.WordDto
+import com.pajamatalk.shared.data.nativeLanguageByCode
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -662,6 +665,34 @@ private fun LanguagePicker(
 }
 
 @Composable
+private fun NativeLanguagePicker(
+    selected: NativeLanguage,
+    onSelect: (NativeLanguage) -> Unit,
+) {
+    CozyCard(background = Color.White.copy(alpha = 0.72f)) {
+        Text("Explanation language", fontWeight = FontWeight.Bold, color = Graphite)
+        Spacer(Modifier.height(10.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(SupportedNativeLanguages) { language ->
+                val isSelected = language.code == selected.code
+                TextButton(
+                    onClick = { onSelect(language) },
+                    modifier = Modifier
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(if (isSelected) Mint.copy(alpha = 0.62f) else SoftLilac),
+                    colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
+                ) {
+                    Text(language.shortLabel, fontWeight = FontWeight.Black)
+                    Spacer(Modifier.width(6.dp))
+                    Text(language.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun ContextResultCard(
     result: ContextAnalyzeDto,
     isAdding: Boolean,
@@ -1179,6 +1210,10 @@ private fun VibeScreen() {
         LanguagePicker(
             selected = appState.selectedLanguage,
             onSelect = { language -> scope.launch { appState.selectLanguage(language) } },
+        )
+        NativeLanguagePicker(
+            selected = nativeLanguageByCode(user?.nativeLanguageCode ?: "uk"),
+            onSelect = { language -> scope.launch { appState.selectNativeLanguage(language) } },
         )
         CozyCard(background = Mint.copy(alpha = 0.42f)) {
             Text("Vibe mode", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Graphite)
