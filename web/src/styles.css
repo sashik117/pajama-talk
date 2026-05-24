@@ -338,10 +338,12 @@ textarea {
   top: 50px;
   right: 0;
   z-index: 20;
-  width: min(82vw, 360px);
+  width: min(92vw, 336px);
+  max-height: min(62vh, 520px);
+  overflow-y: auto;
   display: grid;
-  gap: 12px;
-  padding: 12px;
+  gap: 9px;
+  padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.66);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.86);
@@ -351,28 +353,29 @@ textarea {
 
 .header-language-menu section {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .mini-options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
+  gap: 5px;
 }
 
 .mini-options button {
   min-width: 0;
-  min-height: 42px;
+  min-height: 32px;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 6px 8px;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 5px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   color: #292632;
   background: rgba(247, 241, 255, 0.76);
   font-weight: 560;
-  text-align: left;
+  text-align: center;
 }
 
 .mini-options button.selected {
@@ -384,6 +387,17 @@ textarea {
   color: #292632;
   font-size: 12px;
   font-weight: 610;
+}
+
+.mini-options .language-badge {
+  gap: 4px;
+  font-size: 11px;
+}
+
+.mini-options .flag-sticker {
+  width: 22px;
+  height: 16px;
+  border-radius: 4px;
 }
 
 .notice {
@@ -483,6 +497,30 @@ textarea {
 
 .flag-sk {
   background: linear-gradient(#fff 0 33%, #0b4ea2 33% 66%, #ee1c25 66% 100%);
+}
+
+.flag-sk::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 4px;
+  width: 8px;
+  height: 10px;
+  border: 1px solid #fff;
+  border-radius: 3px 3px 4px 4px;
+  background: linear-gradient(#ee1c25 0 60%, #0b4ea2 60% 100%);
+}
+
+.flag-sk::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  width: 6px;
+  height: 7px;
+  background:
+    linear-gradient(90deg, transparent 0 42%, #fff 42% 58%, transparent 58%),
+    linear-gradient(transparent 0 13%, #fff 13% 27%, transparent 27% 48%, #fff 48% 62%, transparent 62%);
 }
 
 .flag-cs {

@@ -746,7 +746,43 @@ private fun FlagBadge(code: String) {
             "uk" -> horizontal(listOf(Color(0xFF0057B7), Color(0xFFFFD700)))
             "ru" -> horizontal(listOf(Color.White, Color(0xFF0039A6), Color(0xFFD52B1E)))
             "pl" -> horizontal(listOf(Color.White, Color(0xFFDC143C)))
-            "sk" -> horizontal(listOf(Color.White, Color(0xFF0B4EA2), Color(0xFFEE1C25)))
+            "sk" -> {
+                horizontal(listOf(Color.White, Color(0xFF0B4EA2), Color(0xFFEE1C25)))
+                val shieldX = size.width * 0.15f
+                val shieldY = size.height * 0.22f
+                val shieldW = size.width * 0.34f
+                val shieldH = size.height * 0.62f
+                drawRoundRect(
+                    color = Color.White,
+                    topLeft = Offset(shieldX - 1f, shieldY - 1f),
+                    size = Size(shieldW + 2f, shieldH + 2f),
+                )
+                drawRoundRect(
+                    color = Color(0xFFEE1C25),
+                    topLeft = Offset(shieldX, shieldY),
+                    size = Size(shieldW, shieldH),
+                )
+                drawRect(
+                    color = Color(0xFF0B4EA2),
+                    topLeft = Offset(shieldX + shieldW * 0.12f, shieldY + shieldH * 0.6f),
+                    size = Size(shieldW * 0.76f, shieldH * 0.28f),
+                )
+                drawRect(
+                    color = Color.White,
+                    topLeft = Offset(shieldX + shieldW * 0.44f, shieldY + shieldH * 0.18f),
+                    size = Size(shieldW * 0.12f, shieldH * 0.62f),
+                )
+                drawRect(
+                    color = Color.White,
+                    topLeft = Offset(shieldX + shieldW * 0.24f, shieldY + shieldH * 0.3f),
+                    size = Size(shieldW * 0.52f, shieldH * 0.1f),
+                )
+                drawRect(
+                    color = Color.White,
+                    topLeft = Offset(shieldX + shieldW * 0.18f, shieldY + shieldH * 0.48f),
+                    size = Size(shieldW * 0.64f, shieldH * 0.1f),
+                )
+            }
             "cs" -> {
                 horizontal(listOf(Color.White, Color(0xFFD7141A)))
                 drawPath(
