@@ -50,6 +50,11 @@ class PajamaApiClient(
             setBody(payload)
         }.body()
 
+    suspend fun stats(token: String): ProfileStatsDto =
+        client.get("$baseUrl/stats/me") {
+            bearerAuth(token)
+        }.body()
+
     suspend fun words(token: String, languageCode: String? = null): List<WordDto> =
         client.get("$baseUrl/words") {
             bearerAuth(token)
@@ -137,6 +142,18 @@ data class ProfileUpdateRequest(
     @SerialName("native_language_code") val nativeLanguageCode: String? = null,
     @SerialName("daily_vibe_minutes") val dailyVibeMinutes: Int? = null,
     @SerialName("ai_tone") val aiTone: String? = null,
+)
+
+@Serializable
+data class ProfileStatsDto(
+    @SerialName("active_language_code") val activeLanguageCode: String,
+    @SerialName("total_words") val totalWords: Int,
+    @SerialName("language_words") val languageWords: Int,
+    @SerialName("learned_words") val learnedWords: Int,
+    @SerialName("due_reviews") val dueReviews: Int,
+    @SerialName("daily_vibe_minutes") val dailyVibeMinutes: Int,
+    @SerialName("learning_vibe") val learningVibe: String,
+    @SerialName("ai_tone") val aiTone: String,
 )
 
 @Serializable

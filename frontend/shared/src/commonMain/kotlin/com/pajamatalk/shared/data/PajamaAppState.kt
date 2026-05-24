@@ -27,6 +27,8 @@ class PajamaAppState(
         private set
     var user by mutableStateOf<UserDto?>(null)
         private set
+    var stats by mutableStateOf<ProfileStatsDto?>(null)
+        private set
     var words by mutableStateOf<List<WordDto>>(emptyList())
         private set
     var speakingRooms by mutableStateOf<List<SpeakingRoomDto>>(emptyList())
@@ -59,6 +61,7 @@ class PajamaAppState(
             selectedLanguage = languageByCode(profile.activeLanguageCode)
             speakingRooms = login.client.speakingRooms(login.token, selectedLanguage.code)
             loadWords()
+            loadStats()
         }.onFailure { errorMessage = it.friendlyMessage() }
 
         isBooting = false
@@ -74,6 +77,7 @@ class PajamaAppState(
         runCatching {
             user = requireClient().me(requireToken())
             speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
+            loadStats()
         }.onFailure { errorMessage = it.friendlyMessage() }
     }
 
@@ -86,6 +90,14 @@ class PajamaAppState(
             errorMessage = it.friendlyMessage()
         }
         isWordsLoading = false
+    }
+
+    suspend fun loadStats() {
+        runCatching {
+            stats = requireClient().stats(requireToken())
+        }.onFailure {
+            errorMessage = it.friendlyMessage()
+        }
     }
 
     suspend fun addWord(term: String, sourceContext: String = "") {
@@ -102,6 +114,7 @@ class PajamaAppState(
                 languageCode = selectedLanguage.code,
             )
             words = listOf(created) + words.filterNot { it.id == created.id }
+            loadStats()
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
@@ -137,6 +150,7 @@ class PajamaAppState(
             words = words.map {
                 if (it.id == word.id) it.copy(colorLevel = review.colorLevel, dueAt = review.dueAt) else it
             }
+            loadStats()
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
@@ -156,6 +170,7 @@ class PajamaAppState(
             updateProfile(ProfileUpdateRequest(activeLanguageCode = language.code))
             speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
             loadWords()
+            loadStats()
         }
     }
 
@@ -176,6 +191,7 @@ class PajamaAppState(
         errorMessage = null
         runCatching {
             user = requireClient().updateProfile(requireToken(), payload)
+            loadStats()
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }

@@ -97,6 +97,15 @@ Profile settings are now persisted through `PATCH /auth/me`:
 
 The `Vibe Check` tab now reflects live word counts for the selected language and lets the user update vibe/tone from the UI.
 
+## Sprint 4A Status
+
+The backend now has an AI provider layer:
+
+- Uses Gemini `generateContent` when `PAJAMA_GEMINI_API_KEY` is present.
+- Falls back to deterministic mock enrichment when no key is configured.
+- Keeps word enrichment and context analysis behind one service API.
+- Adds `GET /stats/me` for profile-aware word, review, and vibe stats.
+
 ## Multi-Language Core
 
 PajamaTalk is not English-only. Words are stored with `language_code`, and the frontend can switch between:

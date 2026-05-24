@@ -5,6 +5,8 @@ import re
 from app.core.languages import language_name, normalize_language_code
 from app.schemas.context import ContextAnalyzeResponse, ContextHighlight
 from app.schemas.word import WordCreate
+from app.services.ai_prompts import context_analysis_prompt, word_enrichment_prompt
+from app.services.ai_provider import get_ai_provider
 
 
 def enrich_word(
@@ -14,11 +16,27 @@ def enrich_word(
     language_code: str = "en",
 ) -> WordCreate:
     clean_term = term.strip()
+    normalized_code = normalize_language_code(language_code)
+    ai_payload = get_ai_provider().generate_json(
+        word_enrichment_prompt(clean_term, source_context, normalized_code, target_language),
+    )
+    if ai_payload:
+        return WordCreate(
+            term=clean_term,
+            language_code=normalized_code,
+            translation=str(ai_payload.get("translation", "")),
+            transcription=str(ai_payload.get("transcription", "")),
+            meme=str(ai_payload.get("meme", "")),
+            example_one=str(ai_payload.get("example_one", "")),
+            example_two=str(ai_payload.get("example_two", "")),
+            source_context=source_context,
+        )
+
     source_language = language_name(language_code)
     translation = _mock_translate(clean_term, target_language)
     return WordCreate(
         term=clean_term,
-        language_code=normalize_language_code(language_code),
+        language_code=normalized_code,
         translation=translation,
         transcription=f"/{clean_term.lower()}/",
         meme=f"When '{clean_term}' enters the {source_language} chat and suddenly the sentence has main-character energy.",
@@ -33,6 +51,27 @@ def analyze_context(
     target_language: str = "Ukrainian",
     language_code: str = "en",
 ) -> ContextAnalyzeResponse:
+    normalized_code = normalize_language_code(language_code)
+    ai_payload = get_ai_provider().generate_json(
+        context_analysis_prompt(text, normalized_code, target_language),
+    )
+    if ai_payload:
+        highlights = [
+            ContextHighlight(
+                phrase=str(item.get("phrase", "")),
+                explanation=str(item.get("explanation", "")),
+                addable_words=[str(word) for word in item.get("addable_words", [])][:4],
+            )
+            for item in ai_payload.get("highlights", [])[:6]
+            if isinstance(item, dict)
+        ]
+        return ContextAnalyzeResponse(
+            summary=str(ai_payload.get("summary", "")),
+            hidden_meaning=str(ai_payload.get("hidden_meaning", "")),
+            highlights=highlights,
+            suggested_words=[str(word) for word in ai_payload.get("suggested_words", [])][:12],
+        )
+
     source_language = language_name(language_code)
     words = [
         word.lower()

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import auth, context, grammar, health, speaking, words
+from app.api.routes import auth, context, grammar, health, speaking, stats, words
 
 api_router = APIRouter()
 api_router.include_router(health.router)
@@ -9,3 +9,4 @@ api_router.include_router(words.router)
 api_router.include_router(context.router)
 api_router.include_router(grammar.router)
 api_router.include_router(speaking.router)
+api_router.include_router(stats.router)

@@ -265,7 +265,11 @@ private fun AuraScreen() {
         ) {
             Column {
                 Text("PajamaTalk", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
-                Text("5 min chill streak", color = InkMuted, fontWeight = FontWeight.Medium)
+                Text(
+                    "${appState.stats?.dailyVibeMinutes ?: 5} min ${appState.selectedLanguage.label}",
+                    color = InkMuted,
+                    fontWeight = FontWeight.Medium,
+                )
             }
             CandleBadge(days = 7)
         }
@@ -278,9 +282,9 @@ private fun AuraScreen() {
         AuraHero()
 
         CozyCard(background = Color.White.copy(alpha = 0.84f)) {
-            Text("Alex is waiting in the cafe", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Graphite)
+            Text("Alex is waiting in ${appState.selectedLanguage.label}", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Graphite)
             Spacer(Modifier.height(8.dp))
-            Text("A tiny speaking quest, oat milk energy included.", color = InkMuted)
+            Text("${appState.stats?.dueReviews ?: 0} reviews due · ${appState.stats?.learnedWords ?: 0} learned", color = InkMuted)
             Spacer(Modifier.height(14.dp))
             SoftAction("Enter room", Icons.Rounded.Coffee, Peach, onClick = {})
         }
@@ -839,8 +843,8 @@ private fun VibeScreen() {
         ConnectionStatus(appState)
         CozyCard(background = Color.White.copy(alpha = 0.86f)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Stat("${appState.words.size}", "words")
-                Stat("${user?.dailyVibeMinutes ?: 5}m", "daily")
+                Stat("${appState.stats?.languageWords ?: appState.words.size}", "words")
+                Stat("${appState.stats?.dueReviews ?: 0}", "due")
                 Stat(appState.selectedLanguage.shortLabel, "language")
             }
         }

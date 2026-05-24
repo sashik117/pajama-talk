@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60 * 24 * 7
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     gemini_api_key: str | None = None
+    gemini_model: str = "gemini-2.0-flash"
     openai_api_key: str | None = None
 
     model_config = SettingsConfigDict(

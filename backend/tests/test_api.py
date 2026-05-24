@@ -109,3 +109,22 @@ def test_profile_update_persists_language_and_vibe(client: TestClient) -> None:
     profile = client.get("/auth/me", headers=headers)
     assert profile.status_code == 200
     assert profile.json()["active_language_code"] == "fr"
+
+
+def test_profile_stats_follow_active_language(client: TestClient) -> None:
+    headers = auth_headers(client)
+    client.post("/words/enrich", headers=headers, json={"term": "cozy", "language_code": "en"})
+    client.post("/words/enrich", headers=headers, json={"term": "spoko", "language_code": "pl"})
+    client.patch(
+        "/auth/me",
+        headers=headers,
+        json={"active_language_code": "pl", "learning_vibe": "Hardcore", "daily_vibe_minutes": 30},
+    )
+
+    response = client.get("/stats/me", headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["active_language_code"] == "pl"
+    assert body["total_words"] == 2
+    assert body["language_words"] == 1
+    assert body["daily_vibe_minutes"] == 30
