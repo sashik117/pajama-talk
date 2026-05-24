@@ -1,0 +1,19 @@
+kotlin {
+    android {
+        namespace = "com.pajamatalk.shared"
+        compileSdk = 36
+        minSdk = 26
+
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
+
+    sourceSets {
+        androidMain {
+            dependencies {
+                implementation(libs.ktor.client.okhttp)
+            }
+        }
+    }
+}
