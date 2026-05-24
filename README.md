@@ -24,6 +24,19 @@ Then open:
 - API: http://127.0.0.1:8000
 - Swagger: http://127.0.0.1:8000/docs
 
+### Backend With PostgreSQL
+
+```powershell
+docker compose up --build
+```
+
+This starts:
+
+- PostgreSQL on `localhost:5432`
+- FastAPI on `localhost:8000`
+
+The API container uses `PAJAMA_DATABASE_URL=postgresql+psycopg://pajama:pajama@postgres:5432/pajamatalk`. Plain local development can still use SQLite through `backend/.env`.
+
 ### Frontend Desktop Preview
 
 ```powershell
