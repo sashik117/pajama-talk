@@ -106,6 +106,16 @@ The backend now has an AI provider layer:
 - Keeps word enrichment and context analysis behind one service API.
 - Adds `GET /stats/me` for profile-aware word, review, and vibe stats.
 
+## Speaking Hints
+
+`POST /speaking/hints` returns three short reply options for the current room:
+
+- `simple`
+- `conversational`
+- `spicy`
+
+The Speaking Rooms UI exposes this through the hints button in the dialog preview.
+
 ## Multi-Language Core
 
 PajamaTalk is not English-only. Words are stored with `language_code`, and the frontend can switch between:

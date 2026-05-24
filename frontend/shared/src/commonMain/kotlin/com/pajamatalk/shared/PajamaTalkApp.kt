@@ -103,6 +103,7 @@ import com.pajamatalk.shared.data.ContextAnalyzeDto
 import com.pajamatalk.shared.data.LearningLanguage
 import com.pajamatalk.shared.data.PajamaAppState
 import com.pajamatalk.shared.data.ReviewGrade
+import com.pajamatalk.shared.data.SpeakingHintsDto
 import com.pajamatalk.shared.data.SpeakingRoomDto
 import com.pajamatalk.shared.data.SupportedLearningLanguages
 import com.pajamatalk.shared.data.WordDto
@@ -518,6 +519,7 @@ private fun LoadingCard(text: String) {
 @Composable
 private fun SpeakingRoomsScreen() {
     val appState = LocalPajamaState.current
+    val scope = rememberCoroutineScope()
     val rooms = appState.speakingRooms.map { it.toRoom() }.ifEmpty { fallbackRooms() }
     var activeRoom by remember { mutableStateOf<Room?>(null) }
 
@@ -532,7 +534,21 @@ private fun SpeakingRoomsScreen() {
             }
         }
         AnimatedVisibility(activeRoom != null) {
-            DialoguePreview(room = activeRoom ?: rooms.first(), onBack = { activeRoom = null })
+            val room = activeRoom ?: rooms.first()
+            DialoguePreview(
+                room = room,
+                hints = appState.speakingHints,
+                isLoadingHints = appState.isLoadingHints,
+                onHints = {
+                    scope.launch {
+                        appState.loadSpeakingHints(room.id, "I want to keep this conversation going.")
+                    }
+                },
+                onBack = {
+                    appState.clearSpeakingHints()
+                    activeRoom = null
+                },
+            )
         }
     }
 }
@@ -563,7 +579,13 @@ private fun RoomCard(room: Room, onClick: () -> Unit) {
 }
 
 @Composable
-private fun DialoguePreview(room: Room, onBack: () -> Unit) {
+private fun DialoguePreview(
+    room: Room,
+    hints: SpeakingHintsDto?,
+    isLoadingHints: Boolean,
+    onHints: () -> Unit,
+    onBack: () -> Unit,
+) {
     CozyCard(background = Color.White.copy(alpha = 0.9f)) {
         TextButton(onClick = onBack, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
             Text("Rooms")
@@ -587,9 +609,39 @@ private fun DialoguePreview(room: Room, onBack: () -> Unit) {
         Spacer(Modifier.height(22.dp))
         ChatBubble("Hey, want to practice a tiny real-life scene?", incoming = true)
         ChatBubble("Yes, but keep it chill.", incoming = false)
+        Spacer(Modifier.height(4.dp))
+        SoftAction(
+            text = if (isLoadingHints) "Thinking" else "Hints",
+            icon = Icons.Rounded.AutoAwesome,
+            color = Mint,
+            enabled = !isLoadingHints,
+            onClick = onHints,
+        )
+        hints?.let { hintSet ->
+            Spacer(Modifier.height(12.dp))
+            HintBubble("Simple", hintSet.simple)
+            HintBubble("Natural", hintSet.conversational)
+            HintBubble("Spicy", hintSet.spicy)
+        }
         Spacer(Modifier.height(20.dp))
         WaveMicButton()
     }
+}
+
+@Composable
+private fun HintBubble(label: String, text: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(Lavender.copy(alpha = 0.42f))
+            .padding(14.dp),
+    ) {
+        Text(label, color = Graphite, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Text(text, color = InkMuted)
+    }
+    Spacer(Modifier.height(8.dp))
 }
 
 @Composable
@@ -965,6 +1017,7 @@ private fun SoftAction(
 }
 
 private data class Room(
+    val id: String,
     val title: String,
     val character: String,
     val vibe: String,
@@ -976,6 +1029,7 @@ private fun SpeakingRoomDto.toRoom(): Room {
     val lowerId = id.lowercase()
     return when {
         "airport" in lowerId || "gate" in lowerId -> Room(
+            id = id,
             title = title,
             character = character,
             vibe = vibe,
@@ -983,6 +1037,7 @@ private fun SpeakingRoomDto.toRoom(): Room {
             color = Mint,
         )
         "interview" in lowerId -> Room(
+            id = id,
             title = title,
             character = character,
             vibe = vibe,
@@ -990,6 +1045,7 @@ private fun SpeakingRoomDto.toRoom(): Room {
             color = Lavender,
         )
         else -> Room(
+            id = id,
             title = title,
             character = character,
             vibe = vibe,
@@ -1000,7 +1056,7 @@ private fun SpeakingRoomDto.toRoom(): Room {
 }
 
 private fun fallbackRooms(): List<Room> = listOf(
-    Room("Lo-fi Coffee", "Alex", "barista with soft sarcasm", Icons.Rounded.Coffee, Peach),
-    Room("Gate B12", "Nova", "calm airport helper", Icons.Rounded.FlightTakeoff, Mint),
-    Room("IT Interview", "Jules", "friendly tech lead", Icons.Rounded.Work, Lavender),
+    Room("coffee-alex", "Lo-fi Coffee", "Alex", "barista with soft sarcasm", Icons.Rounded.Coffee, Peach),
+    Room("airport-nova", "Gate B12", "Nova", "calm airport helper", Icons.Rounded.FlightTakeoff, Mint),
+    Room("interview-jules", "IT Interview", "Jules", "friendly tech lead", Icons.Rounded.Work, Lavender),
 )

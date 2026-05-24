@@ -4,8 +4,9 @@ import re
 
 from app.core.languages import language_name, normalize_language_code
 from app.schemas.context import ContextAnalyzeResponse, ContextHighlight
+from app.schemas.speaking import SpeakingHintsResponse
 from app.schemas.word import WordCreate
-from app.services.ai_prompts import context_analysis_prompt, word_enrichment_prompt
+from app.services.ai_prompts import context_analysis_prompt, speaking_hints_prompt, word_enrichment_prompt
 from app.services.ai_provider import get_ai_provider
 
 
@@ -110,6 +111,31 @@ def _roleplay_reply(room_id: str, user_text: str, tone: str) -> str:
     if "interview" in room_id:
         return "Good start. Try adding one concrete result, like performance, users, or a bug you fixed."
     return f"I hear you. In my {tone} mode, I would answer a little softer and keep the conversation moving."
+
+
+def generate_speaking_hints(
+    room_prompt: str,
+    last_message: str,
+    language_code: str,
+    target_language: str = "Ukrainian",
+) -> SpeakingHintsResponse:
+    normalized_code = normalize_language_code(language_code)
+    ai_payload = get_ai_provider().generate_json(
+        speaking_hints_prompt(room_prompt, last_message, normalized_code, target_language),
+    )
+    if ai_payload:
+        return SpeakingHintsResponse(
+            simple=str(ai_payload.get("simple", "")),
+            conversational=str(ai_payload.get("conversational", "")),
+            spicy=str(ai_payload.get("spicy", "")),
+        )
+
+    source_language = language_name(normalized_code)
+    return SpeakingHintsResponse(
+        simple=f"Can you say that again, please?",
+        conversational=f"That sounds good. I want to try it in {source_language}.",
+        spicy=f"Okay, I am in. Make it a tiny bit more fun.",
+    )
 
 
 def _mock_translate(term: str, target_language: str) -> str:

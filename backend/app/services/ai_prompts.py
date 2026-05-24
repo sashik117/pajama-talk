@@ -66,3 +66,38 @@ JSON shape:
   "suggested_words": ["string"]
 }}
 """.strip()
+
+
+def speaking_hints_prompt(
+    room_prompt: str,
+    last_message: str,
+    source_language_code: str,
+    target_language: str,
+) -> str:
+    source_language = language_name(source_language_code)
+    return f"""
+You are PajamaTalk, a cozy speaking coach.
+Return strict JSON only.
+
+Task:
+- The learner is practicing {source_language}.
+- Give exactly three possible replies to continue this roleplay.
+- Keep replies short enough to say out loud.
+- "simple" should be beginner-friendly.
+- "conversational" should sound natural.
+- "spicy" can include casual slang but must not be cringe.
+- Use {target_language} only for tiny clarifying notes if needed; the reply itself should be in {source_language}.
+
+Room:
+{room_prompt}
+
+Last message:
+{last_message or "The conversation just started."}
+
+JSON shape:
+{{
+  "simple": "string",
+  "conversational": "string",
+  "spicy": "string"
+}}
+""".strip()

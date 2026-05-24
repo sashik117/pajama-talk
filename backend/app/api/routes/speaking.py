@@ -7,8 +7,8 @@ from app.core.security import decode_access_token
 from app.db.session import SessionLocal, get_db
 from app.models.chat import ChatMessage
 from app.models.user import User
-from app.schemas.speaking import SpeakingRoom
-from app.services.ai_service import stream_roleplay_reply
+from app.schemas.speaking import SpeakingHintsRequest, SpeakingHintsResponse, SpeakingRoom
+from app.services.ai_service import generate_speaking_hints, stream_roleplay_reply
 
 router = APIRouter(prefix="/speaking", tags=["speaking"])
 
@@ -51,6 +51,20 @@ def speaking_rooms(
         room.model_copy(update={"prompt": f"{room.prompt} Keep the practice in {name}."})
         for room in ROOMS
     ]
+
+
+@router.post("/hints", response_model=SpeakingHintsResponse)
+def speaking_hints(
+    payload: SpeakingHintsRequest,
+    user: User = Depends(get_current_user),
+) -> SpeakingHintsResponse:
+    room = next((room for room in ROOMS if room.id == payload.room_id), ROOMS[0])
+    return generate_speaking_hints(
+        room_prompt=room.prompt,
+        last_message=payload.last_message,
+        language_code=payload.language_code,
+        target_language=language_name(user.native_language_code),
+    )
 
 
 @router.websocket("/ws")

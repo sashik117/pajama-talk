@@ -128,3 +128,20 @@ def test_profile_stats_follow_active_language(client: TestClient) -> None:
     assert body["total_words"] == 2
     assert body["language_words"] == 1
     assert body["daily_vibe_minutes"] == 30
+
+
+def test_speaking_hints_use_active_language_context(client: TestClient) -> None:
+    headers = auth_headers(client)
+    response = client.post(
+        "/speaking/hints",
+        headers=headers,
+        json={
+            "room_id": "coffee-alex",
+            "last_message": "What should I say next?",
+            "language_code": "es",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert set(body) == {"simple", "conversational", "spicy"}
+    assert body["simple"]

@@ -33,6 +33,10 @@ class PajamaAppState(
         private set
     var speakingRooms by mutableStateOf<List<SpeakingRoomDto>>(emptyList())
         private set
+    var speakingHints by mutableStateOf<SpeakingHintsDto?>(null)
+        private set
+    var isLoadingHints by mutableStateOf(false)
+        private set
     var contextResult by mutableStateOf<ContextAnalyzeDto?>(null)
         private set
     var selectedLanguage by mutableStateOf(SupportedLearningLanguages.first())
@@ -161,10 +165,31 @@ class PajamaAppState(
         contextResult = null
     }
 
+    suspend fun loadSpeakingHints(roomId: String, lastMessage: String) {
+        isLoadingHints = true
+        errorMessage = null
+        runCatching {
+            speakingHints = requireClient().speakingHints(
+                token = requireToken(),
+                roomId = roomId,
+                lastMessage = lastMessage,
+                languageCode = selectedLanguage.code,
+            )
+        }.onFailure {
+            errorMessage = it.friendlyMessage()
+        }
+        isLoadingHints = false
+    }
+
+    fun clearSpeakingHints() {
+        speakingHints = null
+    }
+
     suspend fun selectLanguage(language: LearningLanguage) {
         if (language.code == selectedLanguage.code) return
         selectedLanguage = language
         contextResult = null
+        speakingHints = null
         words = emptyList()
         if (activeClient != null && token != null) {
             updateProfile(ProfileUpdateRequest(activeLanguageCode = language.code))

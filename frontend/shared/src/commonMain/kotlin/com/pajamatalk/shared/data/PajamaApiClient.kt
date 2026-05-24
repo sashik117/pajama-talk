@@ -96,6 +96,18 @@ class PajamaApiClient(
                 parameter("language_code", languageCode)
             }
         }.body()
+
+    suspend fun speakingHints(
+        token: String,
+        roomId: String,
+        lastMessage: String,
+        languageCode: String,
+    ): SpeakingHintsDto =
+        client.post("$baseUrl/speaking/hints") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(SpeakingHintsRequest(roomId, lastMessage, languageCode))
+        }.body()
 }
 
 enum class ReviewGrade(val value: String) {
@@ -225,4 +237,18 @@ data class SpeakingRoomDto(
     val vibe: String,
     val prompt: String,
     @SerialName("accent_color") val accentColor: String,
+)
+
+@Serializable
+data class SpeakingHintsRequest(
+    @SerialName("room_id") val roomId: String,
+    @SerialName("last_message") val lastMessage: String,
+    @SerialName("language_code") val languageCode: String,
+)
+
+@Serializable
+data class SpeakingHintsDto(
+    val simple: String,
+    val conversational: String,
+    val spicy: String,
 )
