@@ -78,19 +78,19 @@ export type LearningLanguageOption = LanguageOption & {
 export const uiLocales: Array<LanguageOption<UiLocale>> = [
   { code: "uk", label: "Українська", short: "UK", flag: "🇺🇦" },
   { code: "ru", label: "Русский", short: "RU", flag: "🇷🇺" },
-  { code: "en", label: "English", short: "EN", flag: "🇬🇧" },
+  { code: "en", label: "English", short: "ENG", flag: "🏴" },
   { code: "pl", label: "Polski", short: "PL", flag: "🇵🇱" },
   { code: "sk", label: "Slovenčina", short: "SK", flag: "🇸🇰" },
   { code: "cs", label: "Čeština", short: "CZ", flag: "🇨🇿" },
   { code: "fr", label: "Français", short: "FR", flag: "🇫🇷" },
-  { code: "es", label: "Español", short: "ES", flag: "🇪🇸" },
+  { code: "es", label: "Español", short: "ESP", flag: "🇪🇸" },
   { code: "it", label: "Italiano", short: "IT", flag: "🇮🇹" },
   { code: "de", label: "Deutsch", short: "DE", flag: "🇩🇪" },
-  { code: "pt", label: "Português", short: "PT", flag: "🇵🇹" },
+  { code: "pt", label: "Português", short: "POR", flag: "🇵🇹" },
   { code: "tr", label: "Türkçe", short: "TUR", flag: "🇹🇷" },
-  { code: "ja", label: "日本語", short: "JA", flag: "🇯🇵" },
-  { code: "ko", label: "한국어", short: "KO", flag: "🇰🇷" },
-  { code: "zh", label: "中文", short: "CN", flag: "🇨🇳" }
+  { code: "ja", label: "日本語", short: "JPN", flag: "🇯🇵" },
+  { code: "ko", label: "한국어", short: "KOR", flag: "🇰🇷" },
+  { code: "zh", label: "中文", short: "CHN", flag: "🇨🇳" }
 ];
 
 const en: Record<CopyKey, string> = {
@@ -838,20 +838,20 @@ export function t(locale: UiLocale, key: CopyKey): string {
 }
 
 export const learningLanguages = [
-  { code: "en", label: "English", short: "EN", flag: "🇬🇧", sample: "cozy" },
+  { code: "en", label: "English", short: "ENG", flag: "🏴", sample: "cozy" },
   { code: "uk", label: "Ukrainian", short: "UK", flag: "🇺🇦", sample: "затишно" },
   { code: "ru", label: "Russian", short: "RU", flag: "🇷🇺", sample: "уютно" },
   { code: "sk", label: "Slovak", short: "SK", flag: "🇸🇰", sample: "ahoj" },
   { code: "pl", label: "Polish", short: "PL", flag: "🇵🇱", sample: "spoko" },
   { code: "cs", label: "Czech", short: "CZ", flag: "🇨🇿", sample: "pohoda" },
   { code: "fr", label: "French", short: "FR", flag: "🇫🇷", sample: "coucou" },
-  { code: "es", label: "Spanish", short: "ES", flag: "🇪🇸", sample: "vale" },
+  { code: "es", label: "Spanish", short: "ESP", flag: "🇪🇸", sample: "vale" },
   { code: "it", label: "Italian", short: "IT", flag: "🇮🇹", sample: "allora" },
   { code: "de", label: "German", short: "DE", flag: "🇩🇪", sample: "hallo" },
-  { code: "pt", label: "Portuguese", short: "PT", flag: "🇵🇹", sample: "olá" },
-  { code: "ko", label: "Korean", short: "KO", flag: "🇰🇷", sample: "안녕" },
-  { code: "ja", label: "Japanese", short: "JA", flag: "🇯🇵", sample: "すごい" },
-  { code: "zh", label: "Chinese", short: "CN", flag: "🇨🇳", sample: "你好" },
+  { code: "pt", label: "Portuguese", short: "POR", flag: "🇵🇹", sample: "olá" },
+  { code: "ko", label: "Korean", short: "KOR", flag: "🇰🇷", sample: "안녕" },
+  { code: "ja", label: "Japanese", short: "JPN", flag: "🇯🇵", sample: "すごい" },
+  { code: "zh", label: "Chinese", short: "CHN", flag: "🇨🇳", sample: "你好" },
   { code: "tr", label: "Turkish", short: "TUR", flag: "🇹🇷", sample: "merhaba" }
 ] as const satisfies readonly LearningLanguageOption[];
 

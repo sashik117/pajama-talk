@@ -16,20 +16,20 @@ data class NativeLanguage(
 )
 
 val SupportedLearningLanguages = listOf(
-    LearningLanguage("en", "English", "EN", "🇬🇧", "cozy"),
+    LearningLanguage("en", "English", "ENG", "🏴", "cozy"),
     LearningLanguage("uk", "Ukrainian", "UK", "🇺🇦", "затишно"),
     LearningLanguage("ru", "Russian", "RU", "🇷🇺", "уютно"),
     LearningLanguage("sk", "Slovak", "SK", "🇸🇰", "ahoj"),
     LearningLanguage("pl", "Polish", "PL", "🇵🇱", "spoko"),
     LearningLanguage("cs", "Czech", "CZ", "🇨🇿", "pohoda"),
     LearningLanguage("fr", "French", "FR", "🇫🇷", "coucou"),
-    LearningLanguage("es", "Spanish", "ES", "🇪🇸", "vale"),
+    LearningLanguage("es", "Spanish", "ESP", "🇪🇸", "vale"),
     LearningLanguage("it", "Italian", "IT", "🇮🇹", "allora"),
     LearningLanguage("de", "German", "DE", "🇩🇪", "hallo"),
-    LearningLanguage("pt", "Portuguese", "PT", "🇵🇹", "olá"),
-    LearningLanguage("ko", "Korean", "KO", "🇰🇷", "안녕"),
-    LearningLanguage("ja", "Japanese", "JA", "🇯🇵", "すごい"),
-    LearningLanguage("zh", "Chinese", "CN", "🇨🇳", "你好"),
+    LearningLanguage("pt", "Portuguese", "POR", "🇵🇹", "olá"),
+    LearningLanguage("ko", "Korean", "KOR", "🇰🇷", "안녕"),
+    LearningLanguage("ja", "Japanese", "JPN", "🇯🇵", "すごい"),
+    LearningLanguage("zh", "Chinese", "CHN", "🇨🇳", "你好"),
     LearningLanguage("tr", "Turkish", "TUR", "🇹🇷", "merhaba"),
 )
 

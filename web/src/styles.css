@@ -358,7 +358,7 @@ textarea {
 
 .mini-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 5px;
 }
 
@@ -368,8 +368,8 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 4px 5px;
+  gap: 3px;
+  padding: 4px;
   border: 0;
   border-radius: 12px;
   color: #292632;
@@ -390,13 +390,13 @@ textarea {
 }
 
 .mini-options .language-badge {
-  gap: 4px;
-  font-size: 11px;
+  gap: 3px;
+  font-size: 10.5px;
 }
 
 .mini-options .flag-sticker {
-  width: 22px;
-  height: 16px;
+  width: 20px;
+  height: 15px;
   border-radius: 4px;
 }
 
@@ -484,11 +484,9 @@ textarea {
 
 .flag-en {
   background:
-    linear-gradient(90deg, transparent 42%, #fff 42% 58%, transparent 58%),
-    linear-gradient(0deg, transparent 38%, #fff 38% 62%, transparent 62%),
-    linear-gradient(90deg, transparent 46%, #c8102e 46% 54%, transparent 54%),
-    linear-gradient(0deg, transparent 43%, #c8102e 43% 57%, transparent 57%),
-    #012169;
+    linear-gradient(90deg, transparent 0 39%, #c8102e 39% 61%, transparent 61% 100%),
+    linear-gradient(0deg, transparent 0 34%, #c8102e 34% 66%, transparent 66% 100%),
+    #fff;
 }
 
 .flag-pl {
@@ -547,6 +545,18 @@ textarea {
   background: linear-gradient(#aa151b 0 25%, #f1bf00 25% 75%, #aa151b 75% 100%);
 }
 
+.flag-es::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 6px;
+  width: 5px;
+  height: 7px;
+  border-radius: 2px 2px 3px 3px;
+  background: linear-gradient(#aa151b 0 42%, #f1bf00 42% 62%, #aa151b 62%);
+  box-shadow: 0 0 0 1px rgba(84, 36, 31, 0.42);
+}
+
 .flag-it {
   background: linear-gradient(90deg, #009246 0 33%, #fff 33% 66%, #ce2b37 66% 100%);
 }
@@ -557,6 +567,21 @@ textarea {
 
 .flag-pt {
   background: linear-gradient(90deg, #006600 0 40%, #ff0000 40% 100%);
+}
+
+.flag-pt::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, transparent 0 38%, #fff 38% 62%, transparent 62%),
+    linear-gradient(0deg, transparent 0 38%, #fff 38% 62%, transparent 62%),
+    #f6d14a;
+  box-shadow: 0 0 0 1px rgba(74, 50, 24, 0.38);
 }
 
 .flag-tr {
@@ -589,17 +614,40 @@ textarea {
 .flag-ja::after,
 .flag-ko::after {
   position: absolute;
-  inset: 4px 7px;
   border-radius: 999px;
   content: "";
   background: #bc002d;
+}
+
+.flag-ja::after {
+  inset: 4px 7px;
 }
 
 .flag-ko {
   background: #fff;
 }
 
+.flag-ko::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 4px;
+  width: 5px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: #181818;
+  box-shadow:
+    0 3px 0 #181818,
+    0 10px 0 #181818,
+    0 13px 0 #181818,
+    15px 0 0 #181818,
+    15px 3px 0 #181818,
+    15px 10px 0 #181818,
+    15px 13px 0 #181818;
+}
+
 .flag-ko::after {
+  inset: 4px 7px;
   background: linear-gradient(#c60c30 0 50%, #003478 50% 100%);
 }
 

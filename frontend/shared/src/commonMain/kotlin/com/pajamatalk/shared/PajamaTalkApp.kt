@@ -743,6 +743,11 @@ private fun FlagBadge(code: String) {
         }
 
         when (code) {
+            "en" -> {
+                drawRect(Color.White)
+                drawRect(Color(0xFFC8102E), topLeft = Offset(size.width * 0.4f, 0f), size = Size(size.width * 0.2f, size.height))
+                drawRect(Color(0xFFC8102E), topLeft = Offset(0f, size.height * 0.34f), size = Size(size.width, size.height * 0.32f))
+            }
             "uk" -> horizontal(listOf(Color(0xFF0057B7), Color(0xFFFFD700)))
             "ru" -> horizontal(listOf(Color.White, Color(0xFF0039A6), Color(0xFFD52B1E)))
             "pl" -> horizontal(listOf(Color.White, Color(0xFFDC143C)))
@@ -796,10 +801,36 @@ private fun FlagBadge(code: String) {
                 )
             }
             "fr" -> vertical(listOf(Color(0xFF0055A4), Color.White, Color(0xFFEF4135)))
-            "es" -> horizontal(listOf(Color(0xFFAA151B), Color(0xFFF1BF00), Color(0xFFAA151B)))
+            "es" -> {
+                horizontal(listOf(Color(0xFFAA151B), Color(0xFFF1BF00), Color(0xFFAA151B)))
+                drawRoundRect(
+                    color = Color(0xFFAA151B),
+                    topLeft = Offset(size.width * 0.2f, size.height * 0.34f),
+                    size = Size(size.width * 0.2f, size.height * 0.36f),
+                )
+                drawRect(
+                    color = Color(0xFFF1BF00),
+                    topLeft = Offset(size.width * 0.23f, size.height * 0.46f),
+                    size = Size(size.width * 0.14f, size.height * 0.08f),
+                )
+            }
             "it" -> vertical(listOf(Color(0xFF009246), Color.White, Color(0xFFCE2B37)))
             "de" -> horizontal(listOf(Color.Black, Color(0xFFDD0000), Color(0xFFFFCE00)))
-            "pt" -> vertical(listOf(Color(0xFF006600), Color(0xFFFF0000)))
+            "pt" -> {
+                drawRect(Color(0xFFFF0000))
+                drawRect(Color(0xFF006600), size = Size(size.width * 0.4f, size.height))
+                drawCircle(Color(0xFFF6D14A), radius = size.minDimension * 0.21f, center = Offset(size.width * 0.42f, size.height / 2f))
+                drawRect(
+                    color = Color.White,
+                    topLeft = Offset(size.width * 0.39f, size.height * 0.34f),
+                    size = Size(size.width * 0.06f, size.height * 0.32f),
+                )
+                drawRect(
+                    color = Color.White,
+                    topLeft = Offset(size.width * 0.33f, size.height * 0.47f),
+                    size = Size(size.width * 0.18f, size.height * 0.06f),
+                )
+            }
             "ja" -> {
                 drawRect(Color.White)
                 drawCircle(Color(0xFFBC002D), radius = size.minDimension * 0.28f)
@@ -808,6 +839,20 @@ private fun FlagBadge(code: String) {
                 drawRect(Color.White)
                 drawCircle(Color(0xFFC60C30), radius = size.minDimension * 0.24f, center = Offset(size.width / 2, size.height * 0.42f))
                 drawCircle(Color(0xFF003478), radius = size.minDimension * 0.24f, center = Offset(size.width / 2, size.height * 0.58f))
+                val barW = size.width * 0.18f
+                val barH = size.height * 0.07f
+                listOf(
+                    Offset(size.width * 0.12f, size.height * 0.22f),
+                    Offset(size.width * 0.12f, size.height * 0.36f),
+                    Offset(size.width * 0.7f, size.height * 0.22f),
+                    Offset(size.width * 0.7f, size.height * 0.36f),
+                    Offset(size.width * 0.12f, size.height * 0.66f),
+                    Offset(size.width * 0.12f, size.height * 0.8f),
+                    Offset(size.width * 0.7f, size.height * 0.66f),
+                    Offset(size.width * 0.7f, size.height * 0.8f),
+                ).forEach { offset ->
+                    drawRect(Color(0xFF181818), topLeft = offset, size = Size(barW, barH))
+                }
             }
             "zh" -> {
                 drawRect(Color(0xFFDE2910))
