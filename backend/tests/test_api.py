@@ -145,3 +145,21 @@ def test_speaking_hints_use_active_language_context(client: TestClient) -> None:
     body = response.json()
     assert set(body) == {"simple", "conversational", "spicy"}
     assert body["simple"]
+
+
+def test_review_due_queue_returns_due_words_and_removes_reviewed(client: TestClient) -> None:
+    headers = auth_headers(client)
+    created = client.post(
+        "/words/enrich",
+        headers=headers,
+        json={"term": "cozy", "language_code": "en"},
+    ).json()
+
+    due = client.get("/words/review-due?language_code=en", headers=headers)
+    assert due.status_code == 200
+    assert [word["id"] for word in due.json()] == [created["id"]]
+
+    client.post(f"/words/{created['id']}/review", headers=headers, json={"grade": "remember"})
+    due_after_review = client.get("/words/review-due?language_code=en", headers=headers)
+    assert due_after_review.status_code == 200
+    assert due_after_review.json() == []

@@ -63,6 +63,14 @@ class PajamaApiClient(
             }
         }.body()
 
+    suspend fun dueWords(token: String, languageCode: String? = null): List<WordDto> =
+        client.get("$baseUrl/words/review-due") {
+            bearerAuth(token)
+            if (languageCode != null) {
+                parameter("language_code", languageCode)
+            }
+        }.body()
+
     suspend fun enrichWord(
         token: String,
         term: String,

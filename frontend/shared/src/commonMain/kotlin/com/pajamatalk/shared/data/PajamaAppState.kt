@@ -31,6 +31,10 @@ class PajamaAppState(
         private set
     var words by mutableStateOf<List<WordDto>>(emptyList())
         private set
+    var dueWords by mutableStateOf<List<WordDto>>(emptyList())
+        private set
+    var isDueWordsLoading by mutableStateOf(false)
+        private set
     var speakingRooms by mutableStateOf<List<SpeakingRoomDto>>(emptyList())
         private set
     var speakingHints by mutableStateOf<SpeakingHintsDto?>(null)
@@ -65,6 +69,7 @@ class PajamaAppState(
             selectedLanguage = languageByCode(profile.activeLanguageCode)
             speakingRooms = login.client.speakingRooms(login.token, selectedLanguage.code)
             loadWords()
+            loadDueWords()
             loadStats()
         }.onFailure { errorMessage = it.friendlyMessage() }
 
@@ -78,6 +83,7 @@ class PajamaAppState(
         }
         errorMessage = null
         loadWords()
+        loadDueWords()
         runCatching {
             user = requireClient().me(requireToken())
             speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
@@ -94,6 +100,17 @@ class PajamaAppState(
             errorMessage = it.friendlyMessage()
         }
         isWordsLoading = false
+    }
+
+    suspend fun loadDueWords() {
+        isDueWordsLoading = true
+        errorMessage = null
+        runCatching {
+            dueWords = requireClient().dueWords(requireToken(), selectedLanguage.code)
+        }.onFailure {
+            errorMessage = it.friendlyMessage()
+        }
+        isDueWordsLoading = false
     }
 
     suspend fun loadStats() {
@@ -118,6 +135,7 @@ class PajamaAppState(
                 languageCode = selectedLanguage.code,
             )
             words = listOf(created) + words.filterNot { it.id == created.id }
+            dueWords = listOf(created) + dueWords.filterNot { it.id == created.id }
             loadStats()
         }.onFailure {
             errorMessage = it.friendlyMessage()
@@ -154,6 +172,7 @@ class PajamaAppState(
             words = words.map {
                 if (it.id == word.id) it.copy(colorLevel = review.colorLevel, dueAt = review.dueAt) else it
             }
+            dueWords = dueWords.filterNot { it.id == word.id }
             loadStats()
         }.onFailure {
             errorMessage = it.friendlyMessage()
@@ -191,10 +210,12 @@ class PajamaAppState(
         contextResult = null
         speakingHints = null
         words = emptyList()
+        dueWords = emptyList()
         if (activeClient != null && token != null) {
             updateProfile(ProfileUpdateRequest(activeLanguageCode = language.code))
             speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
             loadWords()
+            loadDueWords()
             loadStats()
         }
     }

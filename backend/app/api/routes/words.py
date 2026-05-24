@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -54,6 +56,28 @@ def create_word(
     db.commit()
     db.refresh(word)
     return to_word_response(word)
+
+
+@router.get("/review-due", response_model=list[WordResponse])
+def review_due_words(
+    language_code: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[WordResponse]:
+    normalized_code = normalize_language_code(language_code or user.active_language_code)
+    words = (
+        db.query(Word)
+        .join(SrsData)
+        .filter(
+            Word.owner_id == user.id,
+            Word.language_code == normalized_code,
+            SrsData.due_at <= datetime.now(UTC),
+        )
+        .order_by(SrsData.due_at.asc(), Word.created_at.asc())
+        .limit(20)
+        .all()
+    )
+    return [to_word_response(word) for word in words]
 
 
 @router.post("/enrich", response_model=WordResponse, status_code=status.HTTP_201_CREATED)

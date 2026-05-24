@@ -761,7 +761,8 @@ private fun StorageScreen() {
             )
         } else {
             SrsSwipeCard(
-                word = appState.words.firstOrNull(),
+                word = appState.dueWords.firstOrNull(),
+                isLoading = appState.isDueWordsLoading,
                 isReviewing = appState.isReviewing,
                 onReview = { word, grade -> scope.launch { appState.reviewWord(word, grade) } },
             )
@@ -805,9 +806,15 @@ private fun WordList(
 @Composable
 private fun SrsSwipeCard(
     word: WordDto?,
+    isLoading: Boolean,
     isReviewing: Boolean,
     onReview: (WordDto, ReviewGrade) -> Unit,
 ) {
+    if (isLoading) {
+        LoadingCard("Loading review deck")
+        return
+    }
+
     if (word == null) {
         CozyCard(background = Color.White.copy(alpha = 0.86f)) {
             Text("Review deck is calm", fontWeight = FontWeight.Bold, color = Graphite)
