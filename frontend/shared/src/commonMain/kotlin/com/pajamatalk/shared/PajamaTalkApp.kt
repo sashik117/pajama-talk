@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -59,12 +60,11 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -86,7 +86,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
@@ -239,11 +238,15 @@ private fun ScreenFrame(content: @Composable ColumnScope.() -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = horizontal),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(18.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 18.dp, bottom = 22.dp),
         ) {
             item {
                 Column(
+                    modifier = Modifier
+                        .widthIn(max = 760.dp)
+                        .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                     content = content,
                 )
@@ -429,9 +432,6 @@ private fun ConnectionStatus(appState: PajamaAppState) {
                 color = Mint,
                 onClick = { scope.launch { appState.refreshAll() } },
             )
-        }
-        appState.activeBaseUrl != null -> CozyCard(background = Mint.copy(alpha = 0.28f)) {
-            Text("Live API connected", color = Graphite, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -749,7 +749,7 @@ private fun StorageScreen() {
             isAdding = appState.isAddingWord,
             onAdd = { term -> scope.launch { appState.addWord(term) } },
         )
-        TabRow(selectedTabIndex = tab, containerColor = Color.Transparent, contentColor = Graphite) {
+        SecondaryTabRow(selectedTabIndex = tab, containerColor = Color.Transparent, contentColor = Graphite) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("My words") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Review time") })
         }
@@ -957,7 +957,7 @@ private fun VibeScreen() {
             }
         }
         CozyCard(background = Peach.copy(alpha = 0.34f)) {
-            Text("Profile sync", fontWeight = FontWeight.Bold, color = Graphite)
+            Text(user?.displayName ?: "Dreamer", fontWeight = FontWeight.Bold, color = Graphite)
             Spacer(Modifier.height(6.dp))
             Text("Native: ${(user?.nativeLanguageCode ?: "uk").uppercase()} · ${user?.email ?: "dev user"}", color = InkMuted)
         }
