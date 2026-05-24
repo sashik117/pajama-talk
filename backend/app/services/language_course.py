@@ -9,6 +9,18 @@ STARTER_PACKS: dict[str, dict[str, object]] = {
         "question": ("Can you help me?", "ken yu help mi", "Можеш мені допомогти?"),
         "thanks": ("Thanks, that sounds good.", "thenks, that saundz gud", "Дякую, звучить добре."),
     },
+    "uk": {
+        "hello": ("Привіт, я Саша.", "pry-vit ya Sa-sha", "Привіт, я Саша."),
+        "want": ("Я хочу каву, будь ласка.", "ya kho-chu ka-vu bud las-ka", "Я хочу каву, будь ласка."),
+        "question": ("Можеш мені допомогти?", "mo-zhesh me-ni do-po-moh-ty", "Можеш мені допомогти?"),
+        "thanks": ("Дякую, звучить добре.", "dya-ku-yu zvu-chyt dob-re", "Дякую, звучить добре."),
+    },
+    "ru": {
+        "hello": ("Привет, я Саша.", "pri-vet ya Sa-sha", "Привіт, я Саша."),
+        "want": ("Я хочу кофе, пожалуйста.", "ya ha-chu ko-fe pa-zha-luy-sta", "Я хочу каву, будь ласка."),
+        "question": ("Можешь мне помочь?", "mo-zhesh mnye po-moch", "Можеш мені допомогти?"),
+        "thanks": ("Спасибо, звучит хорошо.", "spa-si-bo zvu-chit ha-ra-sho", "Дякую, звучить добре."),
+    },
     "sk": {
         "hello": ("Ahoj, som Sasha.", "a-hoy som Sasha", "Привіт, я Саша."),
         "want": ("Prosím si kávu.", "pro-seem si kaa-vu", "Я хочу каву, будь ласка."),

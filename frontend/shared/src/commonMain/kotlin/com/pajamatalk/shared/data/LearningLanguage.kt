@@ -17,6 +17,8 @@ data class NativeLanguage(
 
 val SupportedLearningLanguages = listOf(
     LearningLanguage("en", "English", "EN", "🇬🇧", "cozy"),
+    LearningLanguage("uk", "Ukrainian", "UK", "🇺🇦", "затишно"),
+    LearningLanguage("ru", "Russian", "RU", "🇷🇺", "уютно"),
     LearningLanguage("sk", "Slovak", "SK", "🇸🇰", "ahoj"),
     LearningLanguage("pl", "Polish", "PL", "🇵🇱", "spoko"),
     LearningLanguage("cs", "Czech", "CZ", "🇨🇿", "pohoda"),
@@ -34,7 +36,9 @@ val SupportedLearningLanguages = listOf(
 val SupportedNativeLanguages = listOf(
     NativeLanguage("uk", "Ukrainian", "UK", "🇺🇦"),
     NativeLanguage("ru", "Russian", "RU", "🇷🇺"),
-) + SupportedLearningLanguages.map { NativeLanguage(it.code, it.label, it.shortLabel, it.flag) }
+) + SupportedLearningLanguages
+    .filterNot { it.code == "uk" || it.code == "ru" }
+    .map { NativeLanguage(it.code, it.label, it.shortLabel, it.flag) }
 
 fun languageByCode(code: String): LearningLanguage =
     SupportedLearningLanguages.firstOrNull { it.code == code } ?: SupportedLearningLanguages.first()

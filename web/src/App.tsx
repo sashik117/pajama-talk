@@ -76,6 +76,8 @@ const grammarTopics = [
 
 const contextExamplesByLanguage: Record<string, string[]> = {
   en: ["no worries, I got you", "it hits different", "I'm down for it"],
+  uk: ["Привіт, я Саша.", "Я хочу каву, будь ласка.", "Можеш мені допомогти?"],
+  ru: ["Привет, я Саша.", "Я хочу кофе, пожалуйста.", "Можешь мне помочь?"],
   sk: ["Ahoj, som Sasha.", "Prosím si kávu.", "Môžete mi pomôcť?"],
   pl: ["Cześć, jestem Sasha.", "Poproszę kawę.", "Możesz mi pomóc?"],
   cs: ["Ahoj, jsem Sasha.", "Prosím kávu.", "Můžete mi pomoct?"],
@@ -242,6 +244,8 @@ function getSpeechLang(code: string) {
   return (
     {
       en: "en-US",
+      uk: "uk-UA",
+      ru: "ru-RU",
       pl: "pl-PL",
       sk: "sk-SK",
       cs: "cs-CZ",

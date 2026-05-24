@@ -839,6 +839,8 @@ export function t(locale: UiLocale, key: CopyKey): string {
 
 export const learningLanguages = [
   { code: "en", label: "English", short: "EN", flag: "🇬🇧", sample: "cozy" },
+  { code: "uk", label: "Ukrainian", short: "UK", flag: "🇺🇦", sample: "затишно" },
+  { code: "ru", label: "Russian", short: "RU", flag: "🇷🇺", sample: "уютно" },
   { code: "sk", label: "Slovak", short: "SK", flag: "🇸🇰", sample: "ahoj" },
   { code: "pl", label: "Polish", short: "PL", flag: "🇵🇱", sample: "spoko" },
   { code: "cs", label: "Czech", short: "CZ", flag: "🇨🇿", sample: "pohoda" },
@@ -856,7 +858,7 @@ export const learningLanguages = [
 export const nativeLanguages = [
   { code: "uk", label: "Ukrainian", short: "UK", flag: "🇺🇦" },
   { code: "ru", label: "Russian", short: "RU", flag: "🇷🇺" },
-  ...learningLanguages.map((language) => ({
+  ...learningLanguages.filter((language) => !["uk", "ru"].includes(language.code)).map((language) => ({
     code: language.code,
     label: language.label,
     short: language.short,

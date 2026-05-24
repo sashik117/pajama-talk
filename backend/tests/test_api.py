@@ -270,6 +270,22 @@ def test_learning_path_and_grammar_follow_selected_language(client: TestClient) 
     assert check.json()["correct"] is True
 
 
+def test_ukrainian_and_russian_can_be_learning_languages(client: TestClient) -> None:
+    headers = auth_headers(client)
+
+    ukrainian = client.get("/learning/path?language_code=uk&target_language_code=ru", headers=headers)
+    assert ukrainian.status_code == 200
+    ukrainian_body = ukrainian.json()
+    assert ukrainian_body["language_code"] == "uk"
+    assert "Я хочу каву" in ukrainian_body["next_room_prompt"]
+    assert "учитель" in ukrainian_body["assistant_role"]
+
+    russian_rooms = client.get("/speaking/rooms?language_code=ru&target_language_code=uk", headers=headers)
+    assert russian_rooms.status_code == 200
+    assert "Привет, я Саша" in russian_rooms.json()[0]["prompt"]
+    assert "Я хочу кофе" in russian_rooms.json()[0]["prompt"]
+
+
 def test_speaking_uses_selected_language_starter_pack(client: TestClient) -> None:
     headers = auth_headers(client)
     token = headers["Authorization"].replace("Bearer ", "")

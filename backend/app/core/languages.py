@@ -1,5 +1,7 @@
 SUPPORTED_LEARNING_LANGUAGES = {
     "en": "English",
+    "uk": "Ukrainian",
+    "ru": "Russian",
     "sk": "Slovak",
     "pl": "Polish",
     "cs": "Czech",
