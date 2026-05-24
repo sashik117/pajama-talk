@@ -40,6 +40,46 @@ ROOMS = [
         prompt="You are explaining a project during an English interview.",
         accent_color="#C7B8EA",
     ),
+    SpeakingRoom(
+        id="market-mia",
+        title="Tiny Market",
+        character="Mia",
+        vibe="patient shop assistant",
+        prompt="You need to buy something and ask for the price politely.",
+        accent_color="#FFD982",
+    ),
+    SpeakingRoom(
+        id="doctor-lee",
+        title="Clinic Visit",
+        character="Dr. Lee",
+        vibe="calm doctor with simple questions",
+        prompt="You explain how you feel and answer basic health questions.",
+        accent_color="#B7DDE8",
+    ),
+    SpeakingRoom(
+        id="street-ivy",
+        title="City Directions",
+        character="Ivy",
+        vibe="helpful local guide",
+        prompt="You are lost in a new city and need simple directions.",
+        accent_color="#D8E7A6",
+    ),
+    SpeakingRoom(
+        id="date-luna",
+        title="Park Date",
+        character="Luna",
+        vibe="warm casual small talk",
+        prompt="You practice light, natural small talk during a walk.",
+        accent_color="#F5C7D6",
+    ),
+    SpeakingRoom(
+        id="campus-tom",
+        title="First Class",
+        character="Tom",
+        vibe="friendly classmate",
+        prompt="You introduce yourself and ask about a lesson or schedule.",
+        accent_color="#C7D7FF",
+    ),
 ]
 
 

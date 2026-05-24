@@ -731,17 +731,16 @@ private fun LanguageHeaderChip(
     TextButton(
         onClick = onClick,
         modifier = Modifier
-            .height(42.dp)
+            .height(50.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(Color.White.copy(alpha = 0.54f))
             .border(1.dp, Color.White.copy(alpha = 0.42f), RoundedCornerShape(24.dp)),
         colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
     ) {
-        Text(selected.shortLabel, fontWeight = FontWeight.Medium, fontSize = 13.sp)
-        Spacer(Modifier.width(6.dp))
-        Text("→", color = InkMuted, fontSize = 13.sp)
-        Spacer(Modifier.width(6.dp))
-        Text(native.shortLabel, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("${selected.flag} ${selected.shortLabel} → ${native.flag} ${native.shortLabel}", fontWeight = FontWeight.Medium, fontSize = 12.sp)
+            Text("${selected.label} / ${native.label}", color = InkMuted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
@@ -764,9 +763,12 @@ private fun LanguagePicker(
                         .background(if (isSelected) Lavender else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
                 ) {
-                    Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                    Text(language.flag, fontSize = 15.sp)
                     Spacer(Modifier.width(6.dp))
-                    Text(language.label, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Column {
+                        Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 12.sp)
+                        Text(language.label, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = InkMuted)
+                    }
                 }
             }
         }
@@ -792,9 +794,12 @@ private fun NativeLanguagePicker(
                         .background(if (isSelected) Mint.copy(alpha = 0.62f) else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
                 ) {
-                    Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                    Text(language.flag, fontSize = 15.sp)
                     Spacer(Modifier.width(6.dp))
-                    Text(language.label, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Column {
+                        Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 12.sp)
+                        Text(language.label, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = InkMuted)
+                    }
                 }
             }
         }
@@ -1318,8 +1323,19 @@ private fun VibeScreen() {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Stat("${appState.stats?.languageWords ?: appState.words.size}", "words")
                 Stat("${appState.stats?.dueReviews ?: 0}", "due")
-                Stat(appState.selectedLanguage.shortLabel, "language")
+                Stat("${appState.selectedLanguage.flag} ${appState.selectedLanguage.shortLabel}", "language")
             }
+        }
+        CozyCard(background = Color.White.copy(alpha = 0.58f)) {
+            Text("Learning loop", fontWeight = FontWeight.SemiBold, color = Graphite)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Context words feed the dictionary, speaking reuses them, and grammar opens when mistakes repeat.",
+                color = InkMuted,
+                fontSize = 13.sp,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text("Explanation: ${nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").flag} ${nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").label}", color = Graphite, fontWeight = FontWeight.Medium)
         }
         LanguagePicker(
             selected = appState.selectedLanguage,
@@ -1445,14 +1461,14 @@ private fun SoftAction(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier
-            .height(48.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .height(42.dp)
+            .clip(RoundedCornerShape(21.dp))
             .background(color.copy(alpha = if (enabled) 0.72f else 0.32f)),
         colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
     ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
-        Text(text, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -1487,6 +1503,33 @@ private fun SpeakingRoomDto.toRoom(): Room {
             icon = Icons.Rounded.Work,
             color = Lavender,
         )
+        "market" in lowerId -> Room(
+            id = id,
+            title = title,
+            character = character,
+            vibe = vibe,
+            prompt = prompt,
+            icon = Icons.Rounded.Bookmarks,
+            color = Butter,
+        )
+        "doctor" in lowerId || "street" in lowerId -> Room(
+            id = id,
+            title = title,
+            character = character,
+            vibe = vibe,
+            prompt = prompt,
+            icon = Icons.Rounded.Psychology,
+            color = Mint,
+        )
+        "date" in lowerId || "campus" in lowerId -> Room(
+            id = id,
+            title = title,
+            character = character,
+            vibe = vibe,
+            prompt = prompt,
+            icon = Icons.Rounded.AutoAwesome,
+            color = Peach,
+        )
         else -> Room(
             id = id,
             title = title,
@@ -1503,4 +1546,6 @@ private fun fallbackRooms(): List<Room> = listOf(
     Room("coffee-alex", "Lo-fi Coffee", "Alex", "barista with soft sarcasm", "Teacher mode. Say one tiny line.", Icons.Rounded.Coffee, Peach),
     Room("airport-nova", "Gate B12", "Nova", "calm airport helper", "Teacher mode. Ask for help.", Icons.Rounded.FlightTakeoff, Mint),
     Room("interview-jules", "IT Interview", "Jules", "friendly tech lead", "Teacher mode. Introduce yourself.", Icons.Rounded.Work, Lavender),
+    Room("market-mia", "Tiny Market", "Mia", "patient shop assistant", "Teacher mode. Ask for a price.", Icons.Rounded.Bookmarks, Butter),
+    Room("street-ivy", "City Directions", "Ivy", "helpful local guide", "Teacher mode. Ask where to go.", Icons.Rounded.Psychology, Mint),
 )

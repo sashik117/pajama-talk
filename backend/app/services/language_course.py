@@ -85,47 +85,186 @@ def starter_meaning(language_code: str, key: str) -> str:
     return starter_pack(language_code)[key][2]
 
 
-def build_learning_path(language_code: str) -> LearningPathResponse:
+MEANING_TRANSLATIONS: dict[str, dict[str, str]] = {
+    "uk": {
+        "hello": "Привіт, я Sasha.",
+        "want": "Я хочу каву, будь ласка.",
+        "question": "Можеш мені допомогти?",
+        "thanks": "Дякую, звучить добре.",
+    },
+    "en": {
+        "hello": "Hi, I am Sasha.",
+        "want": "I want a coffee, please.",
+        "question": "Can you help me?",
+        "thanks": "Thanks, that sounds good.",
+    },
+    "ru": {
+        "hello": "Привет, я Sasha.",
+        "want": "Я хочу кофе, пожалуйста.",
+        "question": "Можешь мне помочь?",
+        "thanks": "Спасибо, звучит хорошо.",
+    },
+    "pl": {
+        "hello": "Cześć, jestem Sasha.",
+        "want": "Poproszę kawę.",
+        "question": "Możesz mi pomóc?",
+        "thanks": "Dzięki, brzmi dobrze.",
+    },
+    "sk": {
+        "hello": "Ahoj, som Sasha.",
+        "want": "Prosím si kávu.",
+        "question": "Môžeš mi pomôcť?",
+        "thanks": "Ďakujem, znie to dobre.",
+    },
+    "cs": {
+        "hello": "Ahoj, jsem Sasha.",
+        "want": "Prosím kávu.",
+        "question": "Můžeš mi pomoct?",
+        "thanks": "Díky, zní to dobře.",
+    },
+    "fr": {
+        "hello": "Salut, je suis Sasha.",
+        "want": "Je voudrais un café, s'il vous plaît.",
+        "question": "Vous pouvez m'aider ?",
+        "thanks": "Merci, ça me va.",
+    },
+    "es": {
+        "hello": "Hola, soy Sasha.",
+        "want": "Quiero un café, por favor.",
+        "question": "¿Puedes ayudarme?",
+        "thanks": "Gracias, suena bien.",
+    },
+    "it": {
+        "hello": "Ciao, sono Sasha.",
+        "want": "Vorrei un caffè, per favore.",
+        "question": "Puoi aiutarmi?",
+        "thanks": "Grazie, mi va bene.",
+    },
+    "ko": {
+        "hello": "안녕하세요, 저는 Sasha예요.",
+        "want": "커피 주세요.",
+        "question": "도와줄 수 있어요?",
+        "thanks": "고마워요, 좋아요.",
+    },
+    "ja": {
+        "hello": "こんにちは、Sashaです。",
+        "want": "コーヒーをください。",
+        "question": "手伝ってくれますか？",
+        "thanks": "ありがとう、いいですね。",
+    },
+    "zh": {
+        "hello": "你好，我是 Sasha。",
+        "want": "请给我一杯咖啡。",
+        "question": "你可以帮我吗？",
+        "thanks": "谢谢，这很好。",
+    },
+    "tr": {
+        "hello": "Merhaba, ben Sasha.",
+        "want": "Bir kahve istiyorum, lütfen.",
+        "question": "Bana yardım eder misin?",
+        "thanks": "Teşekkürler, kulağa iyi geliyor.",
+    },
+}
+
+COURSE_COPY: dict[str, dict[str, str]] = {
+    "uk": {
+        "assistant": "AI зараз працює як вчитель + співрозмовник для {name}: спочатку дає опору, потім просить сказати коротку живу фразу.",
+        "next": "Спробуй у спікінгу сказати: {phrase}",
+        "hello_title": "1. Представитись без паніки",
+        "hello_goal": "Сказати хто ти і привітатись.",
+        "hello_note": "Новачку не треба знати всю граматику. Спершу беремо готову фразу як конструктор.",
+        "hello_task": "Повтори вголос: {phrase}",
+        "want_title": "2. Попросити щось",
+        "want_goal": "Вміти замовити або попросити базову річ.",
+        "want_note": "Це перша корисна фраза для кафе, магазину і подорожей.",
+        "want_task": "Заміни слово всередині фрази: {phrase}",
+        "question_title": "3. Поставити питання",
+        "question_goal": "Не зависати, коли треба попросити допомогу.",
+        "question_note": "AI-співрозмовник буде провокувати такі питання у діалозі, щоб фраза стала автоматичною.",
+        "question_task": "Скажи питання вголос: {phrase}",
+    },
+    "en": {
+        "assistant": "AI now works as both teacher and conversation partner for {name}: first it gives support, then asks for one short real phrase.",
+        "next": "Try saying this in Speaking: {phrase}",
+        "hello_title": "1. Introduce yourself calmly",
+        "hello_goal": "Say who you are and greet someone.",
+        "hello_note": "A beginner does not need the whole grammar table first. We start with a ready phrase as a building block.",
+        "hello_task": "Repeat out loud: {phrase}",
+        "want_title": "2. Ask for something",
+        "want_goal": "Order or ask for a basic thing.",
+        "want_note": "This is a first useful phrase for cafes, shops and travel.",
+        "want_task": "Swap one word inside the phrase: {phrase}",
+        "question_title": "3. Ask a question",
+        "question_goal": "Avoid freezing when you need help.",
+        "question_note": "The AI partner will trigger these questions in dialogue until they feel automatic.",
+        "question_task": "Say the question out loud: {phrase}",
+    },
+    "ru": {
+        "assistant": "AI сейчас работает как учитель + собеседник для {name}: сначала дает опору, потом просит сказать короткую живую фразу.",
+        "next": "Попробуй в спикинге сказать: {phrase}",
+        "hello_title": "1. Представиться без паники",
+        "hello_goal": "Сказать, кто ты, и поздороваться.",
+        "hello_note": "Новичку не нужно сразу знать всю грамматику. Сначала берем готовую фразу как конструктор.",
+        "hello_task": "Повтори вслух: {phrase}",
+        "want_title": "2. Попросить что-то",
+        "want_goal": "Уметь заказать или попросить базовую вещь.",
+        "want_note": "Это первая полезная фраза для кафе, магазина и путешествий.",
+        "want_task": "Замени одно слово внутри фразы: {phrase}",
+        "question_title": "3. Задать вопрос",
+        "question_goal": "Не зависать, когда нужно попросить помощь.",
+        "question_note": "AI-собеседник будет провоцировать такие вопросы в диалоге, чтобы фраза стала автоматической.",
+        "question_task": "Скажи вопрос вслух: {phrase}",
+    },
+}
+
+
+def _copy_for(explanation_code: str) -> dict[str, str]:
+    return COURSE_COPY.get(explanation_code, COURSE_COPY["en"])
+
+
+def _meaning_for(key: str, explanation_code: str, fallback: str) -> str:
+    return MEANING_TRANSLATIONS.get(explanation_code, MEANING_TRANSLATIONS["en"]).get(key, fallback)
+
+
+def build_learning_path(language_code: str, explanation_code: str = "uk") -> LearningPathResponse:
     code = normalize_language_code(language_code)
     name = language_name(code)
     pack = starter_pack(code)
+    copy = _copy_for(explanation_code)
     return LearningPathResponse(
         language_code=code,
         language_name=name,
         level="Starter A0-A1",
-        assistant_role=(
-            f"AI зараз працює як вчитель + співрозмовник для {name}: спочатку дає опору, "
-            "потім просить сказати коротку живу фразу."
-        ),
-        next_room_prompt=f"Спробуй у спікінгу сказати: {pack['want'][0]}",
+        assistant_role=copy["assistant"].format(name=name),
+        next_room_prompt=copy["next"].format(phrase=pack["want"][0]),
         steps=[
             LearningStep(
                 id=f"{code}-hello",
-                title="1. Представитись без паніки",
-                goal="Сказати хто ти і привітатись.",
-                teacher_note="Новачку не треба знати всю граматику. Спершу беремо готову фразу як конструктор.",
-                micro_task=f"Повтори вголос: {pack['hello'][0]}",
-                examples=[_phrase(pack["hello"])],
+                title=copy["hello_title"],
+                goal=copy["hello_goal"],
+                teacher_note=copy["hello_note"],
+                micro_task=copy["hello_task"].format(phrase=pack["hello"][0]),
+                examples=[_phrase(pack["hello"], "hello", explanation_code)],
             ),
             LearningStep(
                 id=f"{code}-want",
-                title="2. Попросити щось",
-                goal="Вміти замовити або попросити базову річ.",
-                teacher_note="Це перша корисна фраза для кафе, магазину і подорожей.",
-                micro_task=f"Заміни слово всередині фрази: {pack['want'][0]}",
-                examples=[_phrase(pack["want"]), _phrase(pack["thanks"])],
+                title=copy["want_title"],
+                goal=copy["want_goal"],
+                teacher_note=copy["want_note"],
+                micro_task=copy["want_task"].format(phrase=pack["want"][0]),
+                examples=[_phrase(pack["want"], "want", explanation_code), _phrase(pack["thanks"], "thanks", explanation_code)],
             ),
             LearningStep(
                 id=f"{code}-question",
-                title="3. Поставити питання",
-                goal="Не зависати, коли треба попросити допомогу.",
-                teacher_note="AI-співрозмовник буде провокувати такі питання у діалозі, щоб фраза стала автоматичною.",
-                micro_task=f"Скажи питання вголос: {pack['question'][0]}",
-                examples=[_phrase(pack["question"])],
+                title=copy["question_title"],
+                goal=copy["question_goal"],
+                teacher_note=copy["question_note"],
+                micro_task=copy["question_task"].format(phrase=pack["question"][0]),
+                examples=[_phrase(pack["question"], "question", explanation_code)],
             ),
         ],
     )
 
 
-def _phrase(raw: tuple[str, str, str]) -> LearningPhrase:
-    return LearningPhrase(phrase=raw[0], pronunciation=raw[1], meaning=raw[2])
+def _phrase(raw: tuple[str, str, str], key: str, explanation_code: str) -> LearningPhrase:
+    return LearningPhrase(phrase=raw[0], pronunciation=raw[1], meaning=_meaning_for(key, explanation_code, raw[2]))

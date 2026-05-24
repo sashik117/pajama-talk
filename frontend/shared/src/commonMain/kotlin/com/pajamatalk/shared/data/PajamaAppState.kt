@@ -204,8 +204,8 @@ class PajamaAppState(
         isGrammarLoading = true
         errorMessage = null
         runCatching {
-            grammarDrops = requireClient().grammarDrops(requireToken(), selectedLanguage.code)
-            grammarTopics = requireClient().grammarTopics(requireToken(), selectedLanguage.code)
+            grammarDrops = requireClient().grammarDrops(requireToken(), selectedLanguage.code, explanationLanguageCode())
+            grammarTopics = requireClient().grammarTopics(requireToken(), selectedLanguage.code, explanationLanguageCode())
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
@@ -214,7 +214,7 @@ class PajamaAppState(
 
     suspend fun loadLearningPath() {
         runCatching {
-            learningPath = requireClient().learningPath(requireToken(), selectedLanguage.code)
+            learningPath = requireClient().learningPath(requireToken(), selectedLanguage.code, explanationLanguageCode())
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
@@ -232,6 +232,7 @@ class PajamaAppState(
                 term = cleanTerm,
                 sourceContext = sourceContext,
                 languageCode = selectedLanguage.code,
+                targetLanguage = explanationLanguageName(),
             )
             words = listOf(created) + words.filterNot { it.id == created.id }
             dueWords = listOf(created) + dueWords.filterNot { it.id == created.id }
@@ -249,7 +250,12 @@ class PajamaAppState(
         isAnalyzingContext = true
         errorMessage = null
         runCatching {
-            contextResult = requireClient().analyzeContext(requireToken(), cleanText, selectedLanguage.code)
+            contextResult = requireClient().analyzeContext(
+                token = requireToken(),
+                text = cleanText,
+                languageCode = selectedLanguage.code,
+                targetLanguage = explanationLanguageName(),
+            )
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }
@@ -377,7 +383,7 @@ class PajamaAppState(
 
     suspend fun checkGrammar(topicId: String, exerciseId: String, answer: String): GrammarCheckDto? =
         runCatching {
-            requireClient().checkGrammar(requireToken(), topicId, exerciseId, answer)
+            requireClient().checkGrammar(requireToken(), topicId, exerciseId, answer, explanationLanguageCode())
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }.getOrNull()
@@ -385,6 +391,8 @@ class PajamaAppState(
     suspend fun selectNativeLanguage(language: NativeLanguage) {
         if (language.code == user?.nativeLanguageCode) return
         updateProfile(ProfileUpdateRequest(nativeLanguageCode = language.code))
+        loadGrammarDrops()
+        loadLearningPath()
     }
 
     suspend fun setLearningVibe(vibe: String) {
@@ -425,6 +433,12 @@ class PajamaAppState(
 
     private fun requireToken(): String =
         token ?: error("Pajama API token is not ready yet.")
+
+    private fun explanationLanguageCode(): String =
+        user?.nativeLanguageCode ?: "uk"
+
+    private fun explanationLanguageName(): String =
+        nativeLanguageByCode(explanationLanguageCode()).label
 
     private fun Throwable.friendlyMessage(): String =
         if (this is ClientRequestException) {

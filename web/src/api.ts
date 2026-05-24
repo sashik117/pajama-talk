@@ -113,6 +113,15 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function withQuery(path: string, params: Record<string, string | undefined>): string {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+  const serialized = query.toString();
+  return serialized ? `${path}?${serialized}` : path;
+}
+
 export const api = {
   apiUrl: API_URL,
   wsUrl(path: string) {
@@ -134,12 +143,12 @@ export const api = {
   updateProfile: (token: string, payload: Partial<Record<string, string | number>>) =>
     request<UserDto>("/auth/me", { method: "PATCH", token, body: JSON.stringify(payload) }),
   stats: (token: string) => request<StatsDto>("/stats/me", { token }),
-  grammarDrops: (token: string, languageCode?: string) =>
-    request<GrammarDropDto[]>(`/grammar/drops${languageCode ? `?language_code=${languageCode}` : ""}`, { token }),
-  grammarTopics: (token: string, languageCode?: string) =>
-    request<GrammarTopicDto[]>(`/grammar/topics${languageCode ? `?language_code=${languageCode}` : ""}`, { token }),
-  checkGrammar: (token: string, topicId: string, exerciseId: string, answer: string) =>
-    request<GrammarCheckDto>("/grammar/check", {
+  grammarDrops: (token: string, languageCode?: string, targetLanguageCode?: string) =>
+    request<GrammarDropDto[]>(withQuery("/grammar/drops", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
+  grammarTopics: (token: string, languageCode?: string, targetLanguageCode?: string) =>
+    request<GrammarTopicDto[]>(withQuery("/grammar/topics", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
+  checkGrammar: (token: string, topicId: string, exerciseId: string, answer: string, targetLanguageCode?: string) =>
+    request<GrammarCheckDto>(withQuery("/grammar/check", { target_language_code: targetLanguageCode }), {
       method: "POST",
       token,
       body: JSON.stringify({ topic_id: topicId, exercise_id: exerciseId, answer })
@@ -168,8 +177,8 @@ export const api = {
     }),
   speakingRooms: (token: string, languageCode: string) =>
     request<SpeakingRoomDto[]>(`/speaking/rooms?language_code=${languageCode}`, { token }),
-  learningPath: (token: string, languageCode: string) =>
-    request<LearningPathDto>(`/learning/path?language_code=${languageCode}`, { token }),
+  learningPath: (token: string, languageCode: string, targetLanguageCode?: string) =>
+    request<LearningPathDto>(withQuery("/learning/path", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
   speakingHints: (token: string, roomId: string, lastMessage: string, languageCode: string) =>
     request<SpeakingHintsDto>("/speaking/hints", {
       method: "POST",

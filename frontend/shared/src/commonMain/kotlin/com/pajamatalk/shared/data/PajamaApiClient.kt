@@ -63,25 +63,34 @@ class PajamaApiClient(
             bearerAuth(token)
         }.body()
 
-    suspend fun grammarDrops(token: String, languageCode: String? = null): List<GrammarDropDto> =
+    suspend fun grammarDrops(token: String, languageCode: String? = null, targetLanguageCode: String? = null): List<GrammarDropDto> =
         client.get("$baseUrl/grammar/drops") {
             bearerAuth(token)
             if (languageCode != null) {
                 parameter("language_code", languageCode)
             }
+            if (targetLanguageCode != null) {
+                parameter("target_language_code", targetLanguageCode)
+            }
         }.body()
 
-    suspend fun grammarTopics(token: String, languageCode: String? = null): List<GrammarTopicDto> =
+    suspend fun grammarTopics(token: String, languageCode: String? = null, targetLanguageCode: String? = null): List<GrammarTopicDto> =
         client.get("$baseUrl/grammar/topics") {
             bearerAuth(token)
             if (languageCode != null) {
                 parameter("language_code", languageCode)
             }
+            if (targetLanguageCode != null) {
+                parameter("target_language_code", targetLanguageCode)
+            }
         }.body()
 
-    suspend fun checkGrammar(token: String, topicId: String, exerciseId: String, answer: String): GrammarCheckDto =
+    suspend fun checkGrammar(token: String, topicId: String, exerciseId: String, answer: String, targetLanguageCode: String? = null): GrammarCheckDto =
         client.post("$baseUrl/grammar/check") {
             bearerAuth(token)
+            if (targetLanguageCode != null) {
+                parameter("target_language_code", targetLanguageCode)
+            }
             contentType(ContentType.Application.Json)
             setBody(GrammarCheckRequest(topicId, exerciseId, answer))
         }.body()
@@ -107,11 +116,12 @@ class PajamaApiClient(
         term: String,
         sourceContext: String = "",
         languageCode: String = "en",
+        targetLanguage: String = "Ukrainian",
     ): WordDto =
         client.post("$baseUrl/words/enrich") {
             bearerAuth(token)
             contentType(ContentType.Application.Json)
-            setBody(WordEnrichRequest(term, languageCode, sourceContext))
+            setBody(WordEnrichRequest(term, languageCode, sourceContext, targetLanguage))
         }.body()
 
     suspend fun reviewWord(token: String, wordId: Int, grade: ReviewGrade): ReviewDto =
@@ -121,11 +131,16 @@ class PajamaApiClient(
             setBody(ReviewRequest(grade.value))
         }.body()
 
-    suspend fun analyzeContext(token: String, text: String, languageCode: String = "en"): ContextAnalyzeDto =
+    suspend fun analyzeContext(
+        token: String,
+        text: String,
+        languageCode: String = "en",
+        targetLanguage: String = "Ukrainian",
+    ): ContextAnalyzeDto =
         client.post("$baseUrl/context/analyze") {
             bearerAuth(token)
             contentType(ContentType.Application.Json)
-            setBody(ContextAnalyzeRequest(text, languageCode))
+            setBody(ContextAnalyzeRequest(text, languageCode, targetLanguage))
         }.body()
 
     suspend fun speakingRooms(token: String, languageCode: String? = null): List<SpeakingRoomDto> =
@@ -136,11 +151,14 @@ class PajamaApiClient(
             }
         }.body()
 
-    suspend fun learningPath(token: String, languageCode: String? = null): LearningPathDto =
+    suspend fun learningPath(token: String, languageCode: String? = null, targetLanguageCode: String? = null): LearningPathDto =
         client.get("$baseUrl/learning/path") {
             bearerAuth(token)
             if (languageCode != null) {
                 parameter("language_code", languageCode)
+            }
+            if (targetLanguageCode != null) {
+                parameter("target_language_code", targetLanguageCode)
             }
         }.body()
 

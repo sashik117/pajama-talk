@@ -136,6 +136,16 @@ def _roleplay_reply(room_id: str, user_text: str, tone: str, language_code: str,
         return f"No panic. Show me your boarding pass and we will find the right gate together.{learning_hook}"
     if "interview" in room_id:
         return f"Good start. Try adding one concrete result, like performance, users, or a bug you fixed.{learning_hook}"
+    if "market" in room_id:
+        return f"Sure. Ask me for the price, size, or a smaller option, and keep it to one clean sentence.{learning_hook}"
+    if "doctor" in room_id:
+        return f"Tell me one symptom and when it started. Short answers are perfect here.{learning_hook}"
+    if "street" in room_id:
+        return f"You are close. Ask me where the station is, then repeat the direction back to me.{learning_hook}"
+    if "date" in room_id:
+        return f"Nice. Ask one easy question back, like what music or coffee they like.{learning_hook}"
+    if "campus" in room_id:
+        return f"Start with your name, then ask where the class is or what the homework is.{learning_hook}"
     return f"I hear you. In my {tone} mode, I would answer a little softer and keep the conversation moving.{learning_hook}"
 
 

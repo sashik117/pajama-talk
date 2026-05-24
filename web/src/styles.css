@@ -236,13 +236,13 @@ textarea {
 .primary-action,
 .soft-action,
 .demo-action {
-  min-height: 44px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 14px;
-  font-weight: 650;
+  padding: 0 12px;
+  font-weight: 590;
 }
 
 .primary-action {
@@ -252,7 +252,7 @@ textarea {
 
 .soft-action {
   background: rgba(232, 222, 248, 0.82);
-  font-weight: 600;
+  font-weight: 560;
 }
 
 .soft-action.peach,
@@ -274,8 +274,8 @@ textarea {
 }
 
 .ghost-action {
-  min-height: 40px;
-  padding: 0 12px;
+  min-height: 38px;
+  padding: 0 11px;
 }
 
 .ghost-action.inline {
@@ -283,8 +283,8 @@ textarea {
 }
 
 .icon-button {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
@@ -296,13 +296,13 @@ textarea {
 }
 
 .language-pill {
-  min-height: 42px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   border: 1px solid rgba(255, 255, 255, 0.64);
   border-radius: 999px;
-  padding: 0 11px;
+  padding: 4px 10px;
   color: #292632;
   background: rgba(255, 255, 255, 0.66);
   box-shadow: 0 12px 28px rgba(73, 55, 98, 0.055);
@@ -310,10 +310,36 @@ textarea {
 }
 
 .language-pill strong {
-  font-size: 13px;
+  font-size: 12px;
 }
 
-.language-pill span {
+.language-pair {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.language-pair-top {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.language-pair strong {
+  color: #292632;
+}
+
+.language-pair small {
+  max-width: 145px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.language-pill span,
+.language-pair-top span {
   color: #8b808f;
 }
 
@@ -339,19 +365,24 @@ textarea {
 }
 
 .mini-options {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
 
 .mini-options button {
-  min-width: 43px;
-  min-height: 34px;
+  min-width: 0;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 14px;
   color: #292632;
   background: rgba(247, 241, 255, 0.76);
-  font-weight: 600;
+  font-weight: 560;
+  text-align: left;
 }
 
 .mini-options button.selected {
@@ -390,7 +421,7 @@ textarea {
 
 .select-trigger {
   width: 100%;
-  min-height: 50px;
+  min-height: 48px;
   padding: 0 4px;
   text-align: left;
   background: transparent;
@@ -402,7 +433,21 @@ textarea {
 }
 
 .select-trigger strong {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   color: #292632;
+}
+
+.flag {
+  flex: 0 0 auto;
+  color: #292632;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.select-label {
+  font-size: 11px;
 }
 
 .select-menu {
@@ -415,22 +460,36 @@ textarea {
 .select-menu button,
 .button-grid button,
 .tone-list button {
-  min-height: 38px;
+  min-height: 36px;
   background: rgba(247, 241, 255, 0.92);
-  font-weight: 560;
+  font-weight: 540;
 }
 
 .select-menu button {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 0 10px;
+  padding: 7px 9px;
   text-align: left;
 }
 
-.select-menu button span {
+.option-copy {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.option-copy strong {
   color: #292632;
-  font-weight: 650;
+  font-size: 12px;
+  font-weight: 610;
+}
+
+.option-copy small {
+  overflow: hidden;
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .select-menu button.selected,
@@ -836,6 +895,61 @@ textarea {
   min-width: 0;
 }
 
+.storage-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.storage-metric {
+  display: grid;
+  gap: 3px;
+  place-items: center;
+  padding: 11px 8px;
+}
+
+.storage-metric strong {
+  color: #292632;
+  font-size: 22px;
+  font-weight: 620;
+}
+
+.new-word-card {
+  display: grid;
+  gap: 12px;
+}
+
+.new-word-card p,
+.muted-line,
+.source-line {
+  color: #7a7082;
+  font-size: 12px;
+}
+
+.dictionary-tools {
+  display: grid;
+  gap: 10px;
+}
+
+.filter-pills {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.filter-pills button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  color: #292632;
+  background: rgba(247, 241, 255, 0.74);
+  font-weight: 540;
+}
+
+.filter-pills button.selected {
+  background: rgba(157, 206, 192, 0.64);
+}
+
 .icon-only {
   width: 42px;
   padding: 0;
@@ -931,6 +1045,41 @@ textarea {
   padding: 0 14px 11px;
 }
 
+.status-pill {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #31534d;
+  background: rgba(157, 206, 192, 0.42);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-pill.learned {
+  color: #5e506b;
+  background: rgba(232, 222, 248, 0.82);
+}
+
+.word-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 0 14px 10px;
+}
+
+.word-meta span {
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.54);
+  font-size: 11px;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -960,6 +1109,35 @@ textarea {
   background: rgba(247, 241, 255, 0.94);
 }
 
+.profile-insights {
+  display: grid;
+  gap: 11px;
+}
+
+.profile-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.profile-row > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  border-radius: 16px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.profile-row strong {
+  overflow: hidden;
+  color: #292632;
+  font-size: 13px;
+  font-weight: 610;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .button-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -983,13 +1161,13 @@ textarea {
 
 .bottom-nav button {
   min-width: 0;
-  min-height: 50px;
+  min-height: 46px;
   display: grid;
   place-items: center;
   gap: 2px;
   background: transparent;
   font-size: 12px;
-  font-weight: 620;
+  font-weight: 560;
 }
 
 .bottom-nav button.active {
@@ -1035,6 +1213,10 @@ textarea {
 
   .stats-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .profile-row {
+    grid-template-columns: 1fr;
   }
 
   .example-grid,

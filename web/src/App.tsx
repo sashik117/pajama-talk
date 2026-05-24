@@ -7,16 +7,20 @@ import {
   ChevronDown,
   Coffee,
   GraduationCap,
+  Heart,
   Home,
   Languages,
   LogOut,
+  MapPin,
   Mic,
   MicOff,
   Plane,
   Plus,
   RefreshCw,
   Send,
+  ShoppingBag,
   Sparkles,
+  Stethoscope,
   User,
   WandSparkles,
   X
@@ -38,7 +42,7 @@ import { languageName, learningLanguages, nativeLanguages, t, UiLocale, uiLocale
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type ChatLine = { role: "user" | "assistant"; text: string };
-type SelectOption = { code: string; label: string; short: string };
+type SelectOption = { code: string; label: string; short: string; flag: string };
 
 const demoEmail = "dreamer@pajamatalk.dev";
 const demoPassword = "pajama-dev-secret";
@@ -124,7 +128,8 @@ export function App() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const targetLanguage = languageName(user?.native_language_code ?? "uk");
+  const explanationCode = user?.native_language_code ?? "uk";
+  const targetLanguage = languageName(explanationCode);
   const selectedLanguage = learningLanguages.find((language) => language.code === learningCode) ?? learningLanguages[0];
   const activeDrop = grammarDrops[0];
   const dueWord = dueWords[0];
@@ -149,7 +154,7 @@ export function App() {
       localStorage.setItem("pajama-token", nextToken);
       setUser(profile);
       setLearningCode(profile.active_language_code);
-      await loadData(nextToken, profile.active_language_code);
+      await loadData(nextToken, profile.active_language_code, profile.native_language_code);
     } catch (err) {
       localStorage.removeItem("pajama-token");
       setToken("");
@@ -160,16 +165,16 @@ export function App() {
     }
   }
 
-  async function loadData(nextToken = token, languageCode = learningCode) {
+  async function loadData(nextToken = token, languageCode = learningCode, targetCode = explanationCode) {
     if (!nextToken) return;
     const [nextStats, nextWords, nextDue, nextRooms, nextDrops, nextTopics, nextPath] = await Promise.all([
       api.stats(nextToken),
       api.words(nextToken, languageCode),
       api.dueWords(nextToken, languageCode),
       api.speakingRooms(nextToken, languageCode),
-      api.grammarDrops(nextToken, languageCode),
-      api.grammarTopics(nextToken, languageCode),
-      api.learningPath(nextToken, languageCode)
+      api.grammarDrops(nextToken, languageCode, targetCode),
+      api.grammarTopics(nextToken, languageCode, targetCode),
+      api.learningPath(nextToken, languageCode, targetCode)
     ]);
     setStats(nextStats);
     setWords(nextWords);
@@ -223,6 +228,7 @@ export function App() {
     if (!token) return;
     const profile = await api.updateProfile(token, { native_language_code: code });
     setUser(profile);
+    await loadData(token, learningCode, profile.native_language_code);
   }
 
   async function updateVibe(vibe: string) {
@@ -309,7 +315,10 @@ export function App() {
       window.speechSynthesis.speak(new SpeechSynthesisUtterance(finalReply));
     }
     if (token) {
-      const [nextDrops, nextTopics] = await Promise.all([api.grammarDrops(token, learningCode), api.grammarTopics(token, learningCode)]);
+      const [nextDrops, nextTopics] = await Promise.all([
+        api.grammarDrops(token, learningCode, explanationCode),
+        api.grammarTopics(token, learningCode, explanationCode)
+      ]);
       setGrammarDrops(nextDrops);
       setGrammarTopics(nextTopics);
     }
@@ -317,7 +326,7 @@ export function App() {
 
   async function checkGrammar(topicId: string, exerciseId: string, answer: string): Promise<GrammarCheckDto> {
     if (!token) throw new Error("No active session.");
-    return api.checkGrammar(token, topicId, exerciseId, answer);
+    return api.checkGrammar(token, topicId, exerciseId, answer, explanationCode);
   }
 
   function logout() {
@@ -355,7 +364,7 @@ export function App() {
           <div className="topbar-title">
             <h1>{copy(activeTab)}</h1>
             <p>
-              PajamaTalk · {selectedLanguage.label} · {stats?.daily_vibe_minutes ?? 5} min
+              PajamaTalk · {selectedLanguage.flag} {selectedLanguage.label} · {stats?.daily_vibe_minutes ?? 5} min
             </p>
           </div>
           <div className="topbar-actions">
@@ -660,7 +669,7 @@ function LearningPathPanel({ path, openSpeak }: { path: LearningPathDto; openSpe
       <div className="section-title learning-head">
         <div>
           <small>{path.level}</small>
-          <h2>{path.language_name}: стартова система</h2>
+          <h2>{path.language_name}</h2>
           <p>{path.assistant_role}</p>
         </div>
         <button className="soft-action" onClick={openSpeak}>
@@ -728,6 +737,11 @@ function SpeakingScreen({
     if (!activeRoom) return null;
     if (activeRoom.id.includes("airport")) return <Plane size={28} />;
     if (activeRoom.id.includes("interview")) return <BriefcaseBusiness size={28} />;
+    if (activeRoom.id.includes("market")) return <ShoppingBag size={28} />;
+    if (activeRoom.id.includes("doctor")) return <Stethoscope size={28} />;
+    if (activeRoom.id.includes("date")) return <Heart size={28} />;
+    if (activeRoom.id.includes("street")) return <MapPin size={28} />;
+    if (activeRoom.id.includes("campus")) return <GraduationCap size={28} />;
     return <Coffee size={28} />;
   }, [activeRoom]);
 
@@ -778,7 +792,23 @@ function SpeakingScreen({
         {rooms.map((room) => (
           <button className="room-card card" key={room.id} onClick={() => setActiveRoom(room)}>
             <span className="room-icon" style={{ background: room.accent_color }}>
-              {room.id.includes("airport") ? <Plane /> : room.id.includes("interview") ? <BriefcaseBusiness /> : <Coffee />}
+              {room.id.includes("airport") ? (
+                <Plane />
+              ) : room.id.includes("interview") ? (
+                <BriefcaseBusiness />
+              ) : room.id.includes("market") ? (
+                <ShoppingBag />
+              ) : room.id.includes("doctor") ? (
+                <Stethoscope />
+              ) : room.id.includes("date") ? (
+                <Heart />
+              ) : room.id.includes("street") ? (
+                <MapPin />
+              ) : room.id.includes("campus") ? (
+                <GraduationCap />
+              ) : (
+                <Coffee />
+              )}
             </span>
             <span>
               <strong>{room.title}</strong>
@@ -878,11 +908,48 @@ function StorageScreen({
 }) {
   const [term, setTerm] = useState("");
   const [mode, setMode] = useState<"words" | "review">("words");
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "learning" | "learned">("all");
+  const filteredWords = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return words.filter((word) => {
+      const matchesQuery =
+        !needle ||
+        word.term.toLowerCase().includes(needle) ||
+        word.translation.toLowerCase().includes(needle) ||
+        word.source_context.toLowerCase().includes(needle);
+      const matchesFilter = filter === "all" || word.status === filter;
+      return matchesQuery && matchesFilter;
+    });
+  }, [filter, query, words]);
+  const learningCount = words.filter((word) => word.status === "learning").length;
+  const learnedCount = words.filter((word) => word.status === "learned").length;
+  const nextDue = dueWord?.due_at ? compactDate(dueWord.due_at) : copy("reviewEmpty");
 
   return (
     <>
-      <section className="card">
-        <h2>{copy("newWord")}</h2>
+      <section className="storage-overview">
+        <div className="storage-metric card">
+          <strong>{words.length}</strong>
+          <span>{copy("myWords")}</span>
+        </div>
+        <div className="storage-metric card">
+          <strong>{learningCount}</strong>
+          <span>SRS</span>
+        </div>
+        <div className="storage-metric card">
+          <strong>{learnedCount}</strong>
+          <span>{copy("learned")}</span>
+        </div>
+      </section>
+
+      <section className="card new-word-card">
+        <div>
+          <h2>{copy("newWord")}</h2>
+          <p>
+            {sample} · {copy("contextTitle")} → {copy("myWords")} → SRS
+          </p>
+        </div>
         <div className="send-row">
           <input value={term} onChange={(event) => setTerm(event.target.value)} placeholder={sample} />
           <button
@@ -913,6 +980,9 @@ function StorageScreen({
               <small>{dueWord.transcription}</small>
               <h2>{dueWord.term}</h2>
               <p>{dueWord.meme}</p>
+              <p className="muted-line">
+                {copy("due")}: {nextDue}
+              </p>
               <div className="action-row">
                 <button className="soft-action peach" onClick={() => reviewWord("forgot")}>
                   {copy("forgot")}
@@ -927,27 +997,63 @@ function StorageScreen({
           )}
         </section>
       ) : (
-        <section className="word-list">
-          {words.map((word) => (
-            <details className="word-card card" key={word.id}>
-              <summary>
-                <span>
-                  <strong>{word.term}</strong>
-                  <small>
-                    {word.translation} / {word.transcription}
-                  </small>
-                </span>
-                <b>{word.color_level}/5</b>
-              </summary>
-              <p>{word.meme}</p>
-              <p>{word.example_one}</p>
-              <p>{word.example_two}</p>
-            </details>
-          ))}
-        </section>
+        <>
+          <section className="dictionary-tools card">
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`${copy("myWords")} / ${copy("contextTitle")}`} />
+            <div className="filter-pills">
+              {[
+                ["all", copy("myWords")],
+                ["learning", "SRS"],
+                ["learned", copy("learned")]
+              ].map(([key, label]) => (
+                <button key={key} className={filter === key ? "selected" : ""} onClick={() => setFilter(key as typeof filter)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </section>
+          <section className="word-list">
+            {filteredWords.length ? (
+              filteredWords.map((word) => (
+                <details className="word-card card" key={word.id}>
+                  <summary>
+                    <span>
+                      <strong>{word.term}</strong>
+                      <small>
+                        {word.translation} / {word.transcription}
+                      </small>
+                    </span>
+                    <span className={`status-pill ${word.status}`}>{word.status === "learned" ? copy("learned") : "SRS"}</span>
+                  </summary>
+                  <div className="word-meta">
+                    <span>SRS {word.color_level}/5</span>
+                    <span>{word.due_at ? compactDate(word.due_at) : copy("reviewEmpty")}</span>
+                  </div>
+                  {word.source_context && <p className="source-line">{copy("contextTitle")}: {word.source_context}</p>}
+                  <p>{word.meme}</p>
+                  <p>{word.example_one}</p>
+                  <p>{word.example_two}</p>
+                </details>
+              ))
+            ) : (
+              <section className="card empty-state">
+                <strong>{query ? copy("reviewEmpty") : copy("newWord")}</strong>
+                <p>
+                  {copy("contextTitle")} → {copy("myWords")} → SRS
+                </p>
+              </section>
+            )}
+          </section>
+        </>
       )}
     </>
   );
+}
+
+function compactDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function ProfileScreen({
@@ -976,6 +1082,14 @@ function ProfileScreen({
   logout: () => void;
 }) {
   const tones = ["soft sitcom bestie", "chill-bro from California", "strict British aristocrat"];
+  const learning = learningLanguages.find((language) => language.code === learningCode) ?? learningLanguages[0];
+  const native = nativeLanguages.find((language) => language.code === user.native_language_code) ?? nativeLanguages[0];
+  const plan =
+    user.learning_vibe === "Hardcore"
+      ? `${copy("speak")} + ${copy("review")} + ${copy("grammar")}`
+      : user.learning_vibe === "Normal"
+        ? `${copy("speak")} + ${copy("review")}`
+        : copy("speak");
   return (
     <>
       <section className="profile-hero card">
@@ -993,6 +1107,35 @@ function ProfileScreen({
         <Stat value={`${stats?.due_reviews ?? 0}`} label={copy("due")} />
         <Stat value={`${stats?.learned_words ?? 0}`} label={copy("learned")} />
         <Stat value={`${user.daily_vibe_minutes}`} label="min/day" />
+      </section>
+      <section className="profile-insights card">
+        <div className="profile-row">
+          <span>
+            <small>{copy("learningLanguage")}</small>
+            <strong>
+              {learning.flag} {learning.label}
+            </strong>
+          </span>
+          <span>
+            <small>{copy("nativeLanguage")}</small>
+            <strong>
+              {native.flag} {native.label}
+            </strong>
+          </span>
+        </div>
+        <div className="profile-row">
+          <span>
+            <small>{copy("learningVibe")}</small>
+            <strong>{plan}</strong>
+          </span>
+          <span>
+            <small>{copy("aiTone")}</small>
+            <strong>{user.ai_tone}</strong>
+          </span>
+        </div>
+        <p>
+          {copy("contextTitle")} → {copy("myWords")} → {copy("speak")} → {copy("grammar")}
+        </p>
       </section>
       <DropdownSelect title={copy("uiLanguage")} value={locale} options={uiLocales} onChange={(value) => setLocale(value as UiLocale)} />
       <DropdownSelect title={copy("learningLanguage")} value={learningCode} options={learningLanguages} onChange={setLearningCode} />
@@ -1050,9 +1193,20 @@ function HeaderLanguageChip({
     <div className={`header-language ${open ? "open" : ""}`}>
       <button className="language-pill" onClick={() => setOpen((current) => !current)} aria-label="Change languages">
         <Languages size={16} />
-        <strong>{learning.short}</strong>
-        <span>→</span>
-        <strong>{native.short}</strong>
+        <span className="language-pair">
+          <span className="language-pair-top">
+            <strong>
+              {learning.flag} {learning.short}
+            </strong>
+            <span>→</span>
+            <strong>
+              {native.flag} {native.short}
+            </strong>
+          </span>
+          <small>
+            {learning.label} / {native.label}
+          </small>
+        </span>
         <ChevronDown size={15} />
       </button>
       {open && (
@@ -1069,7 +1223,11 @@ function HeaderLanguageChip({
                     setOpen(false);
                   }}
                 >
-                  {option.short}
+                  <span className="flag">{option.flag}</span>
+                  <span className="option-copy">
+                    <strong>{option.short}</strong>
+                    <small>{option.label}</small>
+                  </span>
                 </button>
               ))}
             </div>
@@ -1086,7 +1244,11 @@ function HeaderLanguageChip({
                     setOpen(false);
                   }}
                 >
-                  {option.short}
+                  <span className="flag">{option.flag}</span>
+                  <span className="option-copy">
+                    <strong>{option.short}</strong>
+                    <small>{option.label}</small>
+                  </span>
                 </button>
               ))}
             </div>
@@ -1116,8 +1278,10 @@ function DropdownSelect({
         <span>
           <small>{title}</small>
           <strong>
-            {selected.short} · {selected.label}
+            <span className="flag">{selected.flag}</span>
+            {selected.short}
           </strong>
+          <small className="select-label">{selected.label}</small>
         </span>
         <ChevronDown size={18} />
       </button>
@@ -1132,8 +1296,11 @@ function DropdownSelect({
                 setOpen(false);
               }}
             >
-              <span>{option.short}</span>
-              {option.label}
+              <span className="flag">{option.flag}</span>
+              <span className="option-copy">
+                <strong>{option.short}</strong>
+                <small>{option.label}</small>
+              </span>
             </button>
           ))}
         </div>

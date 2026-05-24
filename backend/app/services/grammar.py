@@ -321,12 +321,18 @@ def detect_mistake_tag(text: str) -> str | None:
     return None
 
 
-def grammar_topics_for_tags(tags: set[str], language_code: str = "en") -> list[GrammarTopic]:
+def grammar_topics_for_tags(tags: set[str], language_code: str = "en", target_language_code: str = "uk") -> list[GrammarTopic]:
     topics = beginner_topics(language_code)
     return [_to_topic(topic, topic.tag in tags) for topic in sorted(topics, key=lambda item: (item.tag not in tags, item.id))]
 
 
-def check_grammar_answer(topic_id: str, exercise_id: str, answer: str, language_code: str = "en") -> GrammarCheckResponse:
+def check_grammar_answer(
+    topic_id: str,
+    exercise_id: str,
+    answer: str,
+    language_code: str = "en",
+    target_language_code: str = "uk",
+) -> GrammarCheckResponse:
     topic = next((item for item in beginner_topics(language_code) if item.id == topic_id), None)
     if topic is None:
         return GrammarCheckResponse(correct=False, expected="", feedback="Topic not found.", score_delta=0)
@@ -341,12 +347,12 @@ def check_grammar_answer(topic_id: str, exercise_id: str, answer: str, language_
     return GrammarCheckResponse(
         correct=correct,
         expected=exercise.answer,
-        feedback=exercise.explanation if correct else f"Майже. Правильний варіант: {exercise.answer}. {exercise.explanation}",
+        feedback=exercise.explanation if correct else _almost_feedback(exercise.answer, exercise.explanation, target_language_code),
         score_delta=12 if correct else 2,
     )
 
 
-def drops_for_tags(tags: set[str], language_code: str = "en") -> list[GrammarDrop]:
+def drops_for_tags(tags: set[str], language_code: str = "en", target_language_code: str = "uk") -> list[GrammarDrop]:
     code = normalize_language_code(language_code)
     if code != "en":
         pack = starter_pack(code)
@@ -456,3 +462,11 @@ def _to_topic(topic: GrammarTopicSpec, recommended: bool) -> GrammarTopic:
 
 def _normalize_answer(value: str) -> str:
     return " ".join(value.strip().lower().rstrip(".!?").split())
+
+
+def _almost_feedback(answer: str, explanation: str, target_language_code: str) -> str:
+    if target_language_code == "uk":
+        return f"Майже. Правильний варіант: {answer}. {explanation}"
+    if target_language_code == "ru":
+        return f"Почти. Правильный вариант: {answer}. {explanation}"
+    return f"Almost. Correct answer: {answer}. {explanation}"
