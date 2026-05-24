@@ -175,8 +175,8 @@ export const api = {
       token,
       body: JSON.stringify({ text, language_code: languageCode, target_language: targetLanguage })
     }),
-  speakingRooms: (token: string, languageCode: string) =>
-    request<SpeakingRoomDto[]>(`/speaking/rooms?language_code=${languageCode}`, { token }),
+  speakingRooms: (token: string, languageCode: string, targetLanguageCode?: string) =>
+    request<SpeakingRoomDto[]>(withQuery("/speaking/rooms", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
   learningPath: (token: string, languageCode: string, targetLanguageCode?: string) =>
     request<LearningPathDto>(withQuery("/learning/path", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
   speakingHints: (token: string, roomId: string, lastMessage: string, languageCode: string) =>

@@ -705,6 +705,83 @@ private fun GrammarNudge(drop: GrammarDropDto?, isLoading: Boolean) {
 }
 
 @Composable
+private fun CodeBadge(code: String, shortLabel: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        FlagBadge(code)
+        Spacer(Modifier.width(5.dp))
+        Text(shortLabel, fontWeight = FontWeight.Medium, fontSize = 12.sp, color = Graphite)
+    }
+}
+
+@Composable
+private fun FlagBadge(code: String) {
+    val shape = RoundedCornerShape(5.dp)
+    Canvas(
+        modifier = Modifier
+            .width(25.dp)
+            .height(18.dp)
+            .clip(shape)
+            .border(1.dp, Graphite.copy(alpha = 0.12f), shape),
+    ) {
+        fun horizontal(colors: List<Color>) {
+            colors.forEachIndexed { index, color ->
+                drawRect(
+                    color = color,
+                    topLeft = Offset(0f, size.height * index / colors.size),
+                    size = Size(size.width, size.height / colors.size),
+                )
+            }
+        }
+        fun vertical(colors: List<Color>) {
+            colors.forEachIndexed { index, color ->
+                drawRect(
+                    color = color,
+                    topLeft = Offset(size.width * index / colors.size, 0f),
+                    size = Size(size.width / colors.size, size.height),
+                )
+            }
+        }
+
+        when (code) {
+            "uk" -> horizontal(listOf(Color(0xFF0057B7), Color(0xFFFFD700)))
+            "ru" -> horizontal(listOf(Color.White, Color(0xFF0039A6), Color(0xFFD52B1E)))
+            "pl" -> horizontal(listOf(Color.White, Color(0xFFDC143C)))
+            "sk", "cs" -> horizontal(listOf(Color.White, Color(0xFF0B4EA2), Color(0xFFEE1C25)))
+            "fr" -> vertical(listOf(Color(0xFF0055A4), Color.White, Color(0xFFEF4135)))
+            "es" -> horizontal(listOf(Color(0xFFAA151B), Color(0xFFF1BF00), Color(0xFFAA151B)))
+            "it" -> vertical(listOf(Color(0xFF009246), Color.White, Color(0xFFCE2B37)))
+            "de" -> horizontal(listOf(Color.Black, Color(0xFFDD0000), Color(0xFFFFCE00)))
+            "pt" -> vertical(listOf(Color(0xFF006600), Color(0xFFFF0000)))
+            "ja" -> {
+                drawRect(Color.White)
+                drawCircle(Color(0xFFBC002D), radius = size.minDimension * 0.28f)
+            }
+            "ko" -> {
+                drawRect(Color.White)
+                drawCircle(Color(0xFFC60C30), radius = size.minDimension * 0.24f, center = Offset(size.width / 2, size.height * 0.42f))
+                drawCircle(Color(0xFF003478), radius = size.minDimension * 0.24f, center = Offset(size.width / 2, size.height * 0.58f))
+            }
+            "zh" -> {
+                drawRect(Color(0xFFDE2910))
+                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.13f, center = Offset(size.width * 0.28f, size.height * 0.36f))
+            }
+            "tr" -> {
+                drawRect(Color(0xFFE30A17))
+                drawCircle(Color.White, radius = size.minDimension * 0.18f, center = Offset(size.width * 0.42f, size.height / 2))
+                drawCircle(Color(0xFFE30A17), radius = size.minDimension * 0.14f, center = Offset(size.width * 0.48f, size.height / 2))
+            }
+            else -> {
+                drawRect(Color(0xFF012169))
+                drawRect(Color.White, topLeft = Offset(size.width * 0.42f, 0f), size = Size(size.width * 0.16f, size.height))
+                drawRect(Color.White, topLeft = Offset(0f, size.height * 0.38f), size = Size(size.width, size.height * 0.24f))
+                drawRect(Color(0xFFC8102E), topLeft = Offset(size.width * 0.46f, 0f), size = Size(size.width * 0.08f, size.height))
+                drawRect(Color(0xFFC8102E), topLeft = Offset(0f, size.height * 0.44f), size = Size(size.width, size.height * 0.12f))
+            }
+        }
+    }
+}
+
+@Composable
 private fun ConnectionStatus(appState: PajamaAppState) {
     val scope = rememberCoroutineScope()
     when {
@@ -737,7 +814,11 @@ private fun LanguageHeaderChip(
             .border(1.dp, Color.White.copy(alpha = 0.42f), RoundedCornerShape(24.dp)),
         colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
     ) {
-        Text("${selected.flag} ${selected.shortLabel} → ${native.flag} ${native.shortLabel}", fontWeight = FontWeight.Medium, fontSize = 12.sp)
+        CodeBadge(selected.code, selected.shortLabel)
+        Spacer(Modifier.width(6.dp))
+        Text("→", color = InkMuted, fontSize = 12.sp)
+        Spacer(Modifier.width(6.dp))
+        CodeBadge(native.code, native.shortLabel)
     }
 }
 
@@ -760,7 +841,7 @@ private fun LanguagePicker(
                         .background(if (isSelected) Lavender else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
                 ) {
-                    Text(language.flag, fontSize = 15.sp)
+                    FlagBadge(language.code)
                     Spacer(Modifier.width(6.dp))
                     Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 12.sp)
                 }
@@ -788,7 +869,7 @@ private fun NativeLanguagePicker(
                         .background(if (isSelected) Mint.copy(alpha = 0.62f) else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
                 ) {
-                    Text(language.flag, fontSize = 15.sp)
+                    FlagBadge(language.code)
                     Spacer(Modifier.width(6.dp))
                     Text(language.shortLabel, fontWeight = FontWeight.Medium, fontSize = 12.sp)
                 }
@@ -1314,7 +1395,7 @@ private fun VibeScreen() {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Stat("${appState.stats?.languageWords ?: appState.words.size}", "words")
                 Stat("${appState.stats?.dueReviews ?: 0}", "due")
-                Stat("${appState.selectedLanguage.flag} ${appState.selectedLanguage.shortLabel}", "language")
+                Stat(appState.selectedLanguage.shortLabel, "language")
             }
         }
         CozyCard(background = Color.White.copy(alpha = 0.58f)) {
@@ -1326,7 +1407,11 @@ private fun VibeScreen() {
                 fontSize = 13.sp,
             )
             Spacer(Modifier.height(8.dp))
-            Text("Explanation: ${nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").flag} ${nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").shortLabel}", color = Graphite, fontWeight = FontWeight.Medium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Explanation:", color = Graphite, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.width(8.dp))
+                CodeBadge(nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").code, nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").shortLabel)
+            }
         }
         LanguagePicker(
             selected = appState.selectedLanguage,

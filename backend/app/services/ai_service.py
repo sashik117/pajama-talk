@@ -11,6 +11,49 @@ from app.services.ai_provider import get_ai_provider
 from app.services.language_course import starter_pack
 
 
+COACH_COPY: dict[str, dict[str, str]] = {
+    "uk": {
+        "meme": "Коли '{term}' заходить у {source_language} sentence і все раптом звучить живіше.",
+        "example_one": "{phrase} / слово для контексту: {term}",
+        "example_two": "{phrase} / спробуй додати '{term}' у живу фразу.",
+        "context_highlight": "Ймовірно важливе слово у цьому контексті. Додай його, якщо воно чіпляє.",
+        "context_summary": "Це схоже на живий шматок {source_language}, не підручниковий приклад.",
+        "context_hidden": "Тут важливі не лише слова, а тон: він звучить розмовно, трохи емоційно і дуже контекстно.",
+        "learning_hook": " Спробуй використати '{term}' у відповіді, якщо підходить.",
+        "roleplay_coffee": "{thanks} Тепер як teacher: спробуй відповісти фразою '{want}'.{hook}",
+        "roleplay_airport": "{question} Добре для ситуації в аеропорту. Скажи коротко і я продовжу діалог.{hook}",
+        "roleplay_interview": "{hello} Почни з представлення, потім додай одну просту фразу про себе.{hook}",
+        "roleplay_default": "{question} Я як teacher підкину опору, а ти відповідай коротко.{hook}",
+    },
+    "ru": {
+        "meme": "Когда '{term}' появляется в {source_language} sentence, фраза сразу звучит живее.",
+        "example_one": "{phrase} / слово для контекста: {term}",
+        "example_two": "{phrase} / попробуй добавить '{term}' в живую фразу.",
+        "context_highlight": "Похоже на важное слово в этом контексте. Добавь его, если оно цепляет.",
+        "context_summary": "Это похоже на живой кусок {source_language}, а не учебниковый пример.",
+        "context_hidden": "Здесь важны не только слова, но и тон: он разговорный, немного эмоциональный и очень контекстный.",
+        "learning_hook": " Попробуй использовать '{term}' в ответе, если подходит.",
+        "roleplay_coffee": "{thanks} Теперь как teacher: попробуй ответить фразой '{want}'.{hook}",
+        "roleplay_airport": "{question} Хорошо для ситуации в аэропорту. Скажи коротко, и я продолжу диалог.{hook}",
+        "roleplay_interview": "{hello} Начни с представления, потом добавь одну простую фразу о себе.{hook}",
+        "roleplay_default": "{question} Я как teacher дам опору, а ты отвечай коротко.{hook}",
+    },
+    "en": {
+        "meme": "When '{term}' walks into a {source_language} sentence, it suddenly sounds more alive.",
+        "example_one": "{phrase} / context word: {term}",
+        "example_two": "{phrase} / try adding '{term}' to a real phrase.",
+        "context_highlight": "Probably an important word in this context. Add it if it feels useful.",
+        "context_summary": "This feels like a real piece of {source_language}, not a textbook example.",
+        "context_hidden": "The tone matters here too: conversational, a bit emotional, and very context-dependent.",
+        "learning_hook": " Try using '{term}' in your answer if it fits.",
+        "roleplay_coffee": "{thanks} Now teacher mode: try replying with '{want}'.{hook}",
+        "roleplay_airport": "{question} Good for an airport situation. Keep it short and I will continue the dialogue.{hook}",
+        "roleplay_interview": "{hello} Start with an introduction, then add one simple sentence about yourself.{hook}",
+        "roleplay_default": "{question} I will give you support as a teacher; answer with one short line.{hook}",
+    },
+}
+
+
 def enrich_word(
     term: str,
     source_context: str = "",
@@ -37,14 +80,15 @@ def enrich_word(
     source_language = language_name(language_code)
     translation = _mock_translate(clean_term, target_language)
     pack = starter_pack(normalized_code)
+    copy = _coach_copy(_target_code_from_language(target_language))
     return WordCreate(
         term=clean_term,
         language_code=normalized_code,
         translation=translation,
         transcription=f"/{clean_term.lower()}/",
-        meme=f"Коли '{clean_term}' заходить у {source_language} sentence і все раптом звучить живіше.",
-        example_one=f"{pack['hello'][0]} / слово для контексту: {clean_term}",
-        example_two=f"{pack['want'][0]} / спробуй додати '{clean_term}' у живу фразу.",
+        meme=copy["meme"].format(term=clean_term, source_language=source_language),
+        example_one=copy["example_one"].format(phrase=pack["hello"][0], term=clean_term),
+        example_two=copy["example_two"].format(phrase=pack["want"][0], term=clean_term),
         source_context=source_context,
     )
 
@@ -76,6 +120,7 @@ def analyze_context(
         )
 
     source_language = language_name(language_code)
+    copy = _coach_copy(_target_code_from_language(target_language))
     words = [
         word.lower()
         for word in re.findall(r"[^\W\d_][^\W\d_'-]*", text, flags=re.UNICODE)
@@ -85,17 +130,14 @@ def analyze_context(
     highlights = [
         ContextHighlight(
             phrase=word,
-            explanation="Ймовірно важливе слово у цьому контексті. Додай його, якщо воно чіпляє.",
+            explanation=copy["context_highlight"],
             addable_words=[word],
         )
         for word in unique_words[:3]
     ]
     return ContextAnalyzeResponse(
-        summary=f"Це схоже на живий шматок {source_language}, не підручниковий приклад.",
-        hidden_meaning=(
-            "Тут важливі не лише слова, а тон: він звучить розмовно, трохи емоційно "
-            "і дуже контекстно."
-        ),
+        summary=copy["context_summary"].format(source_language=source_language),
+        hidden_meaning=copy["context_hidden"],
         highlights=highlights,
         suggested_words=unique_words,
     )
@@ -107,28 +149,37 @@ async def stream_roleplay_reply(
     tone: str,
     language_code: str = "en",
     learning_terms: list[str] | None = None,
+    target_language_code: str = "uk",
 ) -> AsyncIterator[str]:
-    reply = _roleplay_reply(room_id, user_text, tone, language_code, learning_terms or [])
+    reply = _roleplay_reply(room_id, user_text, tone, language_code, learning_terms or [], target_language_code)
     for word in reply.split(" "):
         await asyncio.sleep(0.03)
         yield word + " "
 
 
-def _roleplay_reply(room_id: str, user_text: str, tone: str, language_code: str, learning_terms: list[str]) -> str:
+def _roleplay_reply(
+    room_id: str,
+    user_text: str,
+    tone: str,
+    language_code: str,
+    learning_terms: list[str],
+    target_language_code: str,
+) -> str:
     pack = starter_pack(language_code)
+    copy = _coach_copy(target_language_code)
     learning_hook = ""
     if learning_terms:
         term = learning_terms[0]
-        learning_hook = f" Спробуй використати '{term}' у відповіді, якщо підходить."
+        learning_hook = copy["learning_hook"].format(term=term)
 
     if language_code != "en":
         if "coffee" in room_id:
-            return f"{pack['thanks'][0]} Тепер як teacher: спробуй відповісти фразою '{pack['want'][0]}'.{learning_hook}"
+            return copy["roleplay_coffee"].format(thanks=pack["thanks"][0], want=pack["want"][0], hook=learning_hook)
         if "airport" in room_id:
-            return f"{pack['question'][0]} Добре для ситуації в аеропорту. Скажи коротко і я продовжу діалог.{learning_hook}"
+            return copy["roleplay_airport"].format(question=pack["question"][0], hook=learning_hook)
         if "interview" in room_id:
-            return f"{pack['hello'][0]} Почни з представлення, потім додай одну просту фразу про себе.{learning_hook}"
-        return f"{pack['question'][0]} Я як teacher підкину опору, а ти відповідай коротко.{learning_hook}"
+            return copy["roleplay_interview"].format(hello=pack["hello"][0], hook=learning_hook)
+        return copy["roleplay_default"].format(question=pack["question"][0], hook=learning_hook)
 
     if "coffee" in room_id:
         return f"Nice choice. Want it iced, hot, or emotionally supportive with oat milk?{learning_hook}"
@@ -180,6 +231,19 @@ def generate_speaking_hints(
         conversational=f"That sounds good, and I would like to try saying it in {source_language}.",
         spicy="That sounds good. What would you recommend next?",
     )
+
+
+def _coach_copy(target_language_code: str) -> dict[str, str]:
+    return COACH_COPY.get(target_language_code, COACH_COPY["en"])
+
+
+def _target_code_from_language(target_language: str) -> str:
+    value = target_language.strip().lower()
+    if value in {"uk", "ukrainian"} or "укра" in value:
+        return "uk"
+    if value in {"ru", "russian"} or "рус" in value:
+        return "ru"
+    return "en"
 
 
 def _mock_translate(term: str, target_language: str) -> str:

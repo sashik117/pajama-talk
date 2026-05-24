@@ -82,10 +82,160 @@ const contextExamplesByLanguage: Record<string, string[]> = {
   fr: ["Salut, je suis Sasha.", "Je voudrais un café.", "Vous pouvez m'aider ?"],
   es: ["Hola, soy Sasha.", "Quiero un café, por favor.", "¿Puedes ayudarme?"],
   it: ["Ciao, sono Sasha.", "Vorrei un caffè.", "Puoi aiutarmi?"],
+  de: ["Hallo, ich bin Sasha.", "Ich hätte gern einen Kaffee.", "Kannst du mir helfen?"],
+  pt: ["Olá, eu sou Sasha.", "Queria um café, por favor.", "Pode me ajudar?"],
   ko: ["안녕하세요, 저는 Sasha예요.", "커피 주세요.", "도와줄 수 있어요?"],
   ja: ["こんにちは、Sashaです。", "コーヒーをください。", "手伝ってくれますか？"],
   zh: ["你好，我是Sasha。", "请给我一杯咖啡。", "你可以帮我吗？"],
   tr: ["Merhaba, ben Sasha.", "Bir kahve istiyorum, lütfen.", "Bana yardım eder misin?"]
+};
+
+type GrammarMicrocopy = {
+  intro: string;
+  loading: string;
+  answerPlaceholder: string;
+  check: string;
+  next: string;
+  correct: string;
+  almost: string;
+};
+
+const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
+  uk: {
+    intro: "Міні-урок, приклади і перевірка відповіді. Без полотна правил.",
+    loading: "Граматика завантажується. Якщо backend спить, натисни refresh.",
+    answerPlaceholder: "Впиши правильне речення",
+    check: "Перевірити",
+    next: "Далі",
+    correct: "Так, воно.",
+    almost: "Ще трошки."
+  },
+  ru: {
+    intro: "Мини-урок, примеры и проверка ответа. Без полотна правил.",
+    loading: "Грамматика загружается. Если backend спит, нажми refresh.",
+    answerPlaceholder: "Впиши правильное предложение",
+    check: "Проверить",
+    next: "Дальше",
+    correct: "Да, оно.",
+    almost: "Еще чуть-чуть."
+  },
+  en: {
+    intro: "Mini lesson, examples, and answer check. No wall of rules.",
+    loading: "Grammar is loading. If the backend is asleep, press refresh.",
+    answerPlaceholder: "Type the correct sentence",
+    check: "Check",
+    next: "Next",
+    correct: "Yes, that's it.",
+    almost: "Almost there."
+  },
+  pl: {
+    intro: "Mini-lekcja, przykłady i sprawdzenie odpowiedzi. Bez ściany zasad.",
+    loading: "Gramatyka się ładuje. Jeśli backend śpi, naciśnij refresh.",
+    answerPlaceholder: "Wpisz poprawne zdanie",
+    check: "Sprawdź",
+    next: "Dalej",
+    correct: "Tak, to jest to.",
+    almost: "Jeszcze trochę."
+  },
+  sk: {
+    intro: "Mini lekcia, príklady a kontrola odpovede. Bez steny pravidiel.",
+    loading: "Gramatika sa načítava. Ak backend spí, stlač refresh.",
+    answerPlaceholder: "Napíš správnu vetu",
+    check: "Skontrolovať",
+    next: "Ďalej",
+    correct: "Áno, presne.",
+    almost: "Už skoro."
+  },
+  cs: {
+    intro: "Mini lekce, příklady a kontrola odpovědi. Bez stěny pravidel.",
+    loading: "Gramatika se načítá. Pokud backend spí, stiskni refresh.",
+    answerPlaceholder: "Napiš správnou větu",
+    check: "Zkontrolovat",
+    next: "Dál",
+    correct: "Ano, přesně.",
+    almost: "Ještě kousek."
+  },
+  fr: {
+    intro: "Mini-leçon, exemples et vérification. Pas de mur de règles.",
+    loading: "La grammaire charge. Si le backend dort, appuie sur refresh.",
+    answerPlaceholder: "Écris la phrase correcte",
+    check: "Vérifier",
+    next: "Suivant",
+    correct: "Oui, c'est ça.",
+    almost: "Presque."
+  },
+  es: {
+    intro: "Mini lección, ejemplos y revisión. Nada de muro de reglas.",
+    loading: "La gramática se está cargando. Si el backend duerme, pulsa refresh.",
+    answerPlaceholder: "Escribe la frase correcta",
+    check: "Comprobar",
+    next: "Siguiente",
+    correct: "Sí, eso es.",
+    almost: "Casi."
+  },
+  it: {
+    intro: "Mini-lezione, esempi e controllo risposta. Niente muro di regole.",
+    loading: "La grammatica sta caricando. Se il backend dorme, premi refresh.",
+    answerPlaceholder: "Scrivi la frase corretta",
+    check: "Controlla",
+    next: "Avanti",
+    correct: "Sì, esatto.",
+    almost: "Ci sei quasi."
+  },
+  de: {
+    intro: "Mini-Lektion, Beispiele und Antwortcheck. Keine Regelwand.",
+    loading: "Grammatik lädt. Wenn das Backend schläft, drücke Refresh.",
+    answerPlaceholder: "Schreibe den richtigen Satz",
+    check: "Prüfen",
+    next: "Weiter",
+    correct: "Ja, genau.",
+    almost: "Fast."
+  },
+  pt: {
+    intro: "Mini-lição, exemplos e verificação. Sem parede de regras.",
+    loading: "A gramática está a carregar. Se o backend dorme, toca em refresh.",
+    answerPlaceholder: "Escreve a frase correta",
+    check: "Verificar",
+    next: "Seguinte",
+    correct: "Sim, é isso.",
+    almost: "Quase."
+  },
+  tr: {
+    intro: "Mini ders, örnekler ve cevap kontrolü. Kural duvarı yok.",
+    loading: "Gramer yükleniyor. Backend uyuyorsa refresh'e bas.",
+    answerPlaceholder: "Doğru cümleyi yaz",
+    check: "Kontrol et",
+    next: "Sonraki",
+    correct: "Evet, bu.",
+    almost: "Neredeyse."
+  },
+  ja: {
+    intro: "ミニレッスン、例、答えチェック。長いルール説明なし。",
+    loading: "文法を読み込み中です。backend が止まっていたら refresh を押してください。",
+    answerPlaceholder: "正しい文を入力",
+    check: "確認",
+    next: "次へ",
+    correct: "はい、それです。",
+    almost: "あと少し。"
+  },
+  ko: {
+    intro: "미니 레슨, 예문, 답 확인. 긴 규칙 설명은 없어요.",
+    loading: "문법을 불러오는 중이에요. backend가 잠들었으면 refresh를 눌러요.",
+    answerPlaceholder: "올바른 문장을 입력하세요",
+    check: "확인",
+    next: "다음",
+    correct: "맞아요.",
+    almost: "거의 됐어요."
+  },
+  zh: {
+    intro: "迷你课程、例句和答案检查。不堆规则。",
+    loading: "语法正在加载。如果 backend 睡着了，点 refresh。",
+    answerPlaceholder: "输入正确句子",
+    check: "检查",
+    next: "下一题",
+    correct: "对，就是这样。",
+    almost: "快对了。"
+  }
 };
 
 function getSpeechLang(code: string) {
@@ -98,6 +248,8 @@ function getSpeechLang(code: string) {
       fr: "fr-FR",
       es: "es-ES",
       it: "it-IT",
+      de: "de-DE",
+      pt: "pt-PT",
       ko: "ko-KR",
       ja: "ja-JP",
       zh: "zh-CN",
@@ -171,7 +323,7 @@ export function App() {
       api.stats(nextToken),
       api.words(nextToken, languageCode),
       api.dueWords(nextToken, languageCode),
-      api.speakingRooms(nextToken, languageCode),
+      api.speakingRooms(nextToken, languageCode, targetCode),
       api.grammarDrops(nextToken, languageCode, targetCode),
       api.grammarTopics(nextToken, languageCode, targetCode),
       api.learningPath(nextToken, languageCode, targetCode)
@@ -219,6 +371,10 @@ export function App() {
   async function updateLearning(code: string) {
     if (!token) return;
     setLearningCode(code);
+    setActiveRoom(null);
+    setChat([]);
+    setHints(null);
+    setContextResult(null);
     const profile = await api.updateProfile(token, { active_language_code: code });
     setUser(profile);
     await loadData(token, code);
@@ -226,6 +382,8 @@ export function App() {
 
   async function updateNative(code: string) {
     if (!token) return;
+    setHints(null);
+    setContextResult(null);
     const profile = await api.updateProfile(token, { native_language_code: code });
     setUser(profile);
     await loadData(token, learningCode, profile.native_language_code);
@@ -364,7 +522,7 @@ export function App() {
           <div className="topbar-title">
             <h1>{copy(activeTab)}</h1>
             <p>
-              PajamaTalk · {selectedLanguage.flag} {selectedLanguage.short} · {stats?.daily_vibe_minutes ?? 5} min
+              PajamaTalk · <LanguageBadge option={selectedLanguage} /> · {stats?.daily_vibe_minutes ?? 5} min
             </p>
           </div>
           <div className="topbar-actions">
@@ -388,6 +546,7 @@ export function App() {
         {activeTab === "aura" && (
           <HomeScreen
             copy={copy}
+            locale={uiLocale}
             activeDrop={activeDrop}
             grammarTopics={grammarTopics}
             learningPath={learningPath}
@@ -554,6 +713,7 @@ function AuthScreen({
 
 function HomeScreen({
   copy,
+  locale,
   activeDrop,
   grammarTopics,
   learningPath,
@@ -570,6 +730,7 @@ function HomeScreen({
   openReview
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
+  locale: UiLocale;
   activeDrop?: GrammarDropDto;
   grammarTopics: GrammarTopicDto[];
   learningPath: LearningPathDto | null;
@@ -606,7 +767,7 @@ function HomeScreen({
         </div>
       </section>
 
-      {learningPath && <LearningPathPanel path={learningPath} openSpeak={openSpeak} />}
+      {learningPath && <LearningPathPanel copy={copy} path={learningPath} openSpeak={openSpeak} />}
 
       <section className="card context-card">
         <div className="section-title">
@@ -649,12 +810,20 @@ function HomeScreen({
         )}
       </section>
 
-      <GrammarLab copy={copy} drop={activeDrop} topics={grammarTopics} checkGrammar={checkGrammar} />
+      <GrammarLab copy={copy} locale={locale} drop={activeDrop} topics={grammarTopics} checkGrammar={checkGrammar} />
     </>
   );
 }
 
-function LearningPathPanel({ path, openSpeak }: { path: LearningPathDto; openSpeak: () => void }) {
+function LearningPathPanel({
+  copy,
+  path,
+  openSpeak
+}: {
+  copy: (key: Parameters<typeof t>[1]) => string;
+  path: LearningPathDto;
+  openSpeak: () => void;
+}) {
   const [activeStep, setActiveStep] = useState(path.steps[0]?.id ?? "");
   const step = path.steps.find((item) => item.id === activeStep) ?? path.steps[0];
 
@@ -674,7 +843,7 @@ function LearningPathPanel({ path, openSpeak }: { path: LearningPathDto; openSpe
         </div>
         <button className="soft-action" onClick={openSpeak}>
           <Mic size={17} />
-          Спікінг
+          {copy("speak")}
         </button>
       </div>
       <div className="path-steps">
@@ -1056,6 +1225,19 @@ function compactDate(value: string): string {
   return date.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+function LanguageBadge({ option }: { option: SelectOption }) {
+  return (
+    <span className="language-badge">
+      <FlagSticker code={option.code} />
+      <span>{option.short}</span>
+    </span>
+  );
+}
+
+function FlagSticker({ code }: { code: string }) {
+  return <span className={`flag-sticker flag-${code}`} aria-hidden="true" />;
+}
+
 function ProfileScreen({
   copy,
   locale,
@@ -1113,13 +1295,13 @@ function ProfileScreen({
           <span>
             <small>{copy("learningLanguage")}</small>
             <strong>
-              {learning.flag} {learning.short}
+              <LanguageBadge option={learning} />
             </strong>
           </span>
           <span>
             <small>{copy("nativeLanguage")}</small>
             <strong>
-              {native.flag} {native.short}
+              <LanguageBadge option={native} />
             </strong>
           </span>
         </div>
@@ -1195,13 +1377,9 @@ function HeaderLanguageChip({
         <Languages size={16} />
         <span className="language-pair">
           <span className="language-pair-top">
-            <strong>
-              {learning.flag} {learning.short}
-            </strong>
+            <strong><LanguageBadge option={learning} /></strong>
             <span>→</span>
-            <strong>
-              {native.flag} {native.short}
-            </strong>
+            <strong><LanguageBadge option={native} /></strong>
           </span>
         </span>
         <ChevronDown size={15} />
@@ -1220,8 +1398,7 @@ function HeaderLanguageChip({
                     setOpen(false);
                   }}
                 >
-                  <span className="flag">{option.flag}</span>
-                  <strong>{option.short}</strong>
+                  <LanguageBadge option={option} />
                 </button>
               ))}
             </div>
@@ -1238,8 +1415,7 @@ function HeaderLanguageChip({
                     setOpen(false);
                   }}
                 >
-                  <span className="flag">{option.flag}</span>
-                  <strong>{option.short}</strong>
+                  <LanguageBadge option={option} />
                 </button>
               ))}
             </div>
@@ -1269,8 +1445,7 @@ function DropdownSelect({
         <span>
           <small>{title}</small>
           <strong>
-            <span className="flag">{selected.flag}</span>
-            {selected.short}
+            <LanguageBadge option={selected} />
           </strong>
         </span>
         <ChevronDown size={18} />
@@ -1286,8 +1461,7 @@ function DropdownSelect({
                 setOpen(false);
               }}
             >
-              <span className="flag">{option.flag}</span>
-              <strong>{option.short}</strong>
+              <LanguageBadge option={option} />
             </button>
           ))}
         </div>
@@ -1298,11 +1472,13 @@ function DropdownSelect({
 
 function GrammarLab({
   copy,
+  locale,
   drop,
   topics,
   checkGrammar
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
+  locale: UiLocale;
   drop?: GrammarDropDto;
   topics: GrammarTopicDto[];
   checkGrammar: (topicId: string, exerciseId: string, answer: string) => Promise<GrammarCheckDto>;
@@ -1315,6 +1491,7 @@ function GrammarLab({
   const [checking, setChecking] = useState(false);
   const topic = topics.find((item) => item.id === activeTopicId) ?? topics[0];
   const exercise = topic?.exercises[exerciseIndex] ?? topic?.exercises[0];
+  const micro = grammarMicrocopy[locale] ?? grammarMicrocopy.en;
   const adaptive = drop ?? {
     title: "Past Simple",
     nudge: "Past Simple is tapping the window for 30 seconds.",
@@ -1359,7 +1536,7 @@ function GrammarLab({
           <GraduationCap size={20} />
           <h2>{copy("grammar")}</h2>
         </div>
-        <p>Граматика завантажується. Якщо backend спить, натисни refresh.</p>
+        <p>{micro.loading}</p>
       </section>
     );
   }
@@ -1369,7 +1546,7 @@ function GrammarLab({
       <div className="section-title grammar-title">
         <div>
           <h2>{copy("grammar")}</h2>
-          <p>Міні-урок, приклади і перевірка відповіді. Без полотна правил.</p>
+          <p>{micro.intro}</p>
         </div>
         <span className="grammar-score">{score} xp</span>
       </div>
@@ -1442,21 +1619,21 @@ function GrammarLab({
               setAnswer(event.target.value);
               setResult(null);
             }}
-            placeholder="Впиши правильне речення"
+            placeholder={micro.answerPlaceholder}
           />
         )}
         <div className="exercise-actions">
           <button className="primary-action" disabled={checking || !answer.trim()} onClick={submitAnswer}>
             <Check size={17} />
-            {checking ? "..." : "Перевірити"}
+            {checking ? "..." : micro.check}
           </button>
           <button className="soft-action" onClick={nextExercise}>
-            Далі
+            {micro.next}
           </button>
         </div>
         {result && (
           <div className="grammar-feedback">
-            <strong>{result.correct ? "Так, воно." : "Ще трошки."}</strong>
+            <strong>{result.correct ? micro.correct : micro.almost}</strong>
             <p>{result.feedback}</p>
           </div>
         )}

@@ -45,6 +45,18 @@ STARTER_PACKS: dict[str, dict[str, object]] = {
         "question": ("Puoi aiutarmi?", "pwoi ai-u-tar-mi", "Можеш мені допомогти?"),
         "thanks": ("Grazie, mi va bene.", "gra-tsye mi va be-ne", "Дякую, мені підходить."),
     },
+    "de": {
+        "hello": ("Hallo, ich bin Sasha.", "ha-lo ikh bin Sasha", "Привіт, я Саша."),
+        "want": ("Ich hätte gern einen Kaffee.", "ikh het-te gern ai-nen ka-fe", "Я б хотіла каву."),
+        "question": ("Kannst du mir helfen?", "kanst du mir hel-fen", "Можеш мені допомогти?"),
+        "thanks": ("Danke, das klingt gut.", "dan-ke das klingt gut", "Дякую, звучить добре."),
+    },
+    "pt": {
+        "hello": ("Olá, eu sou Sasha.", "o-la eu sou Sasha", "Привіт, я Саша."),
+        "want": ("Queria um café, por favor.", "ke-ri-a um ka-fe por fa-vor", "Я б хотіла каву, будь ласка."),
+        "question": ("Pode me ajudar?", "po-de me a-ju-dar", "Можете мені допомогти?"),
+        "thanks": ("Obrigada, parece bom.", "o-bri-ga-da pa-re-se bom", "Дякую, звучить добре."),
+    },
     "ko": {
         "hello": ("안녕하세요, 저는 Sasha예요.", "annyeonghaseyo, jeoneun Sasha-yeyo", "Вітаю, я Саша."),
         "want": ("커피 주세요.", "keopi juseyo", "Каву, будь ласка."),
@@ -139,6 +151,18 @@ MEANING_TRANSLATIONS: dict[str, dict[str, str]] = {
         "want": "Vorrei un caffè, per favore.",
         "question": "Puoi aiutarmi?",
         "thanks": "Grazie, mi va bene.",
+    },
+    "de": {
+        "hello": "Hallo, ich bin Sasha.",
+        "want": "Ich hätte gern einen Kaffee.",
+        "question": "Kannst du mir helfen?",
+        "thanks": "Danke, das klingt gut.",
+    },
+    "pt": {
+        "hello": "Olá, eu sou Sasha.",
+        "want": "Queria um café, por favor.",
+        "question": "Pode me ajudar?",
+        "thanks": "Obrigada, parece bom.",
     },
     "ko": {
         "hello": "안녕하세요, 저는 Sasha예요.",

@@ -145,7 +145,7 @@ class PajamaAppState(
         val profile = client.me(accessToken)
         user = profile
         selectedLanguage = languageByCode(profile.activeLanguageCode)
-        speakingRooms = client.speakingRooms(accessToken, selectedLanguage.code)
+        speakingRooms = client.speakingRooms(accessToken, selectedLanguage.code, explanationLanguageCode())
         loadWords()
         loadDueWords()
         loadGrammarDrops()
@@ -165,7 +165,7 @@ class PajamaAppState(
         loadLearningPath()
         runCatching {
             user = requireClient().me(requireToken())
-            speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
+            speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code, explanationLanguageCode())
             loadStats()
         }.onFailure { errorMessage = it.friendlyMessage() }
     }
@@ -372,7 +372,7 @@ class PajamaAppState(
         dueWords = emptyList()
         if (activeClient != null && token != null) {
             updateProfile(ProfileUpdateRequest(activeLanguageCode = language.code))
-            speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code)
+            speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code, explanationLanguageCode())
             loadWords()
             loadDueWords()
             loadGrammarDrops()
@@ -390,7 +390,11 @@ class PajamaAppState(
 
     suspend fun selectNativeLanguage(language: NativeLanguage) {
         if (language.code == user?.nativeLanguageCode) return
+        speakingHints = null
+        speakingMessages = emptyList()
+        contextResult = null
         updateProfile(ProfileUpdateRequest(nativeLanguageCode = language.code))
+        speakingRooms = requireClient().speakingRooms(requireToken(), selectedLanguage.code, explanationLanguageCode())
         loadGrammarDrops()
         loadLearningPath()
     }

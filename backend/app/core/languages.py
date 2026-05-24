@@ -6,6 +6,8 @@ SUPPORTED_LEARNING_LANGUAGES = {
     "fr": "French",
     "es": "Spanish",
     "it": "Italian",
+    "de": "German",
+    "pt": "Portuguese",
     "ko": "Korean",
     "ja": "Japanese",
     "zh": "Chinese",

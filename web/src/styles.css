@@ -436,11 +436,118 @@ textarea {
   color: #292632;
 }
 
-.flag {
-  flex: 0 0 auto;
+.language-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: #292632;
-  font-size: 18px;
+  font-size: 12px;
+  font-weight: 610;
   line-height: 1;
+  white-space: nowrap;
+}
+
+.flag-sticker {
+  flex: 0 0 auto;
+  position: relative;
+  width: 25px;
+  height: 18px;
+  display: inline-block;
+  overflow: hidden;
+  border: 1px solid rgba(41, 38, 50, 0.12);
+  border-radius: 5px;
+  background: #f7f1ff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 3px 8px rgba(73, 55, 98, 0.08);
+}
+
+.flag-uk {
+  background: linear-gradient(#0057b7 0 50%, #ffd700 50% 100%);
+}
+
+.flag-ru {
+  background: linear-gradient(#fff 0 33%, #0039a6 33% 66%, #d52b1e 66% 100%);
+}
+
+.flag-en {
+  background:
+    linear-gradient(90deg, transparent 42%, #fff 42% 58%, transparent 58%),
+    linear-gradient(0deg, transparent 38%, #fff 38% 62%, transparent 62%),
+    linear-gradient(90deg, transparent 46%, #c8102e 46% 54%, transparent 54%),
+    linear-gradient(0deg, transparent 43%, #c8102e 43% 57%, transparent 57%),
+    #012169;
+}
+
+.flag-pl {
+  background: linear-gradient(#fff 0 50%, #dc143c 50% 100%);
+}
+
+.flag-sk,
+.flag-cs {
+  background: linear-gradient(#fff 0 33%, #0b4ea2 33% 66%, #ee1c25 66% 100%);
+}
+
+.flag-fr {
+  background: linear-gradient(90deg, #0055a4 0 33%, #fff 33% 66%, #ef4135 66% 100%);
+}
+
+.flag-es {
+  background: linear-gradient(#aa151b 0 25%, #f1bf00 25% 75%, #aa151b 75% 100%);
+}
+
+.flag-it {
+  background: linear-gradient(90deg, #009246 0 33%, #fff 33% 66%, #ce2b37 66% 100%);
+}
+
+.flag-de {
+  background: linear-gradient(#000 0 33%, #dd0000 33% 66%, #ffce00 66% 100%);
+}
+
+.flag-pt {
+  background: linear-gradient(90deg, #006600 0 40%, #ff0000 40% 100%);
+}
+
+.flag-tr {
+  background: #e30a17;
+}
+
+.flag-tr::after,
+.flag-zh::after {
+  position: absolute;
+  color: #fff;
+  content: "★";
+  font-size: 10px;
+  left: 8px;
+  top: 2px;
+}
+
+.flag-zh {
+  background: #de2910;
+}
+
+.flag-zh::after {
+  color: #ffde00;
+  left: 5px;
+}
+
+.flag-ja {
+  background: #fff;
+}
+
+.flag-ja::after,
+.flag-ko::after {
+  position: absolute;
+  inset: 4px 7px;
+  border-radius: 999px;
+  content: "";
+  background: #bc002d;
+}
+
+.flag-ko {
+  background: #fff;
+}
+
+.flag-ko::after {
+  background: linear-gradient(#c60c30 0 50%, #003478 50% 100%);
 }
 
 .select-menu {

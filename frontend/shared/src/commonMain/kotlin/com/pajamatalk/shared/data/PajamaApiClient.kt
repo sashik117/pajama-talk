@@ -143,11 +143,14 @@ class PajamaApiClient(
             setBody(ContextAnalyzeRequest(text, languageCode, targetLanguage))
         }.body()
 
-    suspend fun speakingRooms(token: String, languageCode: String? = null): List<SpeakingRoomDto> =
+    suspend fun speakingRooms(token: String, languageCode: String? = null, targetLanguageCode: String? = null): List<SpeakingRoomDto> =
         client.get("$baseUrl/speaking/rooms") {
             bearerAuth(token)
             if (languageCode != null) {
                 parameter("language_code", languageCode)
+            }
+            if (targetLanguageCode != null) {
+                parameter("target_language_code", targetLanguageCode)
             }
         }.body()
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.core.languages import language_name, normalize_language_code
+from app.core.languages import language_name, normalize_language_code, normalize_native_language_code
 from app.core.security import decode_access_token
 from app.db.session import SessionLocal, get_db
 from app.models.chat import ChatMessage
@@ -82,22 +82,28 @@ ROOMS = [
     ),
 ]
 
+ROOM_PROMPT_COPY = {
+    "uk": "AI-вчитель для {name}. Почни коротко: {hello} Потім спробуй: {want}",
+    "ru": "AI-учитель для {name}. Начни коротко: {hello} Потом попробуй: {want}",
+    "en": "AI teacher for {name}. Start short: {hello} Then try: {want}",
+}
+
 
 @router.get("/rooms", response_model=list[SpeakingRoom])
 def speaking_rooms(
     language_code: str | None = Query(default=None),
+    target_language_code: str | None = Query(default=None),
     user: User = Depends(get_current_user),
 ) -> list[SpeakingRoom]:
     code = normalize_language_code(language_code or user.active_language_code)
+    target_code = normalize_native_language_code(target_language_code or user.native_language_code)
     name = language_name(code)
     pack = starter_pack(code)
+    copy = ROOM_PROMPT_COPY.get(target_code, ROOM_PROMPT_COPY["en"])
     return [
         room.model_copy(
             update={
-                "prompt": (
-                    f"AI-вчитель для {name}. Почни коротко: {pack['hello'][0]} "
-                    f"Потім спробуй: {pack['want'][0]}"
-                )
+                "prompt": copy.format(name=name, hello=pack["hello"][0], want=pack["want"][0])
             },
         )
         for room in ROOMS
@@ -176,6 +182,7 @@ async def speaking_ws(websocket: WebSocket) -> None:
                 tone=user.ai_tone,
                 language_code=user.active_language_code,
                 learning_terms=learning_terms,
+                target_language_code=user.native_language_code,
             ):
                 reply_parts.append(token_text)
                 await websocket.send_json({"type": "token", "value": token_text})

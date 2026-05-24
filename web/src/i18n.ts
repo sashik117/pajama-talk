@@ -845,6 +845,8 @@ export const learningLanguages = [
   { code: "fr", label: "French", short: "FR", flag: "🇫🇷", sample: "coucou" },
   { code: "es", label: "Spanish", short: "ES", flag: "🇪🇸", sample: "vale" },
   { code: "it", label: "Italian", short: "IT", flag: "🇮🇹", sample: "allora" },
+  { code: "de", label: "German", short: "DE", flag: "🇩🇪", sample: "hallo" },
+  { code: "pt", label: "Portuguese", short: "PT", flag: "🇵🇹", sample: "olá" },
   { code: "ko", label: "Korean", short: "KO", flag: "🇰🇷", sample: "안녕" },
   { code: "ja", label: "Japanese", short: "JA", flag: "🇯🇵", sample: "すごい" },
   { code: "zh", label: "Chinese", short: "ZH", flag: "🇨🇳", sample: "你好" },
