@@ -87,10 +87,10 @@ export const uiLocales: Array<LanguageOption<UiLocale>> = [
   { code: "it", label: "Italiano", short: "IT", flag: "🇮🇹" },
   { code: "de", label: "Deutsch", short: "DE", flag: "🇩🇪" },
   { code: "pt", label: "Português", short: "PT", flag: "🇵🇹" },
-  { code: "tr", label: "Türkçe", short: "TR", flag: "🇹🇷" },
+  { code: "tr", label: "Türkçe", short: "TUR", flag: "🇹🇷" },
   { code: "ja", label: "日本語", short: "JA", flag: "🇯🇵" },
   { code: "ko", label: "한국어", short: "KO", flag: "🇰🇷" },
-  { code: "zh", label: "中文", short: "ZH", flag: "🇨🇳" }
+  { code: "zh", label: "中文", short: "CN", flag: "🇨🇳" }
 ];
 
 const en: Record<CopyKey, string> = {
@@ -851,8 +851,8 @@ export const learningLanguages = [
   { code: "pt", label: "Portuguese", short: "PT", flag: "🇵🇹", sample: "olá" },
   { code: "ko", label: "Korean", short: "KO", flag: "🇰🇷", sample: "안녕" },
   { code: "ja", label: "Japanese", short: "JA", flag: "🇯🇵", sample: "すごい" },
-  { code: "zh", label: "Chinese", short: "ZH", flag: "🇨🇳", sample: "你好" },
-  { code: "tr", label: "Turkish", short: "TR", flag: "🇹🇷", sample: "merhaba" }
+  { code: "zh", label: "Chinese", short: "CN", flag: "🇨🇳", sample: "你好" },
+  { code: "tr", label: "Turkish", short: "TUR", flag: "🇹🇷", sample: "merhaba" }
 ] as const satisfies readonly LearningLanguageOption[];
 
 export const nativeLanguages = [

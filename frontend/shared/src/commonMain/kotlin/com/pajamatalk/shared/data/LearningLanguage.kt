@@ -29,8 +29,8 @@ val SupportedLearningLanguages = listOf(
     LearningLanguage("pt", "Portuguese", "PT", "🇵🇹", "olá"),
     LearningLanguage("ko", "Korean", "KO", "🇰🇷", "안녕"),
     LearningLanguage("ja", "Japanese", "JA", "🇯🇵", "すごい"),
-    LearningLanguage("zh", "Chinese", "ZH", "🇨🇳", "你好"),
-    LearningLanguage("tr", "Turkish", "TR", "🇹🇷", "merhaba"),
+    LearningLanguage("zh", "Chinese", "CN", "🇨🇳", "你好"),
+    LearningLanguage("tr", "Turkish", "TUR", "🇹🇷", "merhaba"),
 )
 
 val SupportedNativeLanguages = listOf(
