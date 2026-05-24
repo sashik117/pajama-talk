@@ -22,7 +22,7 @@ services:
       PAJAMA_ENV: docker
       PAJAMA_DATABASE_URL: postgresql+psycopg://pajama:pajama@postgres:5432/pajamatalk
       PAJAMA_JWT_SECRET: ${PAJAMA_JWT_SECRET:-dev-only-change-me}
-      PAJAMA_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      PAJAMA_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,http://localhost:3175,http://127.0.0.1:3175
       PAJAMA_GEMINI_API_KEY: ${PAJAMA_GEMINI_API_KEY:-}
       PAJAMA_GEMINI_MODEL: ${PAJAMA_GEMINI_MODEL:-gemini-2.0-flash}
     depends_on:

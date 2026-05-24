@@ -3,6 +3,7 @@
 PajamaTalk is a cozy, mobile-first language learning app scaffolded with:
 
 - `frontend/` - Kotlin Compose Multiplatform UI, Voyager tabs, Android-ready structure, and a desktop preview app.
+- `web/` - responsive Vite/React preview for fast browser testing on `localhost:3175`.
 - `backend/` - FastAPI REST API with JWT auth, word storage, AI enrichment stubs, SRS scheduling, context analysis, grammar drops, and a speaking WebSocket.
 
 The app is designed around soft pressure, personal context, and a lofi pastel interface.
@@ -47,6 +48,16 @@ $env:GRADLE_USER_HOME=(Resolve-Path ..).Path + "\.gradle-home"
 
 The desktop target exists so the shared Compose UI can be checked on this Windows machine even before Android SDK setup.
 
+### Web Preview
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+Then open http://127.0.0.1:3175. The web preview talks to FastAPI on `http://127.0.0.1:8000` by default and mirrors the MVP flows: auth/demo login, Aura, Context Buddy, Speaking Rooms, SRS review, word storage, and Vibe settings.
+
 ### Frontend Android
 
 Install Android Studio + Android SDK, then create `frontend/local.properties`:
@@ -84,6 +95,8 @@ PajamaTalk/
     shared/
     androidApp/
     desktopApp/
+  web/
+    src/
 ```
 
 ## Sprint 3A Status

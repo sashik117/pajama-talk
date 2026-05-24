@@ -25,3 +25,9 @@ backend/kotlin-daemon*.log
 frontend/.gradle/
 frontend/build/
 frontend/**/build/
+
+web/node_modules/
+web/dist/
+web/.vite/
+web/*.log
+web/*.tsbuildinfo

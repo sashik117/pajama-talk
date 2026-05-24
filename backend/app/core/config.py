@@ -11,7 +11,14 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me-in-dev"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:3175",
+            "http://127.0.0.1:3175",
+        ]
+    )
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.0-flash"
     openai_api_key: str | None = None
