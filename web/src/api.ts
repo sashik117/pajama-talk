@@ -31,6 +31,7 @@ export type WordDto = {
   example_one: string;
   example_two: string;
   source_context: string;
+  status: string;
   color_level: number;
   due_at: string | null;
 };

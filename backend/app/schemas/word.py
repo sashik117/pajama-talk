@@ -15,6 +15,7 @@ class WordCreate(BaseModel):
     example_one: str = ""
     example_two: str = ""
     source_context: str = ""
+    status: str = "learning"
 
     @field_validator("language_code")
     @classmethod
@@ -44,6 +45,7 @@ class WordResponse(BaseModel):
     example_one: str
     example_two: str
     source_context: str
+    status: str
     color_level: int
     due_at: datetime | None = None
 

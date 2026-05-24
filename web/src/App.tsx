@@ -310,15 +310,26 @@ export function App() {
     <div className="app-shell">
       <main className="screen">
         <header className="topbar">
-          <div>
+          <div className="topbar-title">
             <h1>{copy(activeTab)}</h1>
             <p>
               PajamaTalk · {selectedLanguage.label} · {stats?.daily_vibe_minutes ?? 5} min
             </p>
           </div>
-          <button className="icon-button" onClick={() => void loadData()} aria-label="Refresh">
-            <RefreshCw size={19} />
-          </button>
+          <div className="topbar-actions">
+            {activeTab === "aura" && (
+              <HeaderLanguageChip
+                copy={copy}
+                learningCode={learningCode}
+                nativeCode={user.native_language_code}
+                setLearningCode={(code) => void updateLearning(code)}
+                setNativeCode={(code) => void updateNative(code)}
+              />
+            )}
+            <button className="icon-button" onClick={() => void loadData()} aria-label="Refresh">
+              <RefreshCw size={19} />
+            </button>
+          </div>
         </header>
 
         {error && <div className="notice">{error}</div>}
@@ -326,7 +337,6 @@ export function App() {
         {activeTab === "aura" && (
           <HomeScreen
             copy={copy}
-            stats={stats}
             activeDrop={activeDrop}
             contextText={contextText}
             setContextText={setContextText}
@@ -335,10 +345,6 @@ export function App() {
             analyzeContext={analyzeContext}
             addWord={addWord}
             clearContext={() => setContextResult(null)}
-            learningCode={learningCode}
-            setLearningCode={(code) => void updateLearning(code)}
-            nativeCode={user.native_language_code}
-            setNativeCode={(code) => void updateNative(code)}
             openSpeak={() => setActiveTab("speak")}
             openReview={() => setActiveTab("storage")}
           />
@@ -493,7 +499,6 @@ function AuthScreen({
 
 function HomeScreen({
   copy,
-  stats,
   activeDrop,
   contextText,
   setContextText,
@@ -502,15 +507,10 @@ function HomeScreen({
   analyzeContext,
   addWord,
   clearContext,
-  learningCode,
-  setLearningCode,
-  nativeCode,
-  setNativeCode,
   openSpeak,
   openReview
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
-  stats: StatsDto | null;
   activeDrop?: GrammarDropDto;
   contextText: string;
   setContextText: (value: string) => void;
@@ -519,10 +519,6 @@ function HomeScreen({
   analyzeContext: () => void;
   addWord: (word: string, source?: string) => void;
   clearContext: () => void;
-  learningCode: string;
-  setLearningCode: (code: string) => void;
-  nativeCode: string;
-  setNativeCode: (code: string) => void;
   openSpeak: () => void;
   openReview: () => void;
 }) {
@@ -544,19 +540,7 @@ function HomeScreen({
             </button>
           </div>
         </div>
-        <Stat value={`${stats?.due_reviews ?? 0}`} label={copy("due")} />
-        <Stat value={`${stats?.language_words ?? 0}`} label={copy("myWords")} />
       </section>
-
-      <div className="two-selects">
-        <DropdownSelect
-          title={copy("learningLanguage")}
-          value={learningCode}
-          options={learningLanguages}
-          onChange={setLearningCode}
-        />
-        <DropdownSelect title={copy("nativeLanguage")} value={nativeCode} options={nativeLanguages} onChange={setNativeCode} />
-      </div>
 
       <section className="card context-card">
         <div className="section-title">
@@ -672,6 +656,13 @@ function SpeakingScreen({
     recognition.start();
   }
 
+  function sendDraft() {
+    const text = draft.trim();
+    if (!text) return;
+    setDraft("");
+    sendMessage(text);
+  }
+
   if (!activeRoom) {
     return (
       <section className="room-grid">
@@ -693,11 +684,11 @@ function SpeakingScreen({
   }
 
   return (
-    <section className="card speaking-card">
-      <button className="ghost-action inline" onClick={back}>
-        {copy("rooms")}
-      </button>
+    <section className="card speaking-card messenger-card">
       <div className="room-head">
+        <button className="ghost-action inline" onClick={back}>
+          {copy("rooms")}
+        </button>
         <span className="room-icon" style={{ background: activeRoom.accent_color }}>
           {roomIcon}
         </span>
@@ -707,13 +698,6 @@ function SpeakingScreen({
         </div>
       </div>
 
-      <button className={`mic-stage ${isListening ? "listening" : ""}`} onClick={startVoice}>
-        {isListening ? <MicOff size={34} /> : <Mic size={34} />}
-        <strong>{isListening ? copy("listening") : copy("tapToSpeak")}</strong>
-        <span>{transcript || copy("voicePrimary")}</span>
-      </button>
-      {speechError && <div className="notice">{speechError}</div>}
-
       <div className="chat-log">
         {chat.map((line, index) => (
           <div key={`${line.role}-${index}`} className={`bubble ${line.role}`}>
@@ -721,36 +705,47 @@ function SpeakingScreen({
           </div>
         ))}
       </div>
-      <button className="soft-action" onClick={loadHints}>
-        <WandSparkles size={16} />
-        {copy("hints")}
-      </button>
+
+      <div className="speaker-tools">
+        <button className="soft-action" onClick={loadHints}>
+          <WandSparkles size={16} />
+          {copy("hints")}
+        </button>
+        <span>{isListening ? copy("listening") : transcript || copy("voicePrimary")}</span>
+      </div>
+
       {hints && (
         <div className="hint-stack">
-          {[hints.simple, hints.conversational, hints.spicy].map((hint) => (
-            <button key={hint} className="hint" onClick={() => setDraft(hint)}>
-              {hint}
+          {[
+            ["Chill", hints.simple],
+            ["Grammar", hints.conversational],
+            ["Question", hints.spicy]
+          ].map(([label, hint]) => (
+            <button key={label} className="hint" onClick={() => setDraft(hint)}>
+              <small>{label}</small>
+              <span>{hint}</span>
             </button>
           ))}
         </div>
       )}
-      <details className="text-fallback">
-        <summary>{copy("textFallback")}</summary>
-        <div className="send-row">
-          <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`Reply to ${activeRoom.character}`} />
-          <button
-            className="primary-action icon-only"
-            disabled={!draft.trim()}
-            onClick={() => {
-              const text = draft;
-              setDraft("");
-              sendMessage(text);
-            }}
-          >
-            <Send size={18} />
-          </button>
-        </div>
-      </details>
+      {speechError && <div className="notice">{speechError}</div>}
+
+      <div className="message-composer">
+        <input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") sendDraft();
+          }}
+          placeholder={`Reply to ${activeRoom.character}`}
+        />
+        <button className={`voice-action ${isListening ? "listening" : ""}`} onClick={startVoice} aria-label={copy("tapToSpeak")}>
+          {isListening ? <MicOff size={22} /> : <Mic size={22} />}
+        </button>
+        <button className="primary-action icon-only" disabled={!draft.trim()} onClick={sendDraft} aria-label="Send">
+          <Send size={18} />
+        </button>
+      </div>
     </section>
   );
 }
@@ -922,6 +917,74 @@ function ProfileScreen({
         {copy("logOut")}
       </button>
     </>
+  );
+}
+
+function HeaderLanguageChip({
+  copy,
+  learningCode,
+  nativeCode,
+  setLearningCode,
+  setNativeCode
+}: {
+  copy: (key: Parameters<typeof t>[1]) => string;
+  learningCode: string;
+  nativeCode: string;
+  setLearningCode: (code: string) => void;
+  setNativeCode: (code: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const learning = learningLanguages.find((language) => language.code === learningCode) ?? learningLanguages[0];
+  const native = nativeLanguages.find((language) => language.code === nativeCode) ?? nativeLanguages[0];
+
+  return (
+    <div className={`header-language ${open ? "open" : ""}`}>
+      <button className="language-pill" onClick={() => setOpen((current) => !current)} aria-label="Change languages">
+        <Languages size={16} />
+        <strong>{learning.short}</strong>
+        <span>→</span>
+        <strong>{native.short}</strong>
+        <ChevronDown size={15} />
+      </button>
+      {open && (
+        <div className="header-language-menu">
+          <section>
+            <small>{copy("learningLanguage")}</small>
+            <div className="mini-options">
+              {learningLanguages.map((option) => (
+                <button
+                  key={option.code}
+                  className={option.code === learningCode ? "selected" : ""}
+                  onClick={() => {
+                    setLearningCode(option.code);
+                    setOpen(false);
+                  }}
+                >
+                  {option.short}
+                </button>
+              ))}
+            </div>
+          </section>
+          <section>
+            <small>{copy("nativeLanguage")}</small>
+            <div className="mini-options">
+              {nativeLanguages.map((option) => (
+                <button
+                  key={option.code}
+                  className={option.code === nativeCode ? "selected" : ""}
+                  onClick={() => {
+                    setNativeCode(option.code);
+                    setOpen(false);
+                  }}
+                >
+                  {option.short}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
   );
 }
 

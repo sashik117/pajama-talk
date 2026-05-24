@@ -254,6 +254,7 @@ data class WordDto(
     @SerialName("example_one") val exampleOne: String,
     @SerialName("example_two") val exampleTwo: String,
     @SerialName("source_context") val sourceContext: String,
+    val status: String = "learning",
     @SerialName("color_level") val colorLevel: Int,
     @SerialName("due_at") val dueAt: String? = null,
 )

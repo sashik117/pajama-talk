@@ -83,9 +83,9 @@ Task:
 - The learner is practicing {source_language}.
 - Give exactly three possible replies to continue this roleplay.
 - Keep replies short enough to say out loud.
-- "simple" should be beginner-friendly.
-- "conversational" should sound natural.
-- "spicy" can include casual slang but must not be cringe.
+- "simple" is the Chill option: short, casual, easy to say.
+- "conversational" is the Grammar option: a polished full sentence.
+- "spicy" is the Question option: a reply that takes initiative with a follow-up question.
 - Use {target_language} only for tiny clarifying notes if needed; the reply itself should be in {source_language}.
 
 Room:

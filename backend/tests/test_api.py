@@ -43,6 +43,7 @@ def test_word_enrichment_and_review(client: TestClient) -> None:
     word = created.json()
     assert word["term"] == "cozy"
     assert word["language_code"] == "en"
+    assert word["status"] == "learning"
     assert word["translation"] == "затишний"
 
     reviewed = client.post(f"/words/{word['id']}/review", headers=headers, json={"grade": "remember"})
@@ -162,6 +163,28 @@ def test_speaking_websocket_streams_reply(client: TestClient) -> None:
             tokens.append(event["value"])
 
     assert "".join(tokens).strip().startswith("Nice choice")
+
+
+def test_speaking_websocket_uses_learning_words(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+    client.post(
+        "/words/enrich",
+        headers=headers,
+        json={"term": "cozy", "language_code": "en", "source_context": "This cafe is cozy."},
+    )
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex") as websocket:
+        websocket.send_text("Could I get a latte?")
+        tokens: list[str] = []
+        while True:
+            event = websocket.receive_json()
+            if event["type"] == "done":
+                break
+            assert event["type"] == "token"
+            tokens.append(event["value"])
+
+    assert "cozy" in "".join(tokens)
 
 
 def test_grammar_drop_responds_to_speaking_mistake(client: TestClient) -> None:

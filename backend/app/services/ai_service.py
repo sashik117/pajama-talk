@@ -99,21 +99,31 @@ def analyze_context(
     )
 
 
-async def stream_roleplay_reply(room_id: str, user_text: str, tone: str) -> AsyncIterator[str]:
-    reply = _roleplay_reply(room_id, user_text, tone)
+async def stream_roleplay_reply(
+    room_id: str,
+    user_text: str,
+    tone: str,
+    learning_terms: list[str] | None = None,
+) -> AsyncIterator[str]:
+    reply = _roleplay_reply(room_id, user_text, tone, learning_terms or [])
     for word in reply.split(" "):
         await asyncio.sleep(0.03)
         yield word + " "
 
 
-def _roleplay_reply(room_id: str, user_text: str, tone: str) -> str:
+def _roleplay_reply(room_id: str, user_text: str, tone: str, learning_terms: list[str]) -> str:
+    learning_hook = ""
+    if learning_terms:
+        term = learning_terms[0]
+        learning_hook = f" Try using '{term}' in your answer if it fits."
+
     if "coffee" in room_id:
-        return "Nice choice. Want it iced, hot, or emotionally supportive with oat milk?"
+        return f"Nice choice. Want it iced, hot, or emotionally supportive with oat milk?{learning_hook}"
     if "airport" in room_id:
-        return "No panic. Show me your boarding pass and we will find the right gate together."
+        return f"No panic. Show me your boarding pass and we will find the right gate together.{learning_hook}"
     if "interview" in room_id:
-        return "Good start. Try adding one concrete result, like performance, users, or a bug you fixed."
-    return f"I hear you. In my {tone} mode, I would answer a little softer and keep the conversation moving."
+        return f"Good start. Try adding one concrete result, like performance, users, or a bug you fixed.{learning_hook}"
+    return f"I hear you. In my {tone} mode, I would answer a little softer and keep the conversation moving.{learning_hook}"
 
 
 def generate_speaking_hints(
@@ -135,9 +145,9 @@ def generate_speaking_hints(
 
     source_language = language_name(normalized_code)
     return SpeakingHintsResponse(
-        simple="Can you say that again, please?",
-        conversational=f"That sounds good. I want to try it in {source_language}.",
-        spicy="Okay, I am in. Make it a tiny bit more fun.",
+        simple="Yeah, that sounds good.",
+        conversational=f"That sounds good, and I would like to try saying it in {source_language}.",
+        spicy="That sounds good. What would you recommend next?",
     )
 
 

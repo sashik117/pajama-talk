@@ -7,6 +7,7 @@ from app.core.security import decode_access_token
 from app.db.session import SessionLocal, get_db
 from app.models.chat import ChatMessage
 from app.models.user import User
+from app.models.word import Word
 from app.schemas.speaking import SpeakingHintsRequest, SpeakingHintsResponse, SpeakingRoom
 from app.services.ai_service import generate_speaking_hints, stream_roleplay_reply
 from app.services.grammar import detect_mistake_tag
@@ -104,8 +105,28 @@ async def speaking_ws(websocket: WebSocket) -> None:
             )
             db.commit()
 
+            learning_terms = [
+                row[0]
+                for row in (
+                    db.query(Word.term)
+                    .filter(
+                        Word.owner_id == user.id,
+                        Word.language_code == user.active_language_code,
+                        Word.status == "learning",
+                    )
+                    .order_by(Word.created_at.desc())
+                    .limit(6)
+                    .all()
+                )
+            ]
+
             reply_parts: list[str] = []
-            async for token_text in stream_roleplay_reply(room_id=room_id, user_text=message, tone=user.ai_tone):
+            async for token_text in stream_roleplay_reply(
+                room_id=room_id,
+                user_text=message,
+                tone=user.ai_tone,
+                learning_terms=learning_terms,
+            ):
                 reply_parts.append(token_text)
                 await websocket.send_json({"type": "token", "value": token_text})
 

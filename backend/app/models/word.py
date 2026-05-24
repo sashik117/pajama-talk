@@ -25,6 +25,7 @@ class Word(Base):
     example_one: Mapped[str] = mapped_column(Text, default="")
     example_two: Mapped[str] = mapped_column(Text, default="")
     source_context: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(24), default="learning", index=True)
     color_level: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 

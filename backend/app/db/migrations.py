@@ -2,6 +2,13 @@ from sqlalchemy import Engine
 
 
 def ensure_dev_schema(engine: Engine) -> None:
+    if engine.url.drivername.startswith("postgresql"):
+        with engine.begin() as connection:
+            connection.exec_driver_sql(
+                "ALTER TABLE words ADD COLUMN IF NOT EXISTS status VARCHAR(24) NOT NULL DEFAULT 'learning'",
+            )
+        return
+
     if not engine.url.drivername.startswith("sqlite"):
         return
 
@@ -30,4 +37,8 @@ def ensure_dev_schema(engine: Engine) -> None:
         if "language_code" not in word_columns:
             connection.exec_driver_sql(
                 "ALTER TABLE words ADD COLUMN language_code VARCHAR(12) NOT NULL DEFAULT 'en'",
+            )
+        if "status" not in word_columns:
+            connection.exec_driver_sql(
+                "ALTER TABLE words ADD COLUMN status VARCHAR(24) NOT NULL DEFAULT 'learning'",
             )

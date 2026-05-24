@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -405,6 +406,7 @@ private fun AuraScreen() {
     val appState = LocalPajamaState.current
     val scope = rememberCoroutineScope()
     var contextText by remember { mutableStateOf("") }
+    var showLanguagePicker by remember { mutableStateOf(false) }
 
     ScreenFrame {
         Row(
@@ -413,27 +415,36 @@ private fun AuraScreen() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Text("PajamaTalk", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
+                Text("Головна", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Graphite)
                 Text(
                     "${appState.stats?.dailyVibeMinutes ?: 5} min ${appState.selectedLanguage.label}",
                     color = InkMuted,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Normal,
                 )
             }
-            CandleBadge(days = 7)
+            LanguageHeaderChip(
+                selected = appState.selectedLanguage,
+                native = nativeLanguageByCode(appState.user?.nativeLanguageCode ?: "uk"),
+                onClick = { showLanguagePicker = !showLanguagePicker },
+            )
         }
 
         ConnectionStatus(appState)
-        LanguagePicker(
-            selected = appState.selectedLanguage,
-            onSelect = { language -> scope.launch { appState.selectLanguage(language) } },
-        )
-        AuraHero()
+        AnimatedVisibility(showLanguagePicker) {
+            LanguagePicker(
+                selected = appState.selectedLanguage,
+                onSelect = { language ->
+                    showLanguagePicker = false
+                    scope.launch { appState.selectLanguage(language) }
+                },
+            )
+        }
 
         CozyCard(background = Color.White.copy(alpha = 0.84f)) {
             Text("Alex is waiting in ${appState.selectedLanguage.label}", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Graphite)
             Spacer(Modifier.height(8.dp))
-            Text("${appState.stats?.dueReviews ?: 0} reviews due · ${appState.stats?.learnedWords ?: 0} learned", color = InkMuted)
+            Text("Five calm minutes, one real conversation, zero pressure.", color = InkMuted, fontSize = 13.sp)
             Spacer(Modifier.height(14.dp))
             SoftAction("Enter room", Icons.Rounded.Coffee, Peach, onClick = {})
         }
@@ -637,12 +648,35 @@ private fun ConnectionStatus(appState: PajamaAppState) {
 }
 
 @Composable
+private fun LanguageHeaderChip(
+    selected: LearningLanguage,
+    native: NativeLanguage,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier
+            .height(42.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(Color.White.copy(alpha = 0.54f))
+            .border(1.dp, Color.White.copy(alpha = 0.42f), RoundedCornerShape(24.dp)),
+        colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
+    ) {
+        Text(selected.shortLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Spacer(Modifier.width(6.dp))
+        Text("→", color = InkMuted, fontSize = 13.sp)
+        Spacer(Modifier.width(6.dp))
+        Text(native.shortLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+    }
+}
+
+@Composable
 private fun LanguagePicker(
     selected: LearningLanguage,
     onSelect: (LearningLanguage) -> Unit,
 ) {
     CozyCard(background = Color.White.copy(alpha = 0.72f)) {
-        Text("Learning language", fontWeight = FontWeight.Bold, color = Graphite)
+        Text("Learning language", fontWeight = FontWeight.Medium, fontSize = 13.sp, color = InkMuted)
         Spacer(Modifier.height(10.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(SupportedLearningLanguages) { language ->
@@ -655,9 +689,9 @@ private fun LanguagePicker(
                         .background(if (isSelected) Lavender else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
                 ) {
-                    Text(language.shortLabel, fontWeight = FontWeight.Black)
+                    Text(language.shortLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Spacer(Modifier.width(6.dp))
-                    Text(language.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(language.label, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -670,7 +704,7 @@ private fun NativeLanguagePicker(
     onSelect: (NativeLanguage) -> Unit,
 ) {
     CozyCard(background = Color.White.copy(alpha = 0.72f)) {
-        Text("Explanation language", fontWeight = FontWeight.Bold, color = Graphite)
+        Text("Explanation language", fontWeight = FontWeight.Medium, fontSize = 13.sp, color = InkMuted)
         Spacer(Modifier.height(10.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(SupportedNativeLanguages) { language ->
@@ -683,9 +717,9 @@ private fun NativeLanguagePicker(
                         .background(if (isSelected) Mint.copy(alpha = 0.62f) else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
                 ) {
-                    Text(language.shortLabel, fontWeight = FontWeight.Black)
+                    Text(language.shortLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Spacer(Modifier.width(6.dp))
-                    Text(language.label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(language.label, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -818,17 +852,17 @@ private fun RoomCard(room: Room, onClick: () -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(58.dp)
+                    .size(64.dp)
                     .clip(CircleShape)
                     .background(room.color.copy(alpha = 0.74f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(room.icon, contentDescription = null, tint = Graphite)
+                Icon(room.icon, contentDescription = null, tint = Graphite, modifier = Modifier.size(30.dp))
             }
-            Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(18.dp))
             Column(Modifier.weight(1f)) {
                 Text(room.title, fontWeight = FontWeight.Bold, fontSize = 19.sp, color = Graphite)
-                Text("${room.character} · ${room.vibe}", color = InkMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text("${room.character} · ${room.vibe}", color = InkMuted, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -883,9 +917,9 @@ private fun DialoguePreview(
         )
         hints?.let { hintSet ->
             Spacer(Modifier.height(12.dp))
-            HintBubble("Simple", hintSet.simple)
-            HintBubble("Natural", hintSet.conversational)
-            HintBubble("Spicy", hintSet.spicy)
+            HintBubble("Chill", hintSet.simple)
+            HintBubble("Grammar", hintSet.conversational)
+            HintBubble("Question", hintSet.spicy)
         }
         Spacer(Modifier.height(20.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -896,6 +930,13 @@ private fun DialoguePreview(
                 shape = RoundedCornerShape(24.dp),
                 singleLine = true,
                 placeholder = { Text("Reply to ${room.character}") },
+            )
+            SoftAction(
+                text = "Mic",
+                icon = Icons.Rounded.Mic,
+                color = Mint,
+                enabled = !isStreaming,
+                onClick = {},
             )
             SoftAction(
                 text = if (isStreaming) "..." else "Send",
@@ -909,8 +950,6 @@ private fun DialoguePreview(
                 },
             )
         }
-        Spacer(Modifier.height(20.dp))
-        WaveMicButton()
     }
 }
 
@@ -1285,8 +1324,8 @@ private fun VibeScreen() {
 @Composable
 private fun Stat(value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, fontSize = 22.sp, fontWeight = FontWeight.Black, color = Graphite)
-        Text(label, color = InkMuted)
+        Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Graphite)
+        Text(label, color = InkMuted, fontSize = 12.sp, fontWeight = FontWeight.Normal)
     }
 }
 
@@ -1297,14 +1336,22 @@ private fun CozyCard(
     padded: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val shape = RoundedCornerShape(28.dp)
+    val glassBackground = if (background == Color.Transparent) {
+        background
+    } else {
+        background.copy(alpha = background.alpha.coerceAtMost(0.62f))
+    }
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = background),
+        modifier = modifier
+            .fillMaxWidth()
+            .border(1.dp, Color.White.copy(alpha = 0.42f), shape),
+        shape = shape,
+        colors = CardDefaults.cardColors(containerColor = glassBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
-            modifier = Modifier.padding(if (padded) 18.dp else 0.dp),
+            modifier = Modifier.padding(if (padded) 16.dp else 0.dp),
             content = content,
         )
     }
@@ -1330,7 +1377,7 @@ private fun SoftAction(
     ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
-        Text(text, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

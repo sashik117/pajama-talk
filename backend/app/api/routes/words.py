@@ -26,6 +26,7 @@ def to_word_response(word: Word) -> WordResponse:
         example_one=word.example_one,
         example_two=word.example_two,
         source_context=word.source_context,
+        status=word.status,
         color_level=word.color_level,
         due_at=word.srs.due_at if word.srs else None,
     )
@@ -117,8 +118,11 @@ def review_word(
     schedule_review(word.srs, payload.grade)
     if payload.grade == ReviewGrade.REMEMBER:
         word.color_level = min(5, word.color_level + 1)
+        if word.color_level >= 4:
+            word.status = "learned"
     else:
         word.color_level = max(0, word.color_level - 1)
+        word.status = "learning"
 
     db.commit()
     db.refresh(word.srs)

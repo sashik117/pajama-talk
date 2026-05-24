@@ -16,6 +16,7 @@ backend/__pycache__/
 *.py[cod]
 backend/.pytest_cache/
 backend/pajamatalk.db
+pajamatalk.db
 backend/htmlcov/
 backend/.coverage
 backend/*.egg-info/
