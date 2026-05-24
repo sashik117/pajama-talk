@@ -746,7 +746,19 @@ private fun FlagBadge(code: String) {
             "uk" -> horizontal(listOf(Color(0xFF0057B7), Color(0xFFFFD700)))
             "ru" -> horizontal(listOf(Color.White, Color(0xFF0039A6), Color(0xFFD52B1E)))
             "pl" -> horizontal(listOf(Color.White, Color(0xFFDC143C)))
-            "sk", "cs" -> horizontal(listOf(Color.White, Color(0xFF0B4EA2), Color(0xFFEE1C25)))
+            "sk" -> horizontal(listOf(Color.White, Color(0xFF0B4EA2), Color(0xFFEE1C25)))
+            "cs" -> {
+                horizontal(listOf(Color.White, Color(0xFFD7141A)))
+                drawPath(
+                    Path().apply {
+                        moveTo(0f, 0f)
+                        lineTo(size.width * 0.56f, size.height / 2f)
+                        lineTo(0f, size.height)
+                        close()
+                    },
+                    Color(0xFF11457E),
+                )
+            }
             "fr" -> vertical(listOf(Color(0xFF0055A4), Color.White, Color(0xFFEF4135)))
             "es" -> horizontal(listOf(Color(0xFFAA151B), Color(0xFFF1BF00), Color(0xFFAA151B)))
             "it" -> vertical(listOf(Color(0xFF009246), Color.White, Color(0xFFCE2B37)))

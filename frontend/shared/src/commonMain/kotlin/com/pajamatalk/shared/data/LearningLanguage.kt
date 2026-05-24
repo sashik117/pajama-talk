@@ -19,7 +19,7 @@ val SupportedLearningLanguages = listOf(
     LearningLanguage("en", "English", "EN", "🇬🇧", "cozy"),
     LearningLanguage("sk", "Slovak", "SK", "🇸🇰", "ahoj"),
     LearningLanguage("pl", "Polish", "PL", "🇵🇱", "spoko"),
-    LearningLanguage("cs", "Czech", "CS", "🇨🇿", "pohoda"),
+    LearningLanguage("cs", "Czech", "CZ", "🇨🇿", "pohoda"),
     LearningLanguage("fr", "French", "FR", "🇫🇷", "coucou"),
     LearningLanguage("es", "Spanish", "ES", "🇪🇸", "vale"),
     LearningLanguage("it", "Italian", "IT", "🇮🇹", "allora"),

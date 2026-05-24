@@ -481,9 +481,24 @@ textarea {
   background: linear-gradient(#fff 0 50%, #dc143c 50% 100%);
 }
 
-.flag-sk,
-.flag-cs {
+.flag-sk {
   background: linear-gradient(#fff 0 33%, #0b4ea2 33% 66%, #ee1c25 66% 100%);
+}
+
+.flag-cs {
+  background: linear-gradient(#fff 0 50%, #d7141a 50% 100%);
+}
+
+.flag-cs::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  border-left: 13px solid #11457e;
 }
 
 .flag-fr {
