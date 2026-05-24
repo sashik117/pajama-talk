@@ -47,7 +47,21 @@ export type CopyKey =
   | "logOut"
   | "grammar"
   | "due"
-  | "learned";
+  | "learned"
+  | "today"
+  | "dailyFocus"
+  | "dailyFocusSub"
+  | "voicePrimary"
+  | "tapToSpeak"
+  | "listening"
+  | "speechUnsupported"
+  | "speechError"
+  | "textFallback"
+  | "reviewEmpty"
+  | "profile"
+  | "learningVibe"
+  | "aiTone"
+  | "adaptiveDrop";
 
 export const uiLocales: Array<{ code: UiLocale; label: string; short: string }> = [
   { code: "uk", label: "Українська", short: "UK" },
@@ -75,20 +89,20 @@ const base: Record<CopyKey, string> = {
   register: "Create account",
   create: "Create",
   demo: "Continue demo",
-  aura: "Aura",
-  speak: "Speak",
-  storage: "Storage",
-  vibe: "Vibe",
+  aura: "Home",
+  speak: "Speaking",
+  storage: "Dictionary",
+  vibe: "Profile",
   learningLanguage: "Learning language",
   uiLanguage: "Interface language",
   nativeLanguage: "Explanation language",
-  contextTitle: "Context Buddy",
-  contextPlaceholder: "Paste a line that caught you",
+  contextTitle: "Context",
+  contextPlaceholder: "Paste a phrase, subtitle, post, comment, or song line",
   analyze: "Analyze",
   addWords: "Add words",
   newWord: "New word",
   add: "Add",
-  myWords: "My words",
+  myWords: "Words",
   review: "Review",
   forgot: "Forgot",
   remember: "Remember",
@@ -97,9 +111,23 @@ const base: Record<CopyKey, string> = {
   send: "Send",
   stats: "Stats",
   logOut: "Log out",
-  grammar: "Grammar drop",
+  grammar: "Grammar",
   due: "due",
-  learned: "learned"
+  learned: "learned",
+  today: "Today",
+  dailyFocus: "Small useful practice",
+  dailyFocusSub: "Speak once, review due words, or parse one real phrase.",
+  voicePrimary: "Voice mode. Press the mic and answer out loud.",
+  tapToSpeak: "Tap to speak",
+  listening: "Listening",
+  speechUnsupported: "This browser does not expose speech recognition. Use the text fallback for now.",
+  speechError: "Could not hear that. Try again.",
+  textFallback: "Text fallback",
+  reviewEmpty: "Nothing due right now.",
+  profile: "Profile",
+  learningVibe: "Learning vibe",
+  aiTone: "AI tone",
+  adaptiveDrop: "Adaptive drop"
 };
 
 const copies: Partial<Record<UiLocale, Partial<Record<CopyKey, string>>>> = {
@@ -112,20 +140,20 @@ const copies: Partial<Record<UiLocale, Partial<Record<CopyKey, string>>>> = {
     register: "Створити акаунт",
     create: "Створити",
     demo: "Демо-вхід",
-    aura: "Аура",
+    aura: "Головна",
     speak: "Спікінг",
     storage: "Словник",
-    vibe: "Вайб",
+    vibe: "Профіль",
     learningLanguage: "Мова навчання",
     uiLanguage: "Мова інтерфейсу",
     nativeLanguage: "Мова пояснень",
-    contextTitle: "Context Buddy",
-    contextPlaceholder: "Встав текст, який тебе зачепив",
+    contextTitle: "Контекст",
+    contextPlaceholder: "Встав фразу, субтитр, пост, комент або рядок з пісні",
     analyze: "Розібрати",
     addWords: "Додати слова",
     newWord: "Нове слово",
     add: "Додати",
-    myWords: "Мої слова",
+    myWords: "Слова",
     review: "Повторення",
     forgot: "Забула",
     remember: "Пам'ятаю",
@@ -136,135 +164,46 @@ const copies: Partial<Record<UiLocale, Partial<Record<CopyKey, string>>>> = {
     logOut: "Вийти",
     grammar: "Граматика",
     due: "до повторення",
-    learned: "вивчено"
+    learned: "вивчено",
+    today: "Сьогодні",
+    dailyFocus: "Маленька корисна практика",
+    dailyFocusSub: "Скажи одну фразу голосом, повтори слова або розбери реальний текст.",
+    voicePrimary: "Голосовий режим. Натисни мікрофон і відповідай вголос.",
+    tapToSpeak: "Натисни і говори",
+    listening: "Слухаю",
+    speechUnsupported: "Браузер не дав розпізнавання голосу. Поки є текстовий fallback.",
+    speechError: "Не почула фразу. Спробуй ще раз.",
+    textFallback: "Текстовий fallback",
+    reviewEmpty: "Зараз нічого повторювати.",
+    profile: "Профіль",
+    learningVibe: "Вайб навчання",
+    aiTone: "Тон ШІ",
+    adaptiveDrop: "Адаптивна підказка"
   },
   pl: {
     tagline: "Miękka praktyka języka w twoim tempie.",
-    login: "Zaloguj",
-    register: "Utwórz konto",
-    demo: "Tryb demo",
+    aura: "Start",
+    speak: "Mówienie",
     storage: "Słownik",
-    vibe: "Klimat",
+    vibe: "Profil",
     learningLanguage: "Język nauki",
     uiLanguage: "Język interfejsu",
     nativeLanguage: "Język wyjaśnień",
     analyze: "Analizuj",
-    addWords: "Dodaj słowa",
     review: "Powtórka",
-    forgot: "Nie pamiętam",
-    remember: "Pamiętam",
-    send: "Wyślij",
-    logOut: "Wyloguj"
+    tapToSpeak: "Naciśnij i mów"
   },
-  sk: {
-    tagline: "Jemná jazyková prax vlastným tempom.",
-    login: "Prihlásiť",
-    register: "Vytvoriť účet",
-    demo: "Demo vstup",
-    storage: "Slovník",
-    learningLanguage: "Jazyk učenia",
-    uiLanguage: "Jazyk rozhrania",
-    nativeLanguage: "Jazyk vysvetlení",
-    analyze: "Analyzovať",
-    review: "Opakovanie",
-    send: "Odoslať"
-  },
-  cs: {
-    tagline: "Jemná jazyková praxe vlastním tempem.",
-    login: "Přihlásit",
-    register: "Vytvořit účet",
-    demo: "Demo vstup",
-    storage: "Slovník",
-    learningLanguage: "Jazyk učení",
-    uiLanguage: "Jazyk rozhraní",
-    nativeLanguage: "Jazyk vysvětlení",
-    analyze: "Analyzovat",
-    review: "Opakování",
-    send: "Odeslat"
-  },
-  fr: {
-    tagline: "Une pratique douce, à ton rythme.",
-    login: "Connexion",
-    register: "Créer un compte",
-    demo: "Mode démo",
-    storage: "Dico",
-    learningLanguage: "Langue apprise",
-    uiLanguage: "Langue interface",
-    nativeLanguage: "Langue d'explication",
-    analyze: "Analyser",
-    review: "Révision",
-    send: "Envoyer",
-    logOut: "Déconnexion"
-  },
-  es: {
-    tagline: "Práctica suave, a tu ritmo.",
-    login: "Entrar",
-    register: "Crear cuenta",
-    demo: "Modo demo",
-    storage: "Diccionario",
-    learningLanguage: "Idioma de estudio",
-    uiLanguage: "Idioma de interfaz",
-    nativeLanguage: "Idioma de explicación",
-    analyze: "Analizar",
-    review: "Repasar",
-    send: "Enviar",
-    logOut: "Salir"
-  },
-  it: {
-    tagline: "Pratica morbida, al tuo ritmo.",
-    login: "Accedi",
-    register: "Crea account",
-    demo: "Demo",
-    storage: "Vocabolario",
-    learningLanguage: "Lingua da studiare",
-    uiLanguage: "Lingua interfaccia",
-    nativeLanguage: "Lingua spiegazioni",
-    analyze: "Analizza",
-    review: "Ripasso",
-    send: "Invia"
-  },
-  de: {
-    tagline: "Sanftes Sprachtraining in deinem Tempo.",
-    login: "Einloggen",
-    register: "Konto erstellen",
-    demo: "Demo starten",
-    storage: "Wortschatz",
-    learningLanguage: "Lernsprache",
-    uiLanguage: "Oberfläche",
-    nativeLanguage: "Erklärungssprache",
-    analyze: "Analysieren",
-    review: "Wiederholen",
-    send: "Senden"
-  },
-  pt: {
-    tagline: "Prática leve, no teu ritmo.",
-    login: "Entrar",
-    register: "Criar conta",
-    demo: "Modo demo",
-    storage: "Vocabulário",
-    learningLanguage: "Idioma de estudo",
-    uiLanguage: "Idioma da interface",
-    nativeLanguage: "Idioma de explicação",
-    analyze: "Analisar",
-    review: "Revisão",
-    send: "Enviar"
-  },
-  tr: {
-    tagline: "Kendi hızında yumuşak dil pratiği.",
-    login: "Giriş",
-    register: "Hesap oluştur",
-    demo: "Demo",
-    storage: "Sözlük",
-    learningLanguage: "Öğrenilen dil",
-    uiLanguage: "Arayüz dili",
-    nativeLanguage: "Açıklama dili",
-    analyze: "Analiz et",
-    review: "Tekrar",
-    send: "Gönder"
-  },
-  ja: { tagline: "自分のペースでやさしく練習。", login: "ログイン", register: "登録", demo: "デモ", storage: "単語帳", review: "復習", send: "送信" },
-  ko: { tagline: "내 속도에 맞춘 부드러운 언어 연습.", login: "로그인", register: "가입", demo: "데모", storage: "단어장", review: "복습", send: "보내기" },
-  zh: { tagline: "按你的节奏轻松练习语言。", login: "登录", register: "注册", demo: "演示", storage: "词库", review: "复习", send: "发送" }
+  sk: { aura: "Domov", speak: "Hovorenie", storage: "Slovník", vibe: "Profil", tapToSpeak: "Stlač a hovor" },
+  cs: { aura: "Domů", speak: "Mluvení", storage: "Slovník", vibe: "Profil", tapToSpeak: "Stiskni a mluv" },
+  fr: { aura: "Accueil", speak: "Oral", storage: "Dico", vibe: "Profil", tapToSpeak: "Appuie et parle" },
+  es: { aura: "Inicio", speak: "Hablar", storage: "Diccionario", vibe: "Perfil", tapToSpeak: "Pulsa y habla" },
+  it: { aura: "Home", speak: "Parlato", storage: "Vocabolario", vibe: "Profilo", tapToSpeak: "Premi e parla" },
+  de: { aura: "Start", speak: "Sprechen", storage: "Wortschatz", vibe: "Profil", tapToSpeak: "Tippen und sprechen" },
+  pt: { aura: "Início", speak: "Fala", storage: "Vocabulário", vibe: "Perfil", tapToSpeak: "Toca e fala" },
+  tr: { aura: "Ana sayfa", speak: "Konuşma", storage: "Sözlük", vibe: "Profil", tapToSpeak: "Dokun ve konuş" },
+  ja: { aura: "ホーム", speak: "スピーキング", storage: "単語帳", vibe: "プロフィール", tapToSpeak: "押して話す" },
+  ko: { aura: "홈", speak: "말하기", storage: "단어장", vibe: "프로필", tapToSpeak: "눌러서 말하기" },
+  zh: { aura: "主页", speak: "口语", storage: "词库", vibe: "资料", tapToSpeak: "点击说话" }
 };
 
 export function t(locale: UiLocale, key: CopyKey): string {

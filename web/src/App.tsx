@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
+  Bot,
   BriefcaseBusiness,
   Check,
+  ChevronDown,
   Coffee,
+  GraduationCap,
   Home,
   Languages,
   LogOut,
   Mic,
+  MicOff,
   Plane,
   Plus,
   RefreshCw,
@@ -22,9 +26,57 @@ import { languageName, learningLanguages, nativeLanguages, t, UiLocale, uiLocale
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type ChatLine = { role: "user" | "assistant"; text: string };
+type SelectOption = { code: string; label: string; short: string };
 
 const demoEmail = "dreamer@pajamatalk.dev";
 const demoPassword = "pajama-dev-secret";
+
+const grammarTopics = [
+  {
+    id: "past-perfect",
+    title: "Past Simple vs Present Perfect",
+    rule: "Past Simple = є точний завершений час. Present Perfect = результат важливий зараз.",
+    examples: ["I saw it yesterday.", "I have already seen it.", "She called me last night."]
+  },
+  {
+    id: "articles",
+    title: "A / An / The",
+    rule: "A або an для нового предмета, the для конкретного або вже відомого.",
+    examples: ["I saw a dog.", "The dog was tiny.", "She needs an umbrella."]
+  },
+  {
+    id: "prepositions",
+    title: "In / On / At",
+    rule: "In для простору або місяців, on для днів і поверхонь, at для точок і точного часу.",
+    examples: ["in March", "on Monday", "at 8 PM"]
+  },
+  {
+    id: "conditionals",
+    title: "If-sentences",
+    rule: "If + Present Simple, will + verb для реальної майбутньої ситуації.",
+    examples: ["If I have time, I will call.", "If it rains, we will stay in."]
+  }
+];
+
+const contextExamples = ["no worries, I got you", "it hits different", "I'm down for it"];
+
+function getSpeechLang(code: string) {
+  return (
+    {
+      en: "en-US",
+      pl: "pl-PL",
+      sk: "sk-SK",
+      cs: "cs-CZ",
+      fr: "fr-FR",
+      es: "es-ES",
+      it: "it-IT",
+      ko: "ko-KR",
+      ja: "ja-JP",
+      zh: "zh-CN",
+      tr: "tr-TR"
+    }[code] ?? "en-US"
+  );
+}
 
 export function App() {
   const [uiLocale, setUiLocale] = useState<UiLocale>(() => (localStorage.getItem("pajama-ui") as UiLocale) || "uk");
@@ -56,7 +108,7 @@ export function App() {
   }, [uiLocale]);
 
   useEffect(() => {
-    api.health().catch(() => setError("FastAPI is offline. Start backend on :8000."));
+    api.health().catch(() => setError("FastAPI offline. Запусти backend на :8000."));
     if (token) {
       void openSession(token);
     }
@@ -102,9 +154,7 @@ export function App() {
     setBusy(true);
     setError("");
     try {
-      const session = displayName
-        ? await api.register(email, password, displayName)
-        : await api.login(email, password);
+      const session = displayName ? await api.register(email, password, displayName) : await api.login(email, password);
       await openSession(session.access_token);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Auth failed.");
@@ -143,6 +193,19 @@ export function App() {
     if (!token) return;
     const profile = await api.updateProfile(token, { native_language_code: code });
     setUser(profile);
+  }
+
+  async function updateVibe(vibe: string) {
+    if (!token) return;
+    const minutes = vibe === "Hardcore" ? 30 : vibe === "Normal" ? 15 : 5;
+    const profile = await api.updateProfile(token, { learning_vibe: vibe, daily_vibe_minutes: minutes });
+    setUser(profile);
+    setStats(await api.stats(token));
+  }
+
+  async function updateTone(tone: string) {
+    if (!token) return;
+    setUser(await api.updateProfile(token, { ai_tone: tone }));
   }
 
   async function addWord(term: string, source = "") {
@@ -190,6 +253,7 @@ export function App() {
     const userLine: ChatLine = { role: "user", text: message.trim() };
     setChat((current) => [...current, userLine, { role: "assistant", text: "" }]);
     setHints(null);
+    let finalReply = "";
     await new Promise<void>((resolve, reject) => {
       const socket = new WebSocket(
         api.wsUrl(`/speaking/ws?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(activeRoom.id)}`)
@@ -201,6 +265,7 @@ export function App() {
         const payload = JSON.parse(event.data) as { type: string; value?: string };
         if (payload.type === "token") {
           reply += payload.value ?? "";
+          finalReply = reply.trim();
           setChat((current) => [...current.slice(0, -1), { role: "assistant", text: reply.trimStart() }]);
         }
         if (payload.type === "done") {
@@ -209,6 +274,10 @@ export function App() {
         }
       };
     }).catch((err) => setError(err instanceof Error ? err.message : "Speaking stream failed."));
+    if (finalReply && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(finalReply));
+    }
     if (token) setGrammarDrops(await api.grammarDrops(token));
   }
 
@@ -242,9 +311,9 @@ export function App() {
       <main className="screen">
         <header className="topbar">
           <div>
-            <h1>PajamaTalk</h1>
+            <h1>{copy(activeTab)}</h1>
             <p>
-              {stats?.daily_vibe_minutes ?? 5} min · {selectedLanguage.label}
+              PajamaTalk · {selectedLanguage.label} · {stats?.daily_vibe_minutes ?? 5} min
             </p>
           </div>
           <button className="icon-button" onClick={() => void loadData()} aria-label="Refresh">
@@ -255,7 +324,7 @@ export function App() {
         {error && <div className="notice">{error}</div>}
 
         {activeTab === "aura" && (
-          <AuraScreen
+          <HomeScreen
             copy={copy}
             stats={stats}
             activeDrop={activeDrop}
@@ -268,6 +337,10 @@ export function App() {
             clearContext={() => setContextResult(null)}
             learningCode={learningCode}
             setLearningCode={(code) => void updateLearning(code)}
+            nativeCode={user.native_language_code}
+            setNativeCode={(code) => void updateNative(code)}
+            openSpeak={() => setActiveTab("speak")}
+            openReview={() => setActiveTab("storage")}
           />
         )}
 
@@ -278,10 +351,11 @@ export function App() {
             activeRoom={activeRoom}
             chat={chat}
             hints={hints}
+            learningCode={learningCode}
             setActiveRoom={(room) => {
               setActiveRoom(room);
               setHints(null);
-              setChat([{ role: "assistant", text: `Hey, I am ${room.character}. Send one line and we will keep it easy.` }]);
+              setChat([{ role: "assistant", text: `Hey, I am ${room.character}. Press mic and answer in ${selectedLanguage.label}.` }]);
             }}
             back={() => {
               setActiveRoom(null);
@@ -306,7 +380,7 @@ export function App() {
         )}
 
         {activeTab === "vibe" && (
-          <VibeScreen
+          <ProfileScreen
             copy={copy}
             locale={uiLocale}
             setLocale={setUiLocale}
@@ -315,6 +389,8 @@ export function App() {
             learningCode={learningCode}
             setLearningCode={(code) => void updateLearning(code)}
             setNativeCode={(code) => void updateNative(code)}
+            setVibe={(vibe) => void updateVibe(vibe)}
+            setTone={(tone) => void updateTone(tone)}
             logout={logout}
           />
         )}
@@ -363,14 +439,21 @@ function AuthScreen({
     <main className="auth-screen">
       <section className="auth-panel">
         <div className="brand-lockup">
-          <div className="aura-mini" />
+          <div className="brand-mark">
+            <Mic size={26} />
+          </div>
           <div>
             <h1>PajamaTalk</h1>
             <p>{copy("tagline")}</p>
           </div>
         </div>
 
-        <LocalePills value={locale} setValue={setLocale} copy={copy} />
+        <DropdownSelect
+          title={copy("uiLanguage")}
+          value={locale}
+          options={uiLocales}
+          onChange={(value) => setLocale(value as UiLocale)}
+        />
 
         <div className="card auth-card">
           <h2>{isRegister ? copy("register") : copy("login")}</h2>
@@ -408,7 +491,7 @@ function AuthScreen({
   );
 }
 
-function AuraScreen({
+function HomeScreen({
   copy,
   stats,
   activeDrop,
@@ -420,7 +503,11 @@ function AuraScreen({
   addWord,
   clearContext,
   learningCode,
-  setLearningCode
+  setLearningCode,
+  nativeCode,
+  setNativeCode,
+  openSpeak,
+  openReview
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
   stats: StatsDto | null;
@@ -434,26 +521,56 @@ function AuraScreen({
   clearContext: () => void;
   learningCode: string;
   setLearningCode: (code: string) => void;
+  nativeCode: string;
+  setNativeCode: (code: string) => void;
+  openSpeak: () => void;
+  openReview: () => void;
 }) {
   return (
     <>
-      <LanguagePills title={copy("learningLanguage")} value={learningCode} onChange={setLearningCode} />
-      <section className="aura-hero card">
-        <div className="aura-orb" />
-        <div>
-          <h2>Aura of Knowledge</h2>
-          <p>
-            {stats?.due_reviews ?? 0} {copy("due")} · {stats?.learned_words ?? 0} {copy("learned")}
-          </p>
+      <section className="home-summary">
+        <div className="focus-card card">
+          <small>{copy("today")}</small>
+          <h2>{copy("dailyFocus")}</h2>
+          <p>{copy("dailyFocusSub")}</p>
+          <div className="action-row">
+            <button className="primary-action" onClick={openSpeak}>
+              <Mic size={18} />
+              {copy("speak")}
+            </button>
+            <button className="soft-action" onClick={openReview}>
+              <BookOpen size={18} />
+              {copy("review")}
+            </button>
+          </div>
         </div>
+        <Stat value={`${stats?.due_reviews ?? 0}`} label={copy("due")} />
+        <Stat value={`${stats?.language_words ?? 0}`} label={copy("myWords")} />
       </section>
 
-      <section className="card">
+      <div className="two-selects">
+        <DropdownSelect
+          title={copy("learningLanguage")}
+          value={learningCode}
+          options={learningLanguages}
+          onChange={setLearningCode}
+        />
+        <DropdownSelect title={copy("nativeLanguage")} value={nativeCode} options={nativeLanguages} onChange={setNativeCode} />
+      </div>
+
+      <section className="card context-card">
         <div className="section-title">
           <WandSparkles size={20} />
           <h2>{copy("contextTitle")}</h2>
         </div>
         <textarea value={contextText} onChange={(event) => setContextText(event.target.value)} placeholder={copy("contextPlaceholder")} />
+        <div className="chip-row">
+          {contextExamples.map((example) => (
+            <button key={example} className="chip" onClick={() => setContextText(example)}>
+              {example}
+            </button>
+          ))}
+        </div>
         <button className="primary-action" disabled={busy || contextText.trim().length < 3} onClick={analyzeContext}>
           <Sparkles size={18} />
           {copy("analyze")}
@@ -482,7 +599,7 @@ function AuraScreen({
         )}
       </section>
 
-      <GrammarCard copy={copy} drop={activeDrop} />
+      <GrammarLab copy={copy} drop={activeDrop} />
     </>
   );
 }
@@ -493,6 +610,7 @@ function SpeakingScreen({
   activeRoom,
   chat,
   hints,
+  learningCode,
   setActiveRoom,
   back,
   loadHints,
@@ -503,18 +621,56 @@ function SpeakingScreen({
   activeRoom: SpeakingRoomDto | null;
   chat: ChatLine[];
   hints: SpeakingHintsDto | null;
+  learningCode: string;
   setActiveRoom: (room: SpeakingRoomDto) => void;
   back: () => void;
   loadHints: () => void;
   sendMessage: (message: string) => void;
 }) {
   const [draft, setDraft] = useState("");
+  const [transcript, setTranscript] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState("");
   const roomIcon = useMemo(() => {
     if (!activeRoom) return null;
     if (activeRoom.id.includes("airport")) return <Plane size={28} />;
     if (activeRoom.id.includes("interview")) return <BriefcaseBusiness size={28} />;
     return <Coffee size={28} />;
   }, [activeRoom]);
+
+  function startVoice() {
+    const SpeechCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechCtor) {
+      setSpeechError(copy("speechUnsupported"));
+      return;
+    }
+    const recognition = new SpeechCtor();
+    recognition.lang = getSpeechLang(learningCode);
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    setSpeechError("");
+    setTranscript("");
+    setIsListening(true);
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const text = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+      setTranscript(text);
+    };
+    recognition.onerror = () => {
+      setSpeechError(copy("speechError"));
+      setIsListening(false);
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      setTranscript((current) => {
+        if (current.trim()) void sendMessage(current);
+        return current;
+      });
+    };
+    recognition.start();
+  }
 
   if (!activeRoom) {
     return (
@@ -537,7 +693,7 @@ function SpeakingScreen({
   }
 
   return (
-    <section className="card chat-card">
+    <section className="card speaking-card">
       <button className="ghost-action inline" onClick={back}>
         {copy("rooms")}
       </button>
@@ -550,6 +706,14 @@ function SpeakingScreen({
           <p>{activeRoom.title}</p>
         </div>
       </div>
+
+      <button className={`mic-stage ${isListening ? "listening" : ""}`} onClick={startVoice}>
+        {isListening ? <MicOff size={34} /> : <Mic size={34} />}
+        <strong>{isListening ? copy("listening") : copy("tapToSpeak")}</strong>
+        <span>{transcript || copy("voicePrimary")}</span>
+      </button>
+      {speechError && <div className="notice">{speechError}</div>}
+
       <div className="chat-log">
         {chat.map((line, index) => (
           <div key={`${line.role}-${index}`} className={`bubble ${line.role}`}>
@@ -570,20 +734,23 @@ function SpeakingScreen({
           ))}
         </div>
       )}
-      <div className="send-row">
-        <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`Reply to ${activeRoom.character}`} />
-        <button
-          className="primary-action icon-only"
-          disabled={!draft.trim()}
-          onClick={() => {
-            const text = draft;
-            setDraft("");
-            sendMessage(text);
-          }}
-        >
-          <Send size={18} />
-        </button>
-      </div>
+      <details className="text-fallback">
+        <summary>{copy("textFallback")}</summary>
+        <div className="send-row">
+          <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={`Reply to ${activeRoom.character}`} />
+          <button
+            className="primary-action icon-only"
+            disabled={!draft.trim()}
+            onClick={() => {
+              const text = draft;
+              setDraft("");
+              sendMessage(text);
+            }}
+          >
+            <Send size={18} />
+          </button>
+        </div>
+      </details>
     </section>
   );
 }
@@ -652,7 +819,7 @@ function StorageScreen({
               </div>
             </>
           ) : (
-            <p>Review deck is calm.</p>
+            <p>{copy("reviewEmpty")}</p>
           )}
         </section>
       ) : (
@@ -679,7 +846,7 @@ function StorageScreen({
   );
 }
 
-function VibeScreen({
+function ProfileScreen({
   copy,
   locale,
   setLocale,
@@ -688,6 +855,8 @@ function VibeScreen({
   learningCode,
   setLearningCode,
   setNativeCode,
+  setVibe,
+  setTone,
   logout
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
@@ -698,110 +867,151 @@ function VibeScreen({
   learningCode: string;
   setLearningCode: (code: string) => void;
   setNativeCode: (code: string) => void;
+  setVibe: (vibe: string) => void;
+  setTone: (tone: string) => void;
   logout: () => void;
 }) {
+  const tones = ["soft sitcom bestie", "chill-bro from California", "strict British aristocrat"];
   return (
     <>
+      <section className="profile-hero card">
+        <div>
+          <small>{copy("profile")}</small>
+          <h2>{user.display_name}</h2>
+          <p>{user.email}</p>
+        </div>
+        <div className="profile-score">
+          <strong>{stats?.language_words ?? 0}</strong>
+          <span>{copy("myWords")}</span>
+        </div>
+      </section>
       <section className="stats-grid">
-        <Stat value={`${stats?.language_words ?? 0}`} label="words" />
         <Stat value={`${stats?.due_reviews ?? 0}`} label={copy("due")} />
-        <Stat value={learningCode.toUpperCase()} label="language" />
+        <Stat value={`${stats?.learned_words ?? 0}`} label={copy("learned")} />
+        <Stat value={`${user.daily_vibe_minutes}`} label="min/day" />
       </section>
-      <LocalePills value={locale} setValue={setLocale} copy={copy} />
-      <LanguagePills title={copy("learningLanguage")} value={learningCode} onChange={setLearningCode} />
-      <NativePills title={copy("nativeLanguage")} value={user.native_language_code} onChange={setNativeCode} />
-      <section className="card profile-card">
-        <strong>{user.display_name}</strong>
-        <span>{user.email}</span>
-        <button className="soft-action peach" onClick={logout}>
-          <LogOut size={16} />
-          {copy("logOut")}
-        </button>
+      <DropdownSelect title={copy("uiLanguage")} value={locale} options={uiLocales} onChange={(value) => setLocale(value as UiLocale)} />
+      <DropdownSelect title={copy("learningLanguage")} value={learningCode} options={learningLanguages} onChange={setLearningCode} />
+      <DropdownSelect title={copy("nativeLanguage")} value={user.native_language_code} options={nativeLanguages} onChange={setNativeCode} />
+
+      <section className="card settings-card">
+        <h2>{copy("learningVibe")}</h2>
+        <div className="button-grid">
+          {["Chill", "Normal", "Hardcore"].map((vibe) => (
+            <button key={vibe} className={user.learning_vibe === vibe ? "selected" : ""} onClick={() => setVibe(vibe)}>
+              {vibe}
+            </button>
+          ))}
+        </div>
       </section>
+
+      <section className="card settings-card">
+        <h2>{copy("aiTone")}</h2>
+        <div className="tone-list">
+          {tones.map((tone) => (
+            <button key={tone} className={user.ai_tone === tone ? "selected" : ""} onClick={() => setTone(tone)}>
+              <Bot size={17} />
+              {tone}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <button className="soft-action peach full-width" onClick={logout}>
+        <LogOut size={16} />
+        {copy("logOut")}
+      </button>
     </>
   );
 }
 
-function LocalePills({
+function DropdownSelect({
+  title,
   value,
-  setValue,
-  copy
+  options,
+  onChange
 }: {
-  value: UiLocale;
-  setValue: (locale: UiLocale) => void;
-  copy: (key: Parameters<typeof t>[1]) => string;
+  title: string;
+  value: string;
+  options: readonly SelectOption[];
+  onChange: (value: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.code === value) ?? options[0];
   return (
-    <section className="card compact">
-      <div className="section-title">
-        <Languages size={18} />
-        <h2>{copy("uiLanguage")}</h2>
-      </div>
-      <div className="pill-row">
-        {uiLocales.map((locale) => (
-          <button key={locale.code} className={value === locale.code ? "selected" : ""} onClick={() => setValue(locale.code)}>
-            {locale.short}
-          </button>
-        ))}
-      </div>
+    <section className={`select-card card ${open ? "open" : ""}`}>
+      <button className="select-trigger" onClick={() => setOpen((current) => !current)}>
+        <span>
+          <small>{title}</small>
+          <strong>
+            {selected.short} · {selected.label}
+          </strong>
+        </span>
+        <ChevronDown size={18} />
+      </button>
+      {open && (
+        <div className="select-menu">
+          {options.map((option) => (
+            <button
+              key={option.code}
+              className={option.code === value ? "selected" : ""}
+              onClick={() => {
+                onChange(option.code);
+                setOpen(false);
+              }}
+            >
+              <span>{option.short}</span>
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
 
-function LanguagePills({ title, value, onChange }: { title: string; value: string; onChange: (code: string) => void }) {
-  return (
-    <section className="card compact">
-      <h2>{title}</h2>
-      <div className="pill-row">
-        {learningLanguages.map((language) => (
-          <button key={language.code} className={value === language.code ? "selected" : ""} onClick={() => onChange(language.code)}>
-            {language.short}
-            <span>{language.label}</span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function NativePills({ title, value, onChange }: { title: string; value: string; onChange: (code: string) => void }) {
-  return (
-    <section className="card compact">
-      <h2>{title}</h2>
-      <div className="pill-row">
-        {nativeLanguages.map((language) => (
-          <button key={language.code} className={value === language.code ? "selected" : ""} onClick={() => onChange(language.code)}>
-            {language.short}
-            <span>{language.label}</span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function GrammarCard({ copy, drop }: { copy: (key: Parameters<typeof t>[1]) => string; drop?: GrammarDropDto }) {
-  const active = drop ?? {
+function GrammarLab({ copy, drop }: { copy: (key: Parameters<typeof t>[1]) => string; drop?: GrammarDropDto }) {
+  const [activeTopic, setActiveTopic] = useState(grammarTopics[0].id);
+  const [done, setDone] = useState("");
+  const topic = grammarTopics.find((item) => item.id === activeTopic) ?? grammarTopics[0];
+  const adaptive = drop ?? {
     title: "Past Simple",
     nudge: "Past Simple is tapping the window for 30 seconds.",
     tiny_explanation: "Finished time, finished action.",
     quests: ["I watched it yesterday", "She called me last night"]
   };
-  const [done, setDone] = useState("");
+
   return (
-    <section className="card grammar-card">
-      <h2>{copy("grammar")}</h2>
-      <strong>{active.title}</strong>
-      <p>{active.nudge}</p>
-      <p>{active.tiny_explanation}</p>
-      <div className="quest-list">
-        {active.quests.map((quest) => (
-          <button key={quest} className={done === quest ? "done" : ""} onClick={() => setDone(quest)}>
-            {done === quest ? <Check size={15} /> : <Sparkles size={15} />}
-            {quest}
+    <section className="card grammar-lab">
+      <div className="section-title">
+        <GraduationCap size={20} />
+        <h2>{copy("grammar")}</h2>
+      </div>
+      <div className="topic-tabs">
+        {grammarTopics.map((item) => (
+          <button key={item.id} className={item.id === activeTopic ? "selected" : ""} onClick={() => setActiveTopic(item.id)}>
+            {item.title}
           </button>
         ))}
       </div>
+      <article className="grammar-topic">
+        <strong>{topic.title}</strong>
+        <p>{topic.rule}</p>
+        <div className="quest-list">
+          {topic.examples.map((example) => (
+            <button key={example} className={done === example ? "done" : ""} onClick={() => setDone(example)}>
+              {done === example ? <Check size={15} /> : <Sparkles size={15} />}
+              {example}
+            </button>
+          ))}
+        </div>
+      </article>
+      <article className="adaptive-drop">
+        <small>{copy("adaptiveDrop")}</small>
+        <strong>{adaptive.title}</strong>
+        <p>{adaptive.nudge}</p>
+        <p>{adaptive.tiny_explanation}</p>
+      </article>
     </section>
   );
 }
@@ -814,3 +1024,24 @@ function Stat({ value, label }: { value: string; label: string }) {
     </div>
   );
 }
+
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => SpeechRecognition;
+    webkitSpeechRecognition?: new () => SpeechRecognition;
+  }
+}
+
+type SpeechRecognition = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+};
+
+type SpeechRecognitionEvent = {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+};
