@@ -72,3 +72,16 @@ PajamaTalk/
     androidApp/
     desktopApp/
 ```
+
+## Sprint 3A Status
+
+The shared Compose app now talks to FastAPI in dev mode:
+
+- Auto-registers/logs in as a development user.
+- Loads real words from `GET /words`.
+- Adds enriched words through `POST /words/enrich`.
+- Reviews cards through `POST /words/{id}/review`.
+- Analyzes pasted text through `POST /context/analyze`.
+- Loads speaking rooms through `GET /speaking/rooms`.
+
+The frontend tries `http://127.0.0.1:8000` first, then `http://127.0.0.1:8001`.

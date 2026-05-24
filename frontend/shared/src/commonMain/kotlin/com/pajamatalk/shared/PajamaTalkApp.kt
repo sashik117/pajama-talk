@@ -50,6 +50,7 @@ import androidx.compose.material.icons.rounded.Work
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -65,12 +66,16 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -93,6 +98,12 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import com.pajamatalk.shared.data.ContextAnalyzeDto
+import com.pajamatalk.shared.data.PajamaAppState
+import com.pajamatalk.shared.data.ReviewGrade
+import com.pajamatalk.shared.data.SpeakingRoomDto
+import com.pajamatalk.shared.data.WordDto
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 private val Lavender = Color(0xFFE8DEF8)
@@ -102,9 +113,17 @@ private val Mint = Color(0xFF9DCEC0)
 private val Butter = Color(0xFFFFD982)
 private val Graphite = Color(0xFF28242F)
 private val InkMuted = Color(0xFF6E6578)
+private val LocalPajamaState = staticCompositionLocalOf<PajamaAppState> {
+    error("PajamaAppState was not provided.")
+}
 
 @Composable
 fun PajamaTalkApp() {
+    val appState = remember { PajamaAppState() }
+    LaunchedEffect(Unit) {
+        appState.boot()
+    }
+
     MaterialTheme(
         colorScheme = lightColorScheme(
             primary = Graphite,
@@ -120,23 +139,25 @@ fun PajamaTalkApp() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,
         ) {
-            TabNavigator(AuraTab) {
-                Scaffold(
-                    contentWindowInsets = WindowInsets(0.dp),
-                    bottomBar = { PajamaBottomBar() },
-                ) { padding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Color(0xFFFFFBFF), Color(0xFFF8F1FF), Color(0xFFFFF4EE)),
-                                ),
-                            )
-                            .imePadding(),
-                    ) {
-                        CurrentTab()
+            CompositionLocalProvider(LocalPajamaState provides appState) {
+                TabNavigator(AuraTab) {
+                    Scaffold(
+                        contentWindowInsets = WindowInsets(0.dp),
+                        bottomBar = { PajamaBottomBar() },
+                    ) { padding ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(padding)
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(Color(0xFFFFFBFF), Color(0xFFF8F1FF), Color(0xFFFFF4EE)),
+                                    ),
+                                )
+                                .imePadding(),
+                        ) {
+                            CurrentTab()
+                        }
                     }
                 }
             }
@@ -229,7 +250,10 @@ private fun ScreenFrame(content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 private fun AuraScreen() {
+    val appState = LocalPajamaState.current
+    val scope = rememberCoroutineScope()
     var contextText by remember { mutableStateOf("") }
+
     ScreenFrame {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -243,6 +267,7 @@ private fun AuraScreen() {
             CandleBadge(days = 7)
         }
 
+        ConnectionStatus(appState)
         AuraHero()
 
         CozyCard(background = Color.White.copy(alpha = 0.84f)) {
@@ -250,7 +275,7 @@ private fun AuraScreen() {
             Spacer(Modifier.height(8.dp))
             Text("A tiny speaking quest, oat milk energy included.", color = InkMuted)
             Spacer(Modifier.height(14.dp))
-            SoftAction("Enter room", Icons.Rounded.Coffee, Peach)
+            SoftAction("Enter room", Icons.Rounded.Coffee, Peach, onClick = {})
         }
 
         CozyCard(background = Lavender.copy(alpha = 0.72f)) {
@@ -270,7 +295,24 @@ private fun AuraScreen() {
                 placeholder = { Text("Paste a line that caught you") },
             )
             Spacer(Modifier.height(12.dp))
-            SoftAction("Analyze", Icons.Rounded.Psychology, Mint)
+            SoftAction(
+                text = if (appState.isAnalyzingContext) "Analyzing" else "Analyze",
+                icon = Icons.Rounded.Psychology,
+                color = Mint,
+                enabled = !appState.isAnalyzingContext && contextText.trim().length >= 3,
+                onClick = {
+                    scope.launch { appState.analyzeContext(contextText) }
+                },
+            )
+            appState.contextResult?.let { result ->
+                Spacer(Modifier.height(14.dp))
+                ContextResultCard(
+                    result = result,
+                    isAdding = appState.isAddingWord,
+                    onAddAll = { scope.launch { appState.addContextSuggestions() } },
+                    onClear = { appState.clearContextResult() },
+                )
+            }
         }
 
         GrammarNudge()
@@ -362,16 +404,87 @@ private fun GrammarNudge() {
 }
 
 @Composable
+private fun ConnectionStatus(appState: PajamaAppState) {
+    val scope = rememberCoroutineScope()
+    when {
+        appState.isBooting -> LoadingCard("Connecting")
+        appState.errorMessage != null -> CozyCard(background = Peach.copy(alpha = 0.44f)) {
+            Text(appState.errorMessage ?: "API is resting.", color = Graphite, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            SoftAction(
+                text = "Refresh",
+                icon = Icons.Rounded.AutoAwesome,
+                color = Mint,
+                onClick = { scope.launch { appState.refreshAll() } },
+            )
+        }
+        appState.activeBaseUrl != null -> CozyCard(background = Mint.copy(alpha = 0.28f)) {
+            Text("Live API connected", color = Graphite, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun ContextResultCard(
+    result: ContextAnalyzeDto,
+    isAdding: Boolean,
+    onAddAll: () -> Unit,
+    onClear: () -> Unit,
+) {
+    CozyCard(background = Color.White.copy(alpha = 0.76f)) {
+        Text(result.summary, color = Graphite, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Text(result.hiddenMeaning, color = InkMuted)
+        Spacer(Modifier.height(12.dp))
+        result.highlights.take(3).forEach { highlight ->
+            Text(highlight.phrase, color = Graphite, fontWeight = FontWeight.Bold)
+            Text(highlight.explanation, color = InkMuted)
+            Spacer(Modifier.height(8.dp))
+        }
+        if (result.suggestedWords.isNotEmpty()) {
+            Text(result.suggestedWords.take(6).joinToString(" · "), color = Graphite)
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SoftAction(
+                    text = if (isAdding) "Adding" else "Add words",
+                    icon = Icons.Rounded.Bookmarks,
+                    color = Peach,
+                    modifier = Modifier.weight(1f),
+                    enabled = !isAdding,
+                    onClick = onAddAll,
+                )
+                SoftAction(
+                    text = "Clear",
+                    icon = Icons.Rounded.AutoAwesome,
+                    color = Lavender,
+                    modifier = Modifier.weight(1f),
+                    onClick = onClear,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LoadingCard(text: String) {
+    CozyCard(background = Color.White.copy(alpha = 0.72f)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CircularProgressIndicator(modifier = Modifier.size(22.dp), color = Graphite, strokeWidth = 2.dp)
+            Spacer(Modifier.width(10.dp))
+            Text(text, color = InkMuted, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
 private fun SpeakingRoomsScreen() {
-    val rooms = listOf(
-        Room("Lo-fi Coffee", "Alex", "barista with soft sarcasm", Icons.Rounded.Coffee, Peach),
-        Room("Gate B12", "Nova", "calm airport helper", Icons.Rounded.FlightTakeoff, Mint),
-        Room("IT Interview", "Jules", "friendly tech lead", Icons.Rounded.Work, Lavender),
-    )
+    val appState = LocalPajamaState.current
+    val rooms = appState.speakingRooms.map { it.toRoom() }.ifEmpty { fallbackRooms() }
     var activeRoom by remember { mutableStateOf<Room?>(null) }
 
     ScreenFrame {
         Text("Speaking Rooms", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
+        ConnectionStatus(appState)
         AnimatedVisibility(activeRoom == null) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 rooms.forEach { room ->
@@ -495,38 +608,96 @@ private fun WaveMicButton() {
 }
 
 @Composable
-private fun StorageScreen() {
-    var tab by remember { mutableIntStateOf(0) }
-    ScreenFrame {
-        Text("My Storage", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
-        TabRow(selectedTabIndex = tab, containerColor = Color.Transparent, contentColor = Graphite) {
-            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("My words") })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Review time") })
-        }
-        if (tab == 0) {
-            WordList()
-        } else {
-            SrsSwipeCard()
+private fun AddWordCard(
+    isAdding: Boolean,
+    onAdd: (String) -> Unit,
+) {
+    var term by remember { mutableStateOf("") }
+    CozyCard(background = Lavender.copy(alpha = 0.48f)) {
+        Text("New word", fontWeight = FontWeight.Bold, fontSize = 19.sp, color = Graphite)
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = term,
+                onValueChange = { term = it },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(24.dp),
+                singleLine = true,
+                placeholder = { Text("cozy") },
+            )
+            SoftAction(
+                text = if (isAdding) "..." else "Add",
+                icon = Icons.Rounded.AutoAwesome,
+                color = Mint,
+                enabled = !isAdding && term.isNotBlank(),
+                onClick = {
+                    onAdd(term)
+                    term = ""
+                },
+            )
         }
     }
 }
 
 @Composable
-private fun WordList() {
-    val words = listOf(
-        Word("cozy", "затишний", "/ˈkoʊzi/", 5),
-        Word("awkward", "незручний", "/ˈɔːkwərd/", 2),
-        Word("deadline", "дедлайн", "/ˈdedlaɪn/", 1),
-    )
+private fun StorageScreen() {
+    val appState = LocalPajamaState.current
+    val scope = rememberCoroutineScope()
+    var tab by remember { mutableIntStateOf(0) }
+
+    ScreenFrame {
+        Text("My Storage", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Graphite)
+        ConnectionStatus(appState)
+        AddWordCard(
+            isAdding = appState.isAddingWord,
+            onAdd = { term -> scope.launch { appState.addWord(term) } },
+        )
+        TabRow(selectedTabIndex = tab, containerColor = Color.Transparent, contentColor = Graphite) {
+            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("My words") })
+            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Review time") })
+        }
+        if (tab == 0) {
+            WordList(
+                words = appState.words,
+                isLoading = appState.isWordsLoading || appState.isBooting,
+                onRefresh = { scope.launch { appState.refreshAll() } },
+            )
+        } else {
+            SrsSwipeCard(
+                word = appState.words.firstOrNull(),
+                isReviewing = appState.isReviewing,
+                onReview = { word, grade -> scope.launch { appState.reviewWord(word, grade) } },
+            )
+        }
+    }
+}
+
+@Composable
+private fun WordList(
+    words: List<WordDto>,
+    isLoading: Boolean,
+    onRefresh: () -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        words.forEach { word ->
-            CozyCard(background = Lavender.copy(alpha = 0.28f + word.level * 0.09f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(word.term, fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Graphite)
-                        Text("${word.translation} · ${word.transcription}", color = InkMuted)
+        if (isLoading) {
+            LoadingCard("Loading words")
+        } else if (words.isEmpty()) {
+            CozyCard(background = Color.White.copy(alpha = 0.86f)) {
+                Text("Storage is waiting for its first word", fontWeight = FontWeight.Bold, color = Graphite)
+                Spacer(Modifier.height(10.dp))
+                SoftAction("Refresh", Icons.Rounded.AutoAwesome, Mint, onClick = onRefresh)
+            }
+        } else {
+            words.forEach { word ->
+                val alpha = 0.28f + word.colorLevel.coerceIn(0, 5) * 0.09f
+                CozyCard(background = Lavender.copy(alpha = alpha)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(word.term, fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Graphite)
+                            Text("${word.translation} · ${word.transcription}", color = InkMuted)
+                        }
+                        Text("${word.colorLevel}/5", color = Graphite, fontWeight = FontWeight.Bold)
                     }
-                    Text("${word.level}/5", color = Graphite, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -535,7 +706,20 @@ private fun WordList() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun SrsSwipeCard() {
+private fun SrsSwipeCard(
+    word: WordDto?,
+    isReviewing: Boolean,
+    onReview: (WordDto, ReviewGrade) -> Unit,
+) {
+    if (word == null) {
+        CozyCard(background = Color.White.copy(alpha = 0.86f)) {
+            Text("Review deck is calm", fontWeight = FontWeight.Bold, color = Graphite)
+            Spacer(Modifier.height(6.dp))
+            Text("Add a word and it will show up here.", color = InkMuted)
+        }
+        return
+    }
+
     var offsetX by remember { mutableFloatStateOf(0f) }
     val trail = if (offsetX >= 0) Mint else Peach
     Box(
@@ -557,7 +741,13 @@ private fun SrsSwipeCard() {
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .pointerInput(Unit) {
                     detectDragGestures(
-                        onDragEnd = { offsetX = 0f },
+                        onDragEnd = {
+                            when {
+                                offsetX > 140f -> onReview(word, ReviewGrade.Remember)
+                                offsetX < -140f -> onReview(word, ReviewGrade.Forgot)
+                            }
+                            offsetX = 0f
+                        },
                         onDrag = { change, dragAmount ->
                             change.consume()
                             offsetX += dragAmount.x
@@ -567,15 +757,29 @@ private fun SrsSwipeCard() {
             background = Color.White.copy(alpha = 0.94f),
         ) {
             Spacer(Modifier.height(24.dp))
-            Text("awkward", fontSize = 38.sp, fontWeight = FontWeight.Black, color = Graphite)
+            Text(word.term, fontSize = 38.sp, fontWeight = FontWeight.Black, color = Graphite)
             Spacer(Modifier.height(10.dp))
-            Text("/ˈɔːkwərd/", color = InkMuted)
+            Text(word.transcription.ifBlank { word.translation }, color = InkMuted)
             Spacer(Modifier.height(24.dp))
-            Text("Swipe right if it stayed. Left if it slipped away.", color = InkMuted)
+            Text(word.meme.ifBlank { "Swipe right if it stayed. Left if it slipped away." }, color = InkMuted)
             Spacer(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SoftAction("Forgot", Icons.Rounded.Bookmarks, Peach, Modifier.weight(1f))
-                SoftAction("Remember", Icons.Rounded.AutoAwesome, Mint, Modifier.weight(1f))
+                SoftAction(
+                    text = "Forgot",
+                    icon = Icons.Rounded.Bookmarks,
+                    color = Peach,
+                    modifier = Modifier.weight(1f),
+                    enabled = !isReviewing,
+                    onClick = { onReview(word, ReviewGrade.Forgot) },
+                )
+                SoftAction(
+                    text = "Remember",
+                    icon = Icons.Rounded.AutoAwesome,
+                    color = Mint,
+                    modifier = Modifier.weight(1f),
+                    enabled = !isReviewing,
+                    onClick = { onReview(word, ReviewGrade.Remember) },
+                )
             }
         }
     }
@@ -653,13 +857,16 @@ private fun SoftAction(
     icon: ImageVector,
     color: Color,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
 ) {
     TextButton(
-        onClick = {},
+        onClick = onClick,
+        enabled = enabled,
         modifier = modifier
             .height(48.dp)
             .clip(RoundedCornerShape(24.dp))
-            .background(color.copy(alpha = 0.72f)),
+            .background(color.copy(alpha = if (enabled) 0.72f else 0.32f)),
         colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
     ) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -676,9 +883,35 @@ private data class Room(
     val color: Color,
 )
 
-private data class Word(
-    val term: String,
-    val translation: String,
-    val transcription: String,
-    val level: Int,
+private fun SpeakingRoomDto.toRoom(): Room {
+    val lowerId = id.lowercase()
+    return when {
+        "airport" in lowerId || "gate" in lowerId -> Room(
+            title = title,
+            character = character,
+            vibe = vibe,
+            icon = Icons.Rounded.FlightTakeoff,
+            color = Mint,
+        )
+        "interview" in lowerId -> Room(
+            title = title,
+            character = character,
+            vibe = vibe,
+            icon = Icons.Rounded.Work,
+            color = Lavender,
+        )
+        else -> Room(
+            title = title,
+            character = character,
+            vibe = vibe,
+            icon = Icons.Rounded.Coffee,
+            color = Peach,
+        )
+    }
+}
+
+private fun fallbackRooms(): List<Room> = listOf(
+    Room("Lo-fi Coffee", "Alex", "barista with soft sarcasm", Icons.Rounded.Coffee, Peach),
+    Room("Gate B12", "Nova", "calm airport helper", Icons.Rounded.FlightTakeoff, Mint),
+    Room("IT Interview", "Jules", "friendly tech lead", Icons.Rounded.Work, Lavender),
 )

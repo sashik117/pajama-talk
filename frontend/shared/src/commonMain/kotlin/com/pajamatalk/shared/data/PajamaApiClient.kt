@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 class PajamaApiClient(
-    private val baseUrl: String = "http://127.0.0.1:8000",
+    val baseUrl: String = "http://127.0.0.1:8000",
     private val client: HttpClient = HttpClient {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
