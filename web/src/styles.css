@@ -561,6 +561,87 @@ textarea {
   background: linear-gradient(135deg, rgba(232, 222, 248, 0.84), rgba(255, 255, 255, 0.88), rgba(215, 240, 232, 0.7));
 }
 
+.daily-plan-card {
+  display: grid;
+  gap: 10px;
+}
+
+.daily-task-list {
+  display: grid;
+  gap: 8px;
+}
+
+.daily-task {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  border-radius: 18px;
+  padding: 9px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.daily-task.done {
+  background: rgba(157, 206, 192, 0.32);
+}
+
+.task-check,
+.task-main,
+.task-action {
+  border: 0;
+  color: #292632;
+}
+
+.task-check {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(247, 241, 255, 0.9);
+}
+
+.daily-task.done .task-check {
+  background: rgba(157, 206, 192, 0.72);
+}
+
+.task-main {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.task-main strong,
+.task-main span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-main strong {
+  color: #292632;
+  font-size: 13px;
+  font-weight: 580;
+}
+
+.task-main span {
+  color: #7a7082;
+  font-size: 12px;
+}
+
+.task-action {
+  min-height: 32px;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: rgba(232, 222, 248, 0.82);
+  font-size: 12px;
+  font-weight: 540;
+}
+
 .two-selects {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1952,6 +2033,15 @@ textarea {
   .engagement-grid,
   .two-selects {
     grid-template-columns: 1fr;
+  }
+
+  .daily-task {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .task-action {
+    grid-column: 2;
+    width: fit-content;
   }
 
   .stats-grid {

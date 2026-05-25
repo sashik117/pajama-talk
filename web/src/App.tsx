@@ -576,6 +576,14 @@ function uiLocaleFromCode(code: string): UiLocale {
   return uiLocales.some((locale) => locale.code === code) ? (code as UiLocale) : "en";
 }
 
+function readDailyDone(key: string): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? "{}") as Record<string, boolean>;
+  } catch {
+    return {};
+  }
+}
+
 function getSpeechLang(code: string) {
   return (
     {
@@ -1167,6 +1175,12 @@ function HomeScreen({
 }) {
   const contextExamples = contextExamplesByLanguage[learningCode] ?? contextExamplesByLanguage.en;
   const [contextSavedNote, setContextSavedNote] = useState("");
+  const dailyKey = `pajama-daily-${new Date().toISOString().slice(0, 10)}-${learningCode}`;
+  const [dailyDone, setDailyDone] = useState<Record<string, boolean>>(() => readDailyDone(dailyKey));
+
+  useEffect(() => {
+    setDailyDone(readDailyDone(dailyKey));
+  }, [dailyKey]);
 
   async function saveContextWord(word: string) {
     const created = await addWord(word, contextResult?.summary ?? copy("contextTitle"));
@@ -1187,6 +1201,40 @@ function HomeScreen({
       window.setTimeout(() => setContextSavedNote(""), 2200);
     }
   }
+
+  function toggleDailyTask(id: string) {
+    setDailyDone((current) => {
+      const next = { ...current, [id]: !current[id] };
+      localStorage.setItem(dailyKey, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  const firstStep = learningPath?.steps[0];
+  const firstPhrase = firstStep?.examples[0]?.phrase;
+  const dailyTasks = [
+    {
+      id: "phrase",
+      title: firstPhrase ?? copy("speak"),
+      body: firstStep?.micro_task ?? copy("dailyFocusSub"),
+      actionLabel: copy("speak"),
+      action: openSpeak,
+    },
+    {
+      id: "context",
+      title: contextExamples[0],
+      body: `${copy("contextTitle")} → ${copy("addWords")}`,
+      actionLabel: copy("analyze"),
+      action: () => setContextText(contextExamples[0]),
+    },
+    {
+      id: "review",
+      title: dueWord ? dueWord.term : copy("reviewEmpty"),
+      body: dueWord ? dueWord.translation : copy("reviewEmpty"),
+      actionLabel: copy("review"),
+      action: openReview,
+    },
+  ];
 
   return (
     <>
@@ -1215,6 +1263,29 @@ function HomeScreen({
               {copy("review")}
             </button>
           </div>
+        </div>
+      </section>
+
+      <section className="card daily-plan-card">
+        <div className="section-title">
+          <Check size={20} />
+          <h2>{copy("today")}</h2>
+        </div>
+        <div className="daily-task-list">
+          {dailyTasks.map((task) => (
+            <article key={task.id} className={dailyDone[task.id] ? "daily-task done" : "daily-task"}>
+              <button className="task-check" onClick={() => toggleDailyTask(task.id)} aria-label={dailyDone[task.id] ? "Mark not done" : "Mark done"}>
+                {dailyDone[task.id] && <Check size={15} />}
+              </button>
+              <button className="task-main" onClick={task.action}>
+                <strong>{task.title}</strong>
+                <span>{task.body}</span>
+              </button>
+              <button className="task-action" onClick={task.action}>
+                {task.actionLabel}
+              </button>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -1279,13 +1350,23 @@ function LearningPathPanel({
   addWord: (word: string, source?: string) => Promise<WordDto | undefined>;
 }) {
   const [activeStep, setActiveStep] = useState(path.steps[0]?.id ?? "");
+  const [savedPhrase, setSavedPhrase] = useState("");
   const step = path.steps.find((item) => item.id === activeStep) ?? path.steps[0];
 
   useEffect(() => {
     setActiveStep(path.steps[0]?.id ?? "");
+    setSavedPhrase("");
   }, [path.language_code, path.steps]);
 
   if (!step) return null;
+
+  async function savePhrase(phrase: string) {
+    const created = await addWord(phrase, step.title);
+    if (created) {
+      setSavedPhrase(`${copy("add")}: ${created.term}`);
+      window.setTimeout(() => setSavedPhrase(""), 1800);
+    }
+  }
 
   return (
     <section className="card learning-path-card">
@@ -1317,13 +1398,14 @@ function LearningPathPanel({
               <strong>{example.phrase}</strong>
               <span>{example.pronunciation}</span>
               <p>{example.meaning}</p>
-              <button className="phrase-add" onClick={() => void addWord(example.phrase, step.title)}>
+              <button className="phrase-add" onClick={() => void savePhrase(example.phrase)}>
                 <Plus size={14} />
                 {copy("add")}
               </button>
             </div>
           ))}
         </div>
+        {savedPhrase && <div className="inline-note">{savedPhrase}</div>}
         <div className="micro-task">
           <Sparkles size={16} />
           <span>{step.micro_task}</span>
