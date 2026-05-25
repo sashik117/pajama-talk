@@ -1088,7 +1088,9 @@ textarea {
 
 .messenger-card {
   min-height: min(680px, calc(100dvh - 116px));
-  grid-template-rows: auto minmax(220px, 1fr) auto auto auto;
+  display: grid;
+  grid-template-rows: auto auto minmax(220px, 1fr) auto auto auto;
+  gap: 12px;
 }
 
 .messenger-card > * {
@@ -1106,6 +1108,207 @@ textarea {
 
 .messenger-card .chat-log::-webkit-scrollbar {
   display: none;
+}
+
+.mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.mode-toggle button,
+.speed-row button,
+.summary-phrases button {
+  border: 0;
+  color: #292632;
+  background: transparent;
+}
+
+.mode-toggle button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 14px;
+  font-weight: 590;
+}
+
+.mode-toggle button.active {
+  background: rgba(232, 222, 248, 0.88);
+}
+
+.call-mode {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 10px 10px 8px;
+  text-align: center;
+}
+
+.call-aura {
+  width: min(48vw, 210px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.9), transparent 28%),
+    radial-gradient(circle at 65% 70%, rgba(157, 206, 192, 0.9), transparent 36%),
+    linear-gradient(145deg, rgba(232, 222, 248, 0.95), rgba(243, 182, 168, 0.82));
+  box-shadow: 0 24px 80px rgba(73, 55, 98, 0.12);
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.call-aura.listening {
+  transform: scale(1.035);
+  box-shadow: 0 28px 94px rgba(157, 206, 192, 0.32);
+  animation: callPulse 1.2s ease-in-out infinite alternate;
+}
+
+.call-aura .room-icon {
+  width: 66px;
+  height: 66px;
+}
+
+.call-copy {
+  display: grid;
+  gap: 3px;
+  max-width: 430px;
+}
+
+.call-copy strong {
+  color: #292632;
+  font-size: 20px;
+  font-weight: 620;
+}
+
+.call-copy span {
+  color: #6e6578;
+  font-size: 13px;
+}
+
+.speed-row {
+  width: min(100%, 330px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 5px;
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.speed-row button {
+  min-height: 34px;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 580;
+}
+
+.speed-row button.selected {
+  background: rgba(157, 206, 192, 0.7);
+}
+
+.call-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.call-mic {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #292632;
+  background: linear-gradient(135deg, rgba(243, 182, 168, 0.82), rgba(232, 222, 248, 0.92));
+  box-shadow: 0 18px 44px rgba(73, 55, 98, 0.12);
+  touch-action: none;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.call-mic:active,
+.call-mic.listening {
+  transform: scale(0.96);
+  box-shadow: 0 10px 28px rgba(73, 55, 98, 0.09);
+}
+
+.hangup-action {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 13px;
+  color: #292632;
+  background: rgba(243, 182, 168, 0.72);
+  font-weight: 590;
+}
+
+.hangup-action span {
+  color: #292632;
+  font-size: 12px;
+}
+
+.call-summary {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.call-summary strong {
+  color: #292632;
+  font-weight: 620;
+}
+
+.call-summary p {
+  color: #6e6578;
+  font-size: 12px;
+}
+
+.summary-phrases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.summary-phrases button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: rgba(157, 206, 192, 0.58);
+  font-size: 12px;
+  font-weight: 560;
+}
+
+@keyframes callPulse {
+  from {
+    filter: saturate(1);
+  }
+
+  to {
+    filter: saturate(1.18);
+  }
 }
 
 .bubble {
@@ -1560,6 +1763,14 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .call-aura {
+    width: min(54vw, 190px);
+  }
+
+  .call-mode {
+    gap: 9px;
+  }
+
   .example-grid,
   .option-grid {
     grid-template-columns: 1fr;
@@ -1591,5 +1802,22 @@ textarea {
 
   .select-menu {
     grid-template-columns: 1fr;
+  }
+
+  .messenger-card {
+    min-height: calc(100dvh - 104px);
+  }
+
+  .call-mode {
+    padding-inline: 4px;
+  }
+
+  .call-aura {
+    width: min(58vw, 180px);
+  }
+
+  .call-mic {
+    width: 68px;
+    height: 68px;
   }
 }

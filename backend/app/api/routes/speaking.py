@@ -124,22 +124,97 @@ def speaking_hints(
     )
 
 
-@router.websocket("/ws")
-async def speaking_ws(websocket: WebSocket) -> None:
-    token = websocket.query_params.get("token")
-    room_id = websocket.query_params.get("room_id", "coffee-alex")
-    if token is None:
-        await websocket.close(code=4401)
-        return
+def _learning_terms(db: Session, user: User) -> list[str]:
+    return [
+        row[0]
+        for row in (
+            db.query(Word.term)
+            .filter(
+                Word.owner_id == user.id,
+                Word.language_code == user.active_language_code,
+                Word.status == "learning",
+            )
+            .order_by(Word.created_at.desc())
+            .limit(6)
+            .all()
+        )
+    ]
 
+
+async def _stream_assistant_reply(
+    websocket: WebSocket,
+    db: Session,
+    user: User,
+    room_id: str,
+    message: str,
+    token_type: str,
+) -> str:
+    reply_parts: list[str] = []
+    async for token_text in stream_roleplay_reply(
+        room_id=room_id,
+        user_text=message,
+        tone=user.ai_tone,
+        language_code=user.active_language_code,
+        learning_terms=_learning_terms(db, user),
+        target_language_code=user.native_language_code,
+    ):
+        reply_parts.append(token_text)
+        await websocket.send_json({"type": token_type, "value": token_text})
+
+    reply = "".join(reply_parts).strip()
+    db.add(ChatMessage(owner_id=user.id, room_id=room_id, role="assistant", content=reply))
+    db.commit()
+    return reply
+
+
+def _call_summary(db: Session, user: User, room_id: str) -> dict[str, object]:
+    history = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.owner_id == user.id, ChatMessage.room_id == room_id)
+        .order_by(ChatMessage.created_at.desc())
+        .limit(16)
+        .all()
+    )
+    ordered = list(reversed(history))
+    user_turns = [item for item in ordered if item.role == "user"]
+    assistant_text = " ".join(item.content for item in ordered if item.role == "assistant")
+    phrases = []
+    for chunk in assistant_text.replace("?", ".").replace("!", ".").split("."):
+        phrase = chunk.strip()
+        if 8 <= len(phrase) <= 48 and phrase not in phrases:
+            phrases.append(phrase)
+        if len(phrases) == 4:
+            break
+    mistakes = [item.mistake_tag for item in ordered if item.mistake_tag]
+    grammar_feedback = (
+        f"Focus next time: {mistakes[-1].replace('_', ' ')}."
+        if mistakes
+        else "No repeated grammar pattern yet. Keep speaking in short, clear sentences."
+    )
+    return {
+        "topic": f"{len(user_turns)} voice turns in {room_id.replace('-', ' ')}.",
+        "new_phrases": phrases or ["Could I say that another way?", "What would you recommend next?"],
+        "grammar_feedback": grammar_feedback,
+        "turns": len(user_turns),
+    }
+
+
+def _user_from_ws_token(websocket: WebSocket, db: Session) -> User | None:
+    token = websocket.query_params.get("token")
+    if token is None:
+        return None
     try:
         subject = decode_access_token(token)
     except Exception:
-        await websocket.close(code=4401)
-        return
+        return None
+    return db.query(User).filter(User.email == subject).first()
 
+
+@router.websocket("/ws")
+async def speaking_ws(websocket: WebSocket) -> None:
+    room_id = websocket.query_params.get("room_id", "coffee-alex")
     db: Session = SessionLocal()
-    user = db.query(User).filter(User.email == subject).first()
+    user = _user_from_ws_token(websocket, db)
     if user is None:
         db.close()
         await websocket.close(code=4401)
@@ -160,36 +235,69 @@ async def speaking_ws(websocket: WebSocket) -> None:
             )
             db.commit()
 
-            learning_terms = [
-                row[0]
-                for row in (
-                    db.query(Word.term)
-                    .filter(
-                        Word.owner_id == user.id,
-                        Word.language_code == user.active_language_code,
-                        Word.status == "learning",
-                    )
-                    .order_by(Word.created_at.desc())
-                    .limit(6)
-                    .all()
+            await _stream_assistant_reply(websocket, db, user, room_id, message, "token")
+            await websocket.send_json({"type": "done"})
+    except WebSocketDisconnect:
+        return
+    finally:
+        db.close()
+
+
+@router.websocket("/voice-ws")
+async def speaking_voice_ws(websocket: WebSocket) -> None:
+    room_id = websocket.query_params.get("room_id", "coffee-alex")
+    db: Session = SessionLocal()
+    user = _user_from_ws_token(websocket, db)
+    if user is None:
+        db.close()
+        await websocket.close(code=4401)
+        return
+
+    await websocket.accept()
+    await websocket.send_json(
+        {
+            "type": "session_ready",
+            "stt": "browser-stt-now; whisper-audio-chunks-ready",
+            "tts": "client-speech-synthesis-now; provider-audio-chunks-ready",
+        }
+    )
+    try:
+        while True:
+            payload = await websocket.receive_json()
+            event_type = payload.get("type")
+            if event_type == "audio_chunk":
+                await websocket.send_json({"type": "stt_status", "value": "audio chunk accepted"})
+                continue
+            if event_type == "end_call":
+                await websocket.send_json({"type": "call_summary", "value": _call_summary(db, user, room_id)})
+                await websocket.send_json({"type": "done"})
+                continue
+
+            message = str(payload.get("value") or payload.get("text") or "").strip()
+            if not message:
+                await websocket.send_json({"type": "error", "value": "Empty voice turn."})
+                continue
+
+            db.add(
+                ChatMessage(
+                    owner_id=user.id,
+                    room_id=room_id,
+                    role="user",
+                    content=message,
+                    mistake_tag=detect_mistake_tag(message),
                 )
-            ]
-
-            reply_parts: list[str] = []
-            async for token_text in stream_roleplay_reply(
-                room_id=room_id,
-                user_text=message,
-                tone=user.ai_tone,
-                language_code=user.active_language_code,
-                learning_terms=learning_terms,
-                target_language_code=user.native_language_code,
-            ):
-                reply_parts.append(token_text)
-                await websocket.send_json({"type": "token", "value": token_text})
-
-            reply = "".join(reply_parts).strip()
-            db.add(ChatMessage(owner_id=user.id, room_id=room_id, role="assistant", content=reply))
+            )
             db.commit()
+            await websocket.send_json({"type": "transcript", "value": message})
+            reply = await _stream_assistant_reply(websocket, db, user, room_id, message, "assistant_token")
+            await websocket.send_json(
+                {
+                    "type": "tts",
+                    "format": "client_speech_synthesis",
+                    "text": reply,
+                    "speed": payload.get("speed", 1),
+                }
+            )
             await websocket.send_json({"type": "done"})
     except WebSocketDisconnect:
         return

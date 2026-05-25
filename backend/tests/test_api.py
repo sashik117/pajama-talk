@@ -193,6 +193,34 @@ def test_speaking_websocket_uses_learning_words(client: TestClient) -> None:
     assert "cozy" in "".join(tokens)
 
 
+def test_voice_websocket_turn_and_summary(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/voice-ws?token={token}&room_id=coffee-alex") as websocket:
+        ready = websocket.receive_json()
+        assert ready["type"] == "session_ready"
+        websocket.send_json({"type": "user_text", "value": "Could I get a latte?", "speed": 0.9})
+        tokens: list[str] = []
+        tts_event = None
+        while True:
+            event = websocket.receive_json()
+            if event["type"] == "assistant_token":
+                tokens.append(event["value"])
+            if event["type"] == "tts":
+                tts_event = event
+            if event["type"] == "done":
+                break
+        assert "".join(tokens).strip().startswith("Nice choice")
+        assert tts_event["format"] == "client_speech_synthesis"
+
+        websocket.send_json({"type": "end_call"})
+        summary = websocket.receive_json()
+        assert summary["type"] == "call_summary"
+        assert summary["value"]["turns"] == 1
+        assert summary["value"]["new_phrases"]
+
+
 def test_grammar_drop_responds_to_speaking_mistake(client: TestClient) -> None:
     headers = auth_headers(client)
     token = headers["Authorization"].replace("Bearer ", "")

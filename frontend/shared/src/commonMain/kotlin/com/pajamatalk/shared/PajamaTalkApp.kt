@@ -1009,6 +1009,7 @@ private fun DialoguePreview(
     onBack: () -> Unit,
 ) {
     var draft by remember(room.id) { mutableStateOf("") }
+    var mode by remember(room.id) { mutableStateOf("text") }
 
     CozyCard(background = Color.White.copy(alpha = 0.9f)) {
         TextButton(onClick = onBack, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
@@ -1030,55 +1031,165 @@ private fun DialoguePreview(
                 Text(room.title, color = InkMuted)
             }
         }
-        Spacer(Modifier.height(22.dp))
-        messages.ifEmpty {
-            listOf(SpeakingChatMessage("Hey, want to practice a tiny real-life scene?", incoming = true))
-        }.forEach { message ->
-            ChatBubble(message.text.ifBlank { "..." }, incoming = message.incoming)
+        Spacer(Modifier.height(14.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White.copy(alpha = 0.48f))
+                .padding(5.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            SpeakingModeChip("Text", Icons.Rounded.Psychology, mode == "text", Modifier.weight(1f)) { mode = "text" }
+            SpeakingModeChip("Call", Icons.Rounded.Mic, mode == "call", Modifier.weight(1f)) { mode = "call" }
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(14.dp))
+        AnimatedVisibility(mode == "call") {
+            CallModePreview(room = room, isStreaming = isStreaming, onEndCall = { mode = "text" })
+        }
+        AnimatedVisibility(mode == "text") {
+            Column {
+                messages.ifEmpty {
+                    listOf(SpeakingChatMessage("Hey, want to practice a tiny real-life scene?", incoming = true))
+                }.forEach { message ->
+                    ChatBubble(message.text.ifBlank { "..." }, incoming = message.incoming)
+                }
+                Spacer(Modifier.height(4.dp))
+                SoftAction(
+                    text = if (isLoadingHints) "Thinking" else "Hints",
+                    icon = Icons.Rounded.AutoAwesome,
+                    color = Mint,
+                    enabled = !isLoadingHints && !isStreaming,
+                    onClick = onHints,
+                )
+                hints?.let { hintSet ->
+                    Spacer(Modifier.height(12.dp))
+                    HintBubble("Chill", hintSet.simple)
+                    HintBubble("Grammar", hintSet.conversational)
+                    HintBubble("Question", hintSet.spicy)
+                }
+                Spacer(Modifier.height(20.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = draft,
+                        onValueChange = { draft = it },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(24.dp),
+                        singleLine = true,
+                        placeholder = { Text("Reply to ${room.character}") },
+                    )
+                    SoftAction(
+                        text = "Mic",
+                        icon = Icons.Rounded.Mic,
+                        color = Mint,
+                        enabled = !isStreaming,
+                        onClick = {},
+                    )
+                    SoftAction(
+                        text = if (isStreaming) "..." else "Send",
+                        icon = Icons.Rounded.AutoAwesome,
+                        color = Peach,
+                        enabled = !isStreaming && draft.trim().isNotBlank(),
+                        onClick = {
+                            val message = draft
+                            draft = ""
+                            onSend(message)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpeakingModeChip(
+    text: String,
+    icon: ImageVector,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        modifier = modifier
+            .height(38.dp)
+            .clip(RoundedCornerShape(17.dp))
+            .background(if (selected) Lavender.copy(alpha = 0.82f) else Color.Transparent),
+        colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(17.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(text, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun CallModePreview(room: Room, isStreaming: Boolean, onEndCall: () -> Unit) {
+    val transition = rememberInfiniteTransition(label = "call-aura")
+    val pulse by transition.animateFloat(
+        0.96f,
+        1.04f,
+        infiniteRepeatable(tween(1150), RepeatMode.Reverse),
+        label = "call-pulse",
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(220.dp)
+                .scale(if (isStreaming) pulse else 1f)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        listOf(Color.White.copy(alpha = 0.9f), Lavender, Peach, Mint),
+                    ),
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(74.dp)
+                    .clip(CircleShape)
+                    .background(room.color.copy(alpha = 0.78f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(room.icon, contentDescription = null, tint = Graphite, modifier = Modifier.size(34.dp))
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Text(room.character, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
+        Text("Hold to talk. Release to listen.", color = InkMuted, fontSize = 13.sp)
+        Spacer(Modifier.height(14.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Slow", "Natural", "Fast").forEachIndexed { index, label ->
+                Text(
+                    label,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(if (index == 1) Mint.copy(alpha = 0.58f) else Color.White.copy(alpha = 0.58f))
+                        .padding(horizontal = 13.dp, vertical = 8.dp),
+                    color = Graphite,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        WaveMicButton()
+        Spacer(Modifier.height(12.dp))
         SoftAction(
-            text = if (isLoadingHints) "Thinking" else "Hints",
-            icon = Icons.Rounded.AutoAwesome,
-            color = Mint,
-            enabled = !isLoadingHints && !isStreaming,
-            onClick = onHints,
+            text = "End call",
+            icon = Icons.Rounded.Mic,
+            color = Peach,
+            enabled = true,
+            onClick = onEndCall,
         )
-        hints?.let { hintSet ->
-            Spacer(Modifier.height(12.dp))
-            HintBubble("Chill", hintSet.simple)
-            HintBubble("Grammar", hintSet.conversational)
-            HintBubble("Question", hintSet.spicy)
-        }
-        Spacer(Modifier.height(20.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = draft,
-                onValueChange = { draft = it },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(24.dp),
-                singleLine = true,
-                placeholder = { Text("Reply to ${room.character}") },
-            )
-            SoftAction(
-                text = "Mic",
-                icon = Icons.Rounded.Mic,
-                color = Mint,
-                enabled = !isStreaming,
-                onClick = {},
-            )
-            SoftAction(
-                text = if (isStreaming) "..." else "Send",
-                icon = Icons.Rounded.AutoAwesome,
-                color = Peach,
-                enabled = !isStreaming && draft.trim().isNotBlank(),
-                onClick = {
-                    val message = draft
-                    draft = ""
-                    onSend(message)
-                },
-            )
-        }
     }
 }
 

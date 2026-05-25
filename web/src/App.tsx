@@ -8,12 +8,15 @@ import {
   Coffee,
   GraduationCap,
   Heart,
+  Headphones,
   Home,
   Languages,
   LogOut,
   MapPin,
+  MessageCircle,
   Mic,
   MicOff,
+  PhoneOff,
   Plane,
   Plus,
   Send,
@@ -26,6 +29,7 @@ import {
 } from "lucide-react";
 import {
   api,
+  CallSummaryDto,
   ContextAnalyzeDto,
   GrammarCheckDto,
   GrammarDropDto,
@@ -42,6 +46,19 @@ import { languageName, learningLanguages, nativeLanguages, t, UiLocale, uiLocale
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type ChatLine = { role: "user" | "assistant"; text: string };
 type SelectOption = { code: string; label: string; short: string; flag: string };
+type SpeakingTransport = "text" | "voice";
+type SpeakingMode = "text" | "call";
+type VoiceSpeed = "slow" | "natural" | "fast";
+type SpeakingModeCopy = {
+  text: string;
+  call: string;
+  holdToTalk: string;
+  speedSlow: string;
+  speedNatural: string;
+  speedFast: string;
+  hangUp: string;
+  callSummary: string;
+};
 type ProfileChoiceCopy = {
   setup: string;
   currentLevel: string;
@@ -61,6 +78,160 @@ const targetLevelOptions = ["A1", "A2", "B1", "B2", "C1", "Fluent"] as const;
 const effortOptions = ["Light", "Steady", "Intense"] as const;
 const vibeOptions = ["Chill", "Normal", "Hardcore"] as const;
 const toneOptions = ["Neutral teacher", "Supportive coach", "Precise examiner"] as const;
+const voiceSpeedRate: Record<VoiceSpeed, number> = { slow: 0.82, natural: 1, fast: 1.16 };
+
+const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
+  en: {
+    text: "Text",
+    call: "Call",
+    holdToTalk: "Hold to talk. Release to listen.",
+    speedSlow: "Slow",
+    speedNatural: "Natural",
+    speedFast: "Fast",
+    hangUp: "Hang up",
+    callSummary: "Call summary"
+  },
+  uk: {
+    text: "Текст",
+    call: "Дзвінок",
+    holdToTalk: "Затисни, щоб говорити. Відпусти, щоб слухати.",
+    speedSlow: "Повільно",
+    speedNatural: "Нормально",
+    speedFast: "Швидко",
+    hangUp: "Завершити",
+    callSummary: "Підсумок дзвінка"
+  },
+  ru: {
+    text: "Текст",
+    call: "Звонок",
+    holdToTalk: "Зажми, чтобы говорить. Отпусти, чтобы слушать.",
+    speedSlow: "Медленно",
+    speedNatural: "Нормально",
+    speedFast: "Быстро",
+    hangUp: "Завершить",
+    callSummary: "Итог звонка"
+  },
+  pl: {
+    text: "Tekst",
+    call: "Połączenie",
+    holdToTalk: "Przytrzymaj, aby mówić. Puść, aby słuchać.",
+    speedSlow: "Wolno",
+    speedNatural: "Naturalnie",
+    speedFast: "Szybko",
+    hangUp: "Zakończ",
+    callSummary: "Podsumowanie"
+  },
+  sk: {
+    text: "Text",
+    call: "Hovor",
+    holdToTalk: "Podrž a hovor. Pusť a počúvaj.",
+    speedSlow: "Pomaly",
+    speedNatural: "Prirodzene",
+    speedFast: "Rýchlo",
+    hangUp: "Ukončiť",
+    callSummary: "Zhrnutie hovoru"
+  },
+  cs: {
+    text: "Text",
+    call: "Hovor",
+    holdToTalk: "Podrž a mluv. Pusť a poslouchej.",
+    speedSlow: "Pomalu",
+    speedNatural: "Přirozeně",
+    speedFast: "Rychle",
+    hangUp: "Ukončit",
+    callSummary: "Shrnutí hovoru"
+  },
+  fr: {
+    text: "Texte",
+    call: "Appel",
+    holdToTalk: "Maintiens pour parler. Relâche pour écouter.",
+    speedSlow: "Lent",
+    speedNatural: "Naturel",
+    speedFast: "Rapide",
+    hangUp: "Raccrocher",
+    callSummary: "Résumé d'appel"
+  },
+  es: {
+    text: "Texto",
+    call: "Llamada",
+    holdToTalk: "Mantén para hablar. Suelta para escuchar.",
+    speedSlow: "Lento",
+    speedNatural: "Natural",
+    speedFast: "Rápido",
+    hangUp: "Colgar",
+    callSummary: "Resumen"
+  },
+  it: {
+    text: "Testo",
+    call: "Chiamata",
+    holdToTalk: "Tieni premuto per parlare. Rilascia per ascoltare.",
+    speedSlow: "Lento",
+    speedNatural: "Naturale",
+    speedFast: "Veloce",
+    hangUp: "Chiudi",
+    callSummary: "Riepilogo"
+  },
+  de: {
+    text: "Text",
+    call: "Anruf",
+    holdToTalk: "Gedrückt halten zum Sprechen. Loslassen zum Hören.",
+    speedSlow: "Langsam",
+    speedNatural: "Natürlich",
+    speedFast: "Schnell",
+    hangUp: "Auflegen",
+    callSummary: "Anrufübersicht"
+  },
+  pt: {
+    text: "Texto",
+    call: "Chamada",
+    holdToTalk: "Mantém premido para falar. Solta para ouvir.",
+    speedSlow: "Lento",
+    speedNatural: "Natural",
+    speedFast: "Rápido",
+    hangUp: "Desligar",
+    callSummary: "Resumo"
+  },
+  tr: {
+    text: "Metin",
+    call: "Arama",
+    holdToTalk: "Konuşmak için basılı tut. Dinlemek için bırak.",
+    speedSlow: "Yavaş",
+    speedNatural: "Doğal",
+    speedFast: "Hızlı",
+    hangUp: "Bitir",
+    callSummary: "Arama özeti"
+  },
+  ja: {
+    text: "テキスト",
+    call: "通話",
+    holdToTalk: "押して話す。離すと聞く。",
+    speedSlow: "ゆっくり",
+    speedNatural: "自然",
+    speedFast: "速い",
+    hangUp: "終了",
+    callSummary: "通話まとめ"
+  },
+  ko: {
+    text: "텍스트",
+    call: "통화",
+    holdToTalk: "누르고 말해요. 놓으면 들어요.",
+    speedSlow: "천천히",
+    speedNatural: "자연스럽게",
+    speedFast: "빠르게",
+    hangUp: "종료",
+    callSummary: "통화 요약"
+  },
+  zh: {
+    text: "文字",
+    call: "通话",
+    holdToTalk: "按住说话，松开聆听。",
+    speedSlow: "慢速",
+    speedNatural: "自然",
+    speedFast: "快速",
+    hangUp: "挂断",
+    callSummary: "通话总结"
+  }
+};
 
 const grammarTopics = [
   {
@@ -523,7 +694,7 @@ export function App() {
     setHints(await api.speakingHints(token, activeRoom.id, last, learningCode));
   }
 
-  async function sendMessage(message: string) {
+  async function sendMessage(message: string, speechRate = 1, transport: SpeakingTransport = "text") {
     if (!token || !activeRoom || !message.trim()) return;
     const userLine: ChatLine = { role: "user", text: message.trim() };
     setChat((current) => [...current, userLine, { role: "assistant", text: "" }]);
@@ -531,18 +702,25 @@ export function App() {
     let finalReply = "";
     await new Promise<void>((resolve, reject) => {
       const socket = new WebSocket(
-        api.wsUrl(`/speaking/ws?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(activeRoom.id)}`)
+        api.wsUrl(`/speaking/${transport === "voice" ? "voice-ws" : "ws"}?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(activeRoom.id)}`)
       );
       let reply = "";
-      socket.onopen = () => socket.send(message.trim());
+      socket.onopen = () => {
+        if (transport === "voice") {
+          socket.send(JSON.stringify({ type: "user_text", value: message.trim(), speed: speechRate }));
+        } else {
+          socket.send(message.trim());
+        }
+      };
       socket.onerror = () => reject(new Error("WebSocket failed."));
       socket.onmessage = (event) => {
         const payload = JSON.parse(event.data) as { type: string; value?: string };
-        if (payload.type === "token") {
+        if (payload.type === "token" || payload.type === "assistant_token") {
           reply += payload.value ?? "";
           finalReply = reply.trim();
           setChat((current) => [...current.slice(0, -1), { role: "assistant", text: reply.trimStart() }]);
         }
+        if (payload.type === "assistant_text" && payload.value) finalReply = payload.value;
         if (payload.type === "done") {
           socket.close();
           resolve();
@@ -551,7 +729,10 @@ export function App() {
     }).catch((err) => setError(err instanceof Error ? err.message : "Speaking stream failed."));
     if (finalReply && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(finalReply));
+      const utterance = new SpeechSynthesisUtterance(finalReply);
+      utterance.lang = getSpeechLang(learningCode);
+      utterance.rate = speechRate;
+      window.speechSynthesis.speak(utterance);
     }
     if (token) {
       const [nextDrops, nextTopics] = await Promise.all([
@@ -561,6 +742,22 @@ export function App() {
       setGrammarDrops(nextDrops);
       setGrammarTopics(nextTopics);
     }
+  }
+
+  async function loadCallSummary(roomId: string): Promise<CallSummaryDto> {
+    if (!token) throw new Error("No active session.");
+    return new Promise<CallSummaryDto>((resolve, reject) => {
+      const socket = new WebSocket(api.wsUrl(`/speaking/voice-ws?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(roomId)}`));
+      socket.onopen = () => socket.send(JSON.stringify({ type: "end_call" }));
+      socket.onerror = () => reject(new Error("Call summary failed."));
+      socket.onmessage = (event) => {
+        const payload = JSON.parse(event.data) as { type: string; value?: CallSummaryDto };
+        if (payload.type === "call_summary" && payload.value) {
+          socket.close();
+          resolve(payload.value);
+        }
+      };
+    });
   }
 
   async function checkGrammar(topicId: string, exerciseId: string, answer: string): Promise<GrammarCheckDto> {
@@ -662,6 +859,9 @@ export function App() {
             }}
             loadHints={loadHints}
             sendMessage={sendMessage}
+            loadCallSummary={loadCallSummary}
+            addWord={addWord}
+            labels={speakingModeCopy[uiLocale]}
           />
         )}
 
@@ -963,7 +1163,10 @@ function SpeakingScreen({
   setActiveRoom,
   back,
   loadHints,
-  sendMessage
+  sendMessage,
+  loadCallSummary,
+  addWord,
+  labels
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
   rooms: SpeakingRoomDto[];
@@ -974,13 +1177,20 @@ function SpeakingScreen({
   setActiveRoom: (room: SpeakingRoomDto) => void;
   back: () => void;
   loadHints: () => void;
-  sendMessage: (message: string) => void;
+  sendMessage: (message: string, speechRate?: number, transport?: SpeakingTransport) => void;
+  loadCallSummary: (roomId: string) => Promise<CallSummaryDto>;
+  addWord: (word: string, source?: string) => void;
+  labels: SpeakingModeCopy;
 }) {
   const [draft, setDraft] = useState("");
   const [transcript, setTranscript] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState("");
+  const [mode, setMode] = useState<SpeakingMode>("text");
+  const [voiceSpeed, setVoiceSpeed] = useState<VoiceSpeed>("natural");
+  const [callSummary, setCallSummary] = useState<CallSummaryDto | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const speechRate = voiceSpeedRate[voiceSpeed];
   const roomIcon = useMemo(() => {
     if (!activeRoom) return null;
     if (activeRoom.id.includes("airport")) return <Plane size={28} />;
@@ -1000,10 +1210,16 @@ function SpeakingScreen({
     };
   }, []);
 
+  useEffect(() => {
+    setMode("text");
+    setCallSummary(null);
+    setTranscript("");
+    setSpeechError("");
+  }, [activeRoom?.id]);
+
   function startVoice() {
     if (isListening) {
-      recognitionRef.current?.stop?.();
-      setIsListening(false);
+      stopVoice();
       return;
     }
     const SpeechCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1035,7 +1251,7 @@ function SpeakingScreen({
       setIsListening(false);
       recognitionRef.current = null;
       setTranscript((current) => {
-        if (current.trim()) void sendMessage(current);
+        if (current.trim()) void sendMessage(current, mode === "call" ? speechRate : 1, mode === "call" ? "voice" : "text");
         return current;
       });
     };
@@ -1046,6 +1262,23 @@ function SpeakingScreen({
       setIsListening(false);
       setSpeechError(copy("speechError"));
     }
+  }
+
+  function stopVoice() {
+    recognitionRef.current?.stop?.();
+    setIsListening(false);
+  }
+
+  async function finishCall() {
+    stopVoice();
+    window.speechSynthesis?.cancel();
+    if (!activeRoom) return;
+    try {
+      setCallSummary(await loadCallSummary(activeRoom.id));
+    } catch {
+      setCallSummary(buildLocalCallSummary(activeRoom, chat));
+    }
+    setMode("text");
   }
 
   function sendDraft() {
@@ -1106,54 +1339,124 @@ function SpeakingScreen({
         </div>
       </div>
 
-      <div className="chat-log">
-        {chat.map((line, index) => (
-          <div key={`${line.role}-${index}`} className={`bubble ${line.role}`}>
-            {line.text || "..."}
+      <div className="mode-toggle">
+        <button className={mode === "text" ? "active" : ""} onClick={() => setMode("text")}>
+          <MessageCircle size={16} />
+          {labels.text}
+        </button>
+        <button className={mode === "call" ? "active" : ""} onClick={() => setMode("call")}>
+          <Headphones size={16} />
+          {labels.call}
+        </button>
+      </div>
+
+      {mode === "call" ? (
+        <div className="call-mode">
+          <div className={`call-aura ${isListening ? "listening" : ""}`}>
+            <span className="room-icon" style={{ background: activeRoom.accent_color }}>
+              {roomIcon}
+            </span>
           </div>
-        ))}
-      </div>
-
-      <div className="speaker-tools">
-        <button className="soft-action" onClick={loadHints}>
-          <WandSparkles size={16} />
-          {copy("hints")}
-        </button>
-        <span>{isListening ? copy("listening") : transcript || copy("voicePrimary")}</span>
-      </div>
-
-      {hints && (
-        <div className="hint-stack">
-          {[
-            ["Chill", hints.simple],
-            ["Grammar", hints.conversational],
-            ["Question", hints.spicy]
-          ].map(([label, hint]) => (
-            <button key={label} className="hint" onClick={() => setDraft(hint)}>
-              <small>{label}</small>
-              <span>{hint}</span>
+          <div className="call-copy">
+            <strong>{activeRoom.character}</strong>
+            <span>{isListening ? copy("listening") : transcript || labels.holdToTalk}</span>
+          </div>
+          <div className="speed-row">
+            {(["slow", "natural", "fast"] as const).map((speed) => (
+              <button key={speed} className={voiceSpeed === speed ? "selected" : ""} onClick={() => setVoiceSpeed(speed)}>
+                {speed === "slow" ? labels.speedSlow : speed === "fast" ? labels.speedFast : labels.speedNatural}
+              </button>
+            ))}
+          </div>
+          <div className="call-controls">
+            <button
+              className={`call-mic ${isListening ? "listening" : ""}`}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                if (!isListening) startVoice();
+              }}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                if (isListening) stopVoice();
+              }}
+              onPointerCancel={stopVoice}
+            >
+              {isListening ? <MicOff size={30} /> : <Mic size={30} />}
             </button>
-          ))}
+            <button className="hangup-action" onClick={() => void finishCall()}>
+              <PhoneOff size={17} />
+              <span>{labels.hangUp}</span>
+            </button>
+          </div>
+          {speechError && <div className="notice">{speechError}</div>}
         </div>
-      )}
-      {speechError && <div className="notice">{speechError}</div>}
+      ) : (
+        <>
+          {callSummary && (
+            <div className="call-summary">
+              <small>{labels.callSummary}</small>
+              <strong>{callSummary.topic}</strong>
+              <p>{callSummary.grammar_feedback}</p>
+              <div className="summary-phrases">
+                {callSummary.new_phrases.map((phrase) => (
+                  <button key={phrase} onClick={() => addWord(phrase, activeRoom.title)}>
+                    <Plus size={14} />
+                    {phrase}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="chat-log">
+            {chat.map((line, index) => (
+              <div key={`${line.role}-${index}`} className={`bubble ${line.role}`}>
+                {line.text || "..."}
+              </div>
+            ))}
+          </div>
 
-      <div className="message-composer">
-        <input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") sendDraft();
-          }}
-          placeholder={`Reply to ${activeRoom.character}`}
-        />
-        <button className={`voice-action ${isListening ? "listening" : ""}`} onClick={startVoice} aria-label={copy("tapToSpeak")}>
-          {isListening ? <MicOff size={22} /> : <Mic size={22} />}
-        </button>
-        <button className="primary-action icon-only" disabled={!draft.trim()} onClick={sendDraft} aria-label="Send">
-          <Send size={18} />
-        </button>
-      </div>
+          <div className="speaker-tools">
+            <button className="soft-action" onClick={loadHints}>
+              <WandSparkles size={16} />
+              {copy("hints")}
+            </button>
+            <span>{isListening ? copy("listening") : transcript || copy("voicePrimary")}</span>
+          </div>
+
+          {hints && (
+            <div className="hint-stack">
+              {[
+                ["Chill", hints.simple],
+                ["Grammar", hints.conversational],
+                ["Question", hints.spicy]
+              ].map(([label, hint]) => (
+                <button key={label} className="hint" onClick={() => setDraft(hint)}>
+                  <small>{label}</small>
+                  <span>{hint}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {speechError && <div className="notice">{speechError}</div>}
+
+          <div className="message-composer">
+            <input
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") sendDraft();
+              }}
+              placeholder={`Reply to ${activeRoom.character}`}
+            />
+            <button className={`voice-action ${isListening ? "listening" : ""}`} onClick={startVoice} aria-label={copy("tapToSpeak")}>
+              {isListening ? <MicOff size={22} /> : <Mic size={22} />}
+            </button>
+            <button className="primary-action icon-only" disabled={!draft.trim()} onClick={sendDraft} aria-label="Send">
+              <Send size={18} />
+            </button>
+          </div>
+        </>
+      )}
     </section>
   );
 }
@@ -1359,6 +1662,21 @@ function FlagSticker({ code }: { code: string }) {
       <img src={`/flags/${countryCode}.png`} alt="" loading="lazy" draggable={false} />
     </span>
   );
+}
+
+function buildLocalCallSummary(room: SpeakingRoomDto, chat: ChatLine[]): CallSummaryDto {
+  const assistantText = chat.filter((line) => line.role === "assistant").map((line) => line.text).join(". ");
+  const phrases = assistantText
+    .split(/[.!?]/)
+    .map((item) => item.trim())
+    .filter((item, index, list) => item.length >= 8 && item.length <= 52 && list.indexOf(item) === index)
+    .slice(0, 4);
+  return {
+    topic: `${room.title}: ${chat.filter((line) => line.role === "user").length} voice turns.`,
+    new_phrases: phrases.length ? phrases : ["Could I say that another way?", "What would you recommend next?"],
+    grammar_feedback: "No repeated grammar pattern yet. Keep answers short, clear, and alive.",
+    turns: chat.filter((line) => line.role === "user").length,
+  };
 }
 
 function ProfileScreen({

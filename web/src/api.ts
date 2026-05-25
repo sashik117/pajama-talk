@@ -79,6 +79,12 @@ export type SpeakingRoomDto = {
   accent_color: string;
 };
 export type SpeakingHintsDto = { simple: string; conversational: string; spicy: string };
+export type CallSummaryDto = {
+  topic: string;
+  new_phrases: string[];
+  grammar_feedback: string;
+  turns: number;
+};
 export type LearningPathDto = {
   language_code: string;
   language_name: string;
