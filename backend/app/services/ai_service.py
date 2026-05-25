@@ -78,7 +78,7 @@ def enrich_word(
         )
 
     source_language = language_name(language_code)
-    translation = _mock_translate(clean_term, target_language)
+    translation = _mock_translate(clean_term, target_language, normalized_code)
     pack = starter_pack(normalized_code)
     copy = _coach_copy(_target_code_from_language(target_language))
     return WordCreate(
@@ -266,32 +266,162 @@ def _coach_copy(target_language_code: str) -> dict[str, str]:
 
 def _target_code_from_language(target_language: str) -> str:
     value = target_language.strip().lower()
-    if value in {"uk", "ukrainian"} or "укра" in value:
+    language_codes = {
+        "en": "english",
+        "uk": "ukrainian",
+        "ru": "russian",
+        "sk": "slovak",
+        "pl": "polish",
+        "cs": "czech",
+        "fr": "french",
+        "es": "spanish",
+        "it": "italian",
+        "de": "german",
+        "pt": "portuguese",
+        "ko": "korean",
+        "ja": "japanese",
+        "zh": "chinese",
+        "tr": "turkish",
+    }
+    for code, name in language_codes.items():
+        if value == code or name in value:
+            return code
+    if "укра" in value:
         return "uk"
-    if value in {"ru", "russian"} or "рус" in value:
+    if "рус" in value:
         return "ru"
     return "en"
 
 
-def _mock_translate(term: str, target_language: str) -> str:
+def _mock_translate(term: str, target_language: str, source_language_code: str = "en") -> str:
+    target_code = _target_code_from_language(target_language)
+    normalized = term.strip().lower()
+
+    for key, raw in starter_pack(source_language_code).items():
+        if normalized == raw[0].lower():
+            return starter_pack(target_code).get(key, starter_pack("en")[key])[0]
+
     dictionary = {
-        "cozy": "затишний",
-        "awkward": "незручний",
-        "deadline": "дедлайн",
-        "crush": "краш",
-        "vibe": "вайб",
-        "затишно": "cozy / comfortable",
-        "дякую": "thank you",
-        "допомогти": "to help",
-        "уютно": "cozy / comfortable",
-        "спасибо": "thank you",
-        "помочь": "to help",
-        "ahoj": "привіт",
-        "spoko": "окей / спокійно",
-        "pohoda": "спокій / норм",
-        "coucou": "привітик",
-        "vale": "добре / окей",
-        "allora": "ну / отже",
-        "merhaba": "привіт",
+        "cozy": {
+            "en": "cozy / comfortable",
+            "uk": "затишний",
+            "ru": "уютный",
+            "pl": "przytulny",
+            "sk": "útulný",
+            "cs": "útulný",
+            "fr": "douillet",
+            "es": "acogedor",
+            "it": "accogliente",
+            "de": "gemütlich",
+            "pt": "acolhedor",
+            "tr": "rahat / samimi",
+            "ja": "居心地がいい",
+            "ko": "아늑한",
+            "zh": "舒适的",
+        },
+        "awkward": {
+            "en": "awkward",
+            "uk": "незручний",
+            "ru": "неловкий",
+            "pl": "niezręczny",
+            "sk": "trápny",
+            "cs": "trapný",
+            "fr": "maladroit",
+            "es": "incómodo",
+            "it": "imbarazzante",
+            "de": "unangenehm",
+            "pt": "constrangedor",
+            "tr": "garip",
+            "ja": "気まずい",
+            "ko": "어색한",
+            "zh": "尴尬的",
+        },
+        "deadline": {
+            "en": "deadline",
+            "uk": "дедлайн",
+            "ru": "дедлайн",
+            "pl": "termin",
+            "sk": "termín",
+            "cs": "termín",
+            "fr": "date limite",
+            "es": "fecha límite",
+            "it": "scadenza",
+            "de": "Frist",
+            "pt": "prazo",
+            "tr": "son teslim tarihi",
+            "ja": "締め切り",
+            "ko": "마감일",
+            "zh": "截止日期",
+        },
+        "exam": {
+            "en": "exam",
+            "uk": "іспит",
+            "ru": "экзамен",
+            "pl": "egzamin",
+            "sk": "skúška",
+            "cs": "zkouška",
+            "fr": "examen",
+            "es": "examen",
+            "it": "esame",
+            "de": "Prüfung",
+            "pt": "exame",
+            "tr": "sınav",
+            "ja": "試験",
+            "ko": "시험",
+            "zh": "考试",
+        },
+        "coffee": {
+            "en": "coffee",
+            "uk": "кава",
+            "ru": "кофе",
+            "pl": "kawa",
+            "sk": "káva",
+            "cs": "káva",
+            "fr": "café",
+            "es": "café",
+            "it": "caffè",
+            "de": "Kaffee",
+            "pt": "café",
+            "tr": "kahve",
+            "ja": "コーヒー",
+            "ko": "커피",
+            "zh": "咖啡",
+        },
+        "it hits different": {
+            "en": "it feels special",
+            "uk": "це відчувається зовсім по-іншому",
+            "ru": "это ощущается совсем иначе",
+            "pl": "to ma zupełnie inny klimat",
+            "sk": "pôsobí to úplne inak",
+            "cs": "působí to úplně jinak",
+            "fr": "ça fait un effet différent",
+            "es": "se siente diferente",
+            "it": "ha tutto un altro effetto",
+            "de": "das fühlt sich anders an",
+            "pt": "bate diferente",
+            "tr": "bambaşka hissettiriyor",
+            "ja": "特別に感じる",
+            "ko": "느낌이 완전히 달라",
+            "zh": "感觉完全不一样",
+        },
+        "vibe": {
+            "en": "vibe / mood",
+            "uk": "вайб / настрій",
+            "ru": "вайб / настроение",
+            "pl": "klimat",
+            "sk": "nálada",
+            "cs": "atmosféra",
+            "fr": "ambiance",
+            "es": "vibra",
+            "it": "atmosfera",
+            "de": "Stimmung",
+            "pt": "vibe",
+            "tr": "hava / enerji",
+            "ja": "雰囲気",
+            "ko": "분위기",
+            "zh": "氛围",
+        },
     }
-    return dictionary.get(term.lower(), f"{term} ({target_language})")
+    if normalized in dictionary:
+        return dictionary[normalized].get(target_code, dictionary[normalized]["en"])
+    return f"{term} -> {language_name(target_code)}"

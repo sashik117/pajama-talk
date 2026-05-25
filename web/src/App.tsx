@@ -31,14 +31,10 @@ import {
   api,
   CallSummaryDto,
   ContextAnalyzeDto,
-  EchoFeedbackDto,
   GrammarCheckDto,
   GrammarDropDto,
   GrammarTopicDto,
   LearningPathDto,
-  MemePuzzleDto,
-  OracleDto,
-  SlangDto,
   SpeakingHintsDto,
   SpeakingRoomDto,
   StatsDto,
@@ -557,6 +553,24 @@ const profileCopy: Record<UiLocale, ProfileChoiceCopy> = {
   zh: { ...enProfileCopy, setup: "学习档案", currentLevel: "当前水平", targetLevel: "目标水平", effortLevel: "投入程度", efforts: { Light: "轻松", Steady: "稳定", Intense: "高强度" }, vibes: { Chill: "轻松", Normal: "正常", Hardcore: "高强度" }, tones: { "Neutral teacher": "中立老师", "Supportive coach": "支持型教练", "Precise examiner": "精准考官" } },
 };
 
+const storageFlowCopy: Record<UiLocale, { translation: string; examples: string; empty: string }> = {
+  en: { translation: "translation", examples: "examples", empty: "Add a word above. PajamaTalk will show translation, examples, and SRS." },
+  uk: { translation: "переклад", examples: "приклади", empty: "Додай слово вище. PajamaTalk покаже переклад, приклади й повторення." },
+  ru: { translation: "перевод", examples: "примеры", empty: "Добавь слово выше. PajamaTalk покажет перевод, примеры и повторение." },
+  pl: { translation: "tłumaczenie", examples: "przykłady", empty: "Dodaj słowo wyżej. PajamaTalk pokaże tłumaczenie, przykłady i SRS." },
+  sk: { translation: "preklad", examples: "príklady", empty: "Pridaj slovo vyššie. PajamaTalk ukáže preklad, príklady a SRS." },
+  cs: { translation: "překlad", examples: "příklady", empty: "Přidej slovo nahoře. PajamaTalk ukáže překlad, příklady a SRS." },
+  fr: { translation: "traduction", examples: "exemples", empty: "Ajoute un mot plus haut. PajamaTalk montrera traduction, exemples et SRS." },
+  es: { translation: "traducción", examples: "ejemplos", empty: "Añade una palabra arriba. PajamaTalk mostrará traducción, ejemplos y SRS." },
+  it: { translation: "traduzione", examples: "esempi", empty: "Aggiungi una parola sopra. PajamaTalk mostrerà traduzione, esempi e SRS." },
+  de: { translation: "Übersetzung", examples: "Beispiele", empty: "Füge oben ein Wort hinzu. PajamaTalk zeigt Übersetzung, Beispiele und SRS." },
+  pt: { translation: "tradução", examples: "exemplos", empty: "Adiciona uma palavra acima. PajamaTalk mostra tradução, exemplos e SRS." },
+  tr: { translation: "çeviri", examples: "örnekler", empty: "Yukarıya bir kelime ekle. PajamaTalk çeviri, örnekler ve SRS gösterir." },
+  ja: { translation: "翻訳", examples: "例文", empty: "上に単語を追加すると、翻訳・例文・SRS が表示されます。" },
+  ko: { translation: "번역", examples: "예문", empty: "위에 단어를 추가하면 번역, 예문, SRS가 표시됩니다." },
+  zh: { translation: "翻译", examples: "例句", empty: "在上方添加单词后，PajamaTalk 会显示翻译、例句和 SRS。" },
+};
+
 function uiLocaleFromCode(code: string): UiLocale {
   return uiLocales.some((locale) => locale.code === code) ? (code as UiLocale) : "en";
 }
@@ -595,9 +609,6 @@ export function App() {
   const [grammarDrops, setGrammarDrops] = useState<GrammarDropDto[]>([]);
   const [grammarTopics, setGrammarTopics] = useState<GrammarTopicDto[]>([]);
   const [learningPath, setLearningPath] = useState<LearningPathDto | null>(null);
-  const [oracle, setOracle] = useState<OracleDto | null>(null);
-  const [slang, setSlang] = useState<SlangDto | null>(null);
-  const [memePuzzle, setMemePuzzle] = useState<MemePuzzleDto | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("aura");
   const [learningCode, setLearningCode] = useState("en");
   const [contextText, setContextText] = useState("");
@@ -649,17 +660,14 @@ export function App() {
 
   async function loadData(nextToken = token, languageCode = learningCode, targetCode = explanationCode) {
     if (!nextToken) return;
-    const [nextStats, nextWords, nextDue, nextRooms, nextDrops, nextTopics, nextPath, nextOracle, nextSlang, nextPuzzle] = await Promise.all([
+    const [nextStats, nextWords, nextDue, nextRooms, nextDrops, nextTopics, nextPath] = await Promise.all([
       api.stats(nextToken),
       api.words(nextToken, languageCode),
       api.dueWords(nextToken, languageCode),
       api.speakingRooms(nextToken, languageCode, targetCode),
       api.grammarDrops(nextToken, languageCode, targetCode),
       api.grammarTopics(nextToken, languageCode, targetCode),
-      api.learningPath(nextToken, languageCode, targetCode),
-      api.oracle(nextToken, languageCode, targetCode),
-      api.slang(nextToken, languageCode),
-      api.memePuzzle(nextToken, languageCode)
+      api.learningPath(nextToken, languageCode, targetCode)
     ]);
     setStats(nextStats);
     setWords(nextWords);
@@ -668,9 +676,6 @@ export function App() {
     setGrammarDrops(nextDrops);
     setGrammarTopics(nextTopics);
     setLearningPath(nextPath);
-    setOracle(nextOracle);
-    setSlang(nextSlang);
-    setMemePuzzle(nextPuzzle);
   }
 
   async function login(email: string, password: string, displayName?: string) {
@@ -743,19 +748,24 @@ export function App() {
 
   async function updateProfileSettings(payload: Partial<Record<string, string | number>>) {
     if (!token) return;
-    setUser(await api.updateProfile(token, payload));
+    const profile = await api.updateProfile(token, payload);
+    setUser(profile);
+    setLearningCode(profile.active_language_code);
+    await loadData(token, profile.active_language_code, profile.native_language_code);
   }
 
   async function addWord(term: string, source = "") {
-    if (!token || !term.trim()) return;
+    if (!token || !term.trim()) return undefined;
     setBusy(true);
     try {
       const word = await api.enrichWord(token, term.trim(), learningCode, targetLanguage, source);
       setWords((current) => [word, ...current.filter((item) => item.id !== word.id)]);
       setDueWords((current) => [word, ...current.filter((item) => item.id !== word.id)]);
       setStats(await api.stats(token));
+      return word;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add word.");
+      return undefined;
     } finally {
       setBusy(false);
     }
@@ -784,16 +794,6 @@ export function App() {
     if (!token || !activeRoom) return;
     const last = [...chat].reverse().find((line: ChatLine) => line.role === "assistant")?.text ?? activeRoom.prompt;
     setHints(await api.speakingHints(token, activeRoom.id, last, learningCode));
-  }
-
-  async function refreshEngagementPuzzle() {
-    if (!token) return;
-    setMemePuzzle(await api.memePuzzle(token, learningCode));
-  }
-
-  async function checkEcho(phrase: string, transcript: string): Promise<EchoFeedbackDto> {
-    if (!token) throw new Error("No active session.");
-    return api.echoFeedback(token, phrase, transcript, learningCode);
   }
 
   async function sendMessage(message: string, speechRate = 1, transport: SpeakingTransport = "text") {
@@ -882,9 +882,6 @@ export function App() {
     setGrammarDrops([]);
     setGrammarTopics([]);
     setLearningPath(null);
-    setOracle(null);
-    setSlang(null);
-    setMemePuzzle(null);
   }
 
   if (!user) {
@@ -933,9 +930,6 @@ export function App() {
             activeDrop={activeDrop}
             grammarTopics={grammarTopics}
             learningPath={learningPath}
-            oracle={oracle}
-            slang={slang}
-            memePuzzle={memePuzzle}
             learningCode={learningCode}
             contextText={contextText}
             setContextText={setContextText}
@@ -944,7 +938,6 @@ export function App() {
             analyzeContext={analyzeContext}
             addWord={addWord}
             checkGrammar={checkGrammar}
-            refreshPuzzle={() => void refreshEngagementPuzzle()}
             clearContext={() => setContextResult(null)}
             openSpeak={() => setActiveTab("speak")}
             openReview={() => setActiveTab("storage")}
@@ -975,7 +968,6 @@ export function App() {
             sendMessage={sendMessage}
             loadCallSummary={loadCallSummary}
             addWord={addWord}
-            checkEcho={checkEcho}
             labels={speakingModeCopy[uiLocale]}
           />
         )}
@@ -983,6 +975,7 @@ export function App() {
         {activeTab === "storage" && (
           <StorageScreen
             copy={copy}
+            locale={uiLocale}
             words={words}
             dueWord={dueWord}
             busy={busy}
@@ -1110,9 +1103,6 @@ function HomeScreen({
   activeDrop,
   grammarTopics,
   learningPath,
-  oracle,
-  slang,
-  memePuzzle,
   learningCode,
   contextText,
   setContextText,
@@ -1121,7 +1111,6 @@ function HomeScreen({
   analyzeContext,
   addWord,
   checkGrammar,
-  refreshPuzzle,
   clearContext,
   openSpeak,
   openReview
@@ -1131,18 +1120,14 @@ function HomeScreen({
   activeDrop?: GrammarDropDto;
   grammarTopics: GrammarTopicDto[];
   learningPath: LearningPathDto | null;
-  oracle: OracleDto | null;
-  slang: SlangDto | null;
-  memePuzzle: MemePuzzleDto | null;
   learningCode: string;
   contextText: string;
   setContextText: (value: string) => void;
   contextResult: ContextAnalyzeDto | null;
   busy: boolean;
   analyzeContext: () => void;
-  addWord: (word: string, source?: string) => void;
+  addWord: (word: string, source?: string) => Promise<WordDto | undefined>;
   checkGrammar: (topicId: string, exerciseId: string, answer: string) => Promise<GrammarCheckDto>;
-  refreshPuzzle: () => void;
   clearContext: () => void;
   openSpeak: () => void;
   openReview: () => void;
@@ -1167,8 +1152,6 @@ function HomeScreen({
           </div>
         </div>
       </section>
-
-      <EngagementStrip copy={copy} oracle={oracle} slang={slang} memePuzzle={memePuzzle} addWord={addWord} refreshPuzzle={refreshPuzzle} />
 
       {learningPath && <LearningPathPanel copy={copy} path={learningPath} openSpeak={openSpeak} />}
 
@@ -1215,104 +1198,6 @@ function HomeScreen({
 
       <GrammarLab copy={copy} locale={locale} drop={activeDrop} topics={grammarTopics} checkGrammar={checkGrammar} />
     </>
-  );
-}
-
-function EngagementStrip({
-  copy,
-  oracle,
-  slang,
-  memePuzzle,
-  addWord,
-  refreshPuzzle
-}: {
-  copy: (key: Parameters<typeof t>[1]) => string;
-  oracle: OracleDto | null;
-  slang: SlangDto | null;
-  memePuzzle: MemePuzzleDto | null;
-  addWord: (word: string, source?: string) => void;
-  refreshPuzzle: () => void;
-}) {
-  const [oracleOpen, setOracleOpen] = useState(true);
-  const [pickedPieces, setPickedPieces] = useState<string[]>([]);
-  const [savedNote, setSavedNote] = useState("");
-  const answer = pickedPieces.join(" ");
-  const solved = Boolean(memePuzzle && answer === memePuzzle.answer);
-
-  useEffect(() => {
-    setPickedPieces([]);
-  }, [memePuzzle?.answer]);
-
-  function saveWord(word: string, source: string) {
-    addWord(word, source);
-    setSavedNote(`${copy("add")}: ${word}`);
-    window.setTimeout(() => setSavedNote(""), 1800);
-  }
-
-  return (
-    <section className="engagement-grid">
-      <article className={`card oracle-card ${oracleOpen ? "open" : ""}`}>
-        <button className="oracle-cookie" onClick={() => setOracleOpen((value) => !value)}>
-          <Sparkles size={18} />
-          <span>Pajama Oracle</span>
-        </button>
-        {oracleOpen && oracle && (
-          <div className="oracle-body">
-            <p>{oracle.prediction}</p>
-            <div className="chip-row">
-              {oracle.idioms.map((idiom) => (
-                <button key={idiom.phrase} className="chip" onClick={() => saveWord(idiom.phrase, "Pajama Oracle")}>
-                  <Plus size={13} />
-                  {idiom.phrase}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </article>
-
-      {slang && (
-        <article className="card slang-card">
-          <small>Slang Wheel</small>
-          <strong>{slang.term}</strong>
-          <p>{slang.meaning}</p>
-          <span>{slang.example}</span>
-          <button className="soft-action mint" onClick={() => saveWord(slang.term, "Slang Wheel")}>
-            <Plus size={15} />
-            {copy("add")}
-          </button>
-        </article>
-      )}
-
-      {memePuzzle && (
-        <article className={`card meme-card ${solved ? "solved" : ""}`}>
-          <small>Puzzle Meme</small>
-          <strong>{memePuzzle.target_word}</strong>
-          <p>{memePuzzle.template}</p>
-          <div className="meme-answer">{answer || memePuzzle.prompt}</div>
-          <div className="puzzle-pieces">
-            {memePuzzle.pieces.map((piece, index) => {
-              const used = pickedPieces.includes(piece);
-              return (
-                <button key={`${piece}-${index}`} disabled={used || solved} onClick={() => setPickedPieces((current) => [...current, piece])}>
-                  {piece}
-                </button>
-              );
-            })}
-          </div>
-          <div className="action-row">
-            <button className="soft-action" onClick={() => setPickedPieces([])}>
-              <X size={15} />
-            </button>
-            <button className="soft-action mint" onClick={solved ? refreshPuzzle : () => saveWord(memePuzzle.target_word, "Puzzle Meme")}>
-              <Plus size={15} />
-              {solved ? "Next" : copy("add")}
-            </button>
-          </div>
-        </article>
-      )}
-      {savedNote && <div className="save-toast">{savedNote}</div>}
-    </section>
   );
 }
 
@@ -1389,7 +1274,6 @@ function SpeakingScreen({
   sendMessage,
   loadCallSummary,
   addWord,
-  checkEcho,
   labels
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
@@ -1403,8 +1287,7 @@ function SpeakingScreen({
   loadHints: () => void;
   sendMessage: (message: string, speechRate?: number, transport?: SpeakingTransport) => void;
   loadCallSummary: (roomId: string) => Promise<CallSummaryDto>;
-  addWord: (word: string, source?: string) => void;
-  checkEcho: (phrase: string, transcript: string) => Promise<EchoFeedbackDto>;
+  addWord: (word: string, source?: string) => Promise<WordDto | undefined>;
   labels: SpeakingModeCopy;
 }) {
   const [draft, setDraft] = useState("");
@@ -1415,9 +1298,6 @@ function SpeakingScreen({
   const [mode, setMode] = useState<SpeakingMode>("text");
   const [voiceSpeed, setVoiceSpeed] = useState<VoiceSpeed>("natural");
   const [callSummary, setCallSummary] = useState<CallSummaryDto | null>(null);
-  const [echoPhrase, setEchoPhrase] = useState("");
-  const [echoDraft, setEchoDraft] = useState("");
-  const [echoResult, setEchoResult] = useState<EchoFeedbackDto | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const speechRate = voiceSpeedRate[voiceSpeed];
   const roomIcon = useMemo(() => {
@@ -1445,9 +1325,6 @@ function SpeakingScreen({
     setTranscript("");
     setSpeechError("");
     setPendingRoom(null);
-    setEchoPhrase("");
-    setEchoDraft("");
-    setEchoResult(null);
   }, [activeRoom?.id]);
 
   function startVoice() {
@@ -1500,60 +1377,6 @@ function SpeakingScreen({
   function stopVoice() {
     recognitionRef.current?.stop?.();
     setIsListening(false);
-  }
-
-  async function submitEcho(phrase = echoPhrase, transcript = echoDraft) {
-    if (!phrase.trim() || !transcript.trim()) return;
-    try {
-      setEchoResult(await checkEcho(phrase, transcript));
-    } catch (err) {
-      setSpeechError(err instanceof Error ? err.message : copy("speechError"));
-    }
-  }
-
-  function startEcho(phrase: string) {
-    setEchoPhrase(phrase);
-    setEchoDraft("");
-    setEchoResult(null);
-    const SpeechCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechCtor) {
-      setSpeechError(copy("speechUnsupported"));
-      return;
-    }
-    const recognition = new SpeechCtor();
-    recognition.lang = getSpeechLang(learningCode);
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    setSpeechError("");
-    setIsListening(true);
-    recognitionRef.current = recognition;
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const text = Array.from(event.results)
-        .map((result) => result[0]?.transcript ?? "")
-        .join(" ")
-        .trim();
-      setEchoDraft(text);
-    };
-    recognition.onerror = () => {
-      setSpeechError(copy("speechError"));
-      setIsListening(false);
-      recognitionRef.current = null;
-    };
-    recognition.onend = () => {
-      setIsListening(false);
-      recognitionRef.current = null;
-      setEchoDraft((current) => {
-        if (current.trim()) void submitEcho(phrase, current);
-        return current;
-      });
-    };
-    try {
-      recognition.start();
-    } catch {
-      recognitionRef.current = null;
-      setIsListening(false);
-      setSpeechError(copy("speechError"));
-    }
   }
 
   async function finishCall() {
@@ -1725,35 +1548,9 @@ function SpeakingScreen({
             {chat.map((line, index) => (
               <div key={`${line.role}-${index}`} className={`bubble ${line.role}`}>
                 <span>{line.text || "..."}</span>
-                {line.role === "assistant" && line.text && line.text !== "..." && (
-                  <button className="echo-action" onClick={() => startEcho(line.text)}>
-                    <Mic size={13} />
-                    {labels.echo}
-                  </button>
-                )}
               </div>
             ))}
           </div>
-
-          {echoPhrase && (
-            <div className="echo-panel">
-              <small>{labels.echo}</small>
-              <strong>{echoPhrase}</strong>
-              <div className="send-row">
-                <input value={echoDraft} onChange={(event) => setEchoDraft(event.target.value)} placeholder={labels.echoPlaceholder} />
-                <button className="soft-action mint" disabled={!echoDraft.trim()} onClick={() => void submitEcho()}>
-                  {labels.echoCheck}
-                </button>
-              </div>
-              {echoResult && (
-                <div className="echo-result">
-                  <strong>{echoResult.score}%</strong>
-                  <p>{echoResult.feedback}</p>
-                  <span>{echoResult.next_tip}</span>
-                </div>
-              )}
-            </div>
-          )}
 
           <div className="speaker-tools">
             <button className="soft-action" onClick={loadHints}>
@@ -1803,6 +1600,7 @@ function SpeakingScreen({
 
 function StorageScreen({
   copy,
+  locale,
   words,
   dueWord,
   busy,
@@ -1811,17 +1609,20 @@ function StorageScreen({
   reviewWord
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
+  locale: UiLocale;
   words: WordDto[];
   dueWord?: WordDto;
   busy: boolean;
   sample: string;
-  addWord: (word: string) => void;
+  addWord: (word: string) => Promise<WordDto | undefined>;
   reviewWord: (grade: "remember" | "forgot") => void;
 }) {
   const [term, setTerm] = useState("");
   const [mode, setMode] = useState<"words" | "review">("words");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "learning" | "learned">("all");
+  const [lastAdded, setLastAdded] = useState<WordDto | null>(null);
+  const flow = storageFlowCopy[locale] ?? storageFlowCopy.en;
   const filteredWords = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return words.filter((word) => {
@@ -1859,7 +1660,7 @@ function StorageScreen({
         <div>
           <h2>{copy("newWord")}</h2>
           <p>
-            {sample} · {copy("contextTitle")} → {copy("myWords")} → SRS
+            {sample} · {copy("add")} → {flow.translation} → {flow.examples} → SRS
           </p>
         </div>
         <div className="send-row">
@@ -1867,9 +1668,15 @@ function StorageScreen({
           <button
             className="primary-action"
             disabled={busy || !term.trim()}
-            onClick={() => {
-              addWord(term);
-              setTerm("");
+            onClick={async () => {
+              const created = await addWord(term);
+              if (created) {
+                setLastAdded(created);
+                setMode("words");
+                setFilter("all");
+                setQuery("");
+                setTerm("");
+              }
             }}
           >
             <Plus size={18} />
@@ -1877,6 +1684,18 @@ function StorageScreen({
           </button>
         </div>
       </section>
+      {lastAdded && (
+        <section className="card word-result-card">
+          <small>{copy("add")} → {copy("myWords")}</small>
+          <div>
+            <h2>{lastAdded.term}</h2>
+            <strong>{lastAdded.translation}</strong>
+            <span>{lastAdded.transcription}</span>
+          </div>
+          <p>{lastAdded.example_one}</p>
+          <p>{lastAdded.example_two}</p>
+        </section>
+      )}
       <div className="segmented">
         <button className={mode === "words" ? "active" : ""} onClick={() => setMode("words")}>
           {copy("myWords")}
@@ -1931,9 +1750,8 @@ function StorageScreen({
                   <summary>
                     <span>
                       <strong>{word.term}</strong>
-                      <small>
-                        {word.translation} / {word.transcription}
-                      </small>
+                      <span className="translation-line">{word.translation}</span>
+                      <small>{word.transcription}</small>
                     </span>
                     <span className={`status-pill ${word.status}`}>{word.status === "learned" ? copy("learned") : "SRS"}</span>
                   </summary>
@@ -1951,7 +1769,7 @@ function StorageScreen({
               <section className="card empty-state">
                 <strong>{query ? copy("reviewEmpty") : copy("newWord")}</strong>
                 <p>
-                  {copy("contextTitle")} → {copy("myWords")} → SRS
+                  {flow.empty}
                 </p>
               </section>
             )}
@@ -2069,14 +1887,6 @@ function ProfileScreen({
   logout: () => void;
 }) {
   const labels = profileCopy[locale] ?? enProfileCopy;
-  const learning = learningLanguages.find((language) => language.code === learningCode) ?? learningLanguages[0];
-  const native = nativeLanguages.find((language) => language.code === user.native_language_code) ?? nativeLanguages[0];
-  const plan =
-    user.learning_vibe === "Hardcore"
-      ? `${copy("speak")} + ${copy("review")} + ${copy("grammar")}`
-      : user.learning_vibe === "Normal"
-        ? `${copy("speak")} + ${copy("review")}`
-        : copy("speak");
   return (
     <>
       <section className="profile-hero card">
@@ -2094,35 +1904,6 @@ function ProfileScreen({
         <Stat value={`${stats?.due_reviews ?? 0}`} label={copy("due")} />
         <Stat value={`${stats?.learned_words ?? 0}`} label={copy("learned")} />
         <Stat value={`${stats?.language_words ?? 0}`} label={copy("myWords")} />
-      </section>
-      <section className="profile-insights card" hidden>
-        <div className="profile-row">
-          <span>
-            <small>{copy("learningLanguage")}</small>
-            <strong>
-              <LanguageBadge option={learning} />
-            </strong>
-          </span>
-          <span>
-            <small>{copy("nativeLanguage")}</small>
-            <strong>
-              <LanguageBadge option={native} />
-            </strong>
-          </span>
-        </div>
-        <div className="profile-row">
-          <span>
-            <small>{copy("learningVibe")}</small>
-            <strong>{plan}</strong>
-          </span>
-          <span>
-            <small>{copy("aiTone")}</small>
-            <strong>{user.ai_tone}</strong>
-          </span>
-        </div>
-        <p>
-          {copy("contextTitle")} → {copy("myWords")} → {copy("speak")} → {copy("grammar")}
-        </p>
       </section>
       <section className="profile-controls">
         <DropdownSelect title={copy("learningLanguage")} value={learningCode} options={learningLanguages} onChange={setLearningCode} />

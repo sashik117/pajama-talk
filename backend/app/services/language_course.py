@@ -262,42 +262,78 @@ def _meaning_for(key: str, explanation_code: str, fallback: str) -> str:
     return MEANING_TRANSLATIONS.get(explanation_code, MEANING_TRANSLATIONS["en"]).get(key, fallback)
 
 
-def build_learning_path(language_code: str, explanation_code: str = "uk") -> LearningPathResponse:
+def _profile_step_keys(current_level: str) -> list[str]:
+    level = (current_level or "Starter").strip().lower()
+    if level in {"starter", "a0", "a1"}:
+        return ["hello", "want", "question"]
+    if level == "a2":
+        return ["want", "question", "hello"]
+    return ["question", "want", "hello"]
+
+
+def _effort_hint(effort_level: str) -> str:
+    effort = (effort_level or "Steady").strip()
+    hints = {
+        "Light": "1 tiny answer",
+        "Steady": "2 spoken turns",
+        "Intense": "3-turn mini dialogue",
+    }
+    return hints.get(effort, hints["Steady"])
+
+
+def build_learning_path(
+    language_code: str,
+    explanation_code: str = "uk",
+    current_level: str = "Starter",
+    target_level: str = "A1",
+    effort_level: str = "Steady",
+) -> LearningPathResponse:
     code = normalize_language_code(language_code)
     name = language_name(code)
     pack = starter_pack(code)
     copy = _copy_for(explanation_code)
+    step_keys = _profile_step_keys(current_level)
+    titles = {
+        "hello": copy["hello_title"],
+        "want": copy["want_title"],
+        "question": copy["question_title"],
+    }
+    goals = {
+        "hello": copy["hello_goal"],
+        "want": copy["want_goal"],
+        "question": copy["question_goal"],
+    }
+    notes = {
+        "hello": copy["hello_note"],
+        "want": copy["want_note"],
+        "question": copy["question_note"],
+    }
+    tasks = {
+        "hello": copy["hello_task"],
+        "want": copy["want_task"],
+        "question": copy["question_task"],
+    }
+    examples = {
+        "hello": [_phrase(pack["hello"], "hello", explanation_code)],
+        "want": [_phrase(pack["want"], "want", explanation_code), _phrase(pack["thanks"], "thanks", explanation_code)],
+        "question": [_phrase(pack["question"], "question", explanation_code)],
+    }
     return LearningPathResponse(
         language_code=code,
         language_name=name,
-        level="Starter A0-A1",
+        level=f"{current_level or 'Starter'} -> {target_level or 'A1'} · {_effort_hint(effort_level)}",
         assistant_role=copy["assistant"].format(name=name),
         next_room_prompt=copy["next"].format(phrase=pack["want"][0]),
         steps=[
             LearningStep(
-                id=f"{code}-hello",
-                title=copy["hello_title"],
-                goal=copy["hello_goal"],
-                teacher_note=copy["hello_note"],
-                micro_task=copy["hello_task"].format(phrase=pack["hello"][0]),
-                examples=[_phrase(pack["hello"], "hello", explanation_code)],
-            ),
-            LearningStep(
-                id=f"{code}-want",
-                title=copy["want_title"],
-                goal=copy["want_goal"],
-                teacher_note=copy["want_note"],
-                micro_task=copy["want_task"].format(phrase=pack["want"][0]),
-                examples=[_phrase(pack["want"], "want", explanation_code), _phrase(pack["thanks"], "thanks", explanation_code)],
-            ),
-            LearningStep(
-                id=f"{code}-question",
-                title=copy["question_title"],
-                goal=copy["question_goal"],
-                teacher_note=copy["question_note"],
-                micro_task=copy["question_task"].format(phrase=pack["question"][0]),
-                examples=[_phrase(pack["question"], "question", explanation_code)],
-            ),
+                id=f"{code}-{key}",
+                title=titles[key],
+                goal=goals[key],
+                teacher_note=notes[key],
+                micro_task=f"{tasks[key].format(phrase=pack[key][0])} · {_effort_hint(effort_level)}",
+                examples=examples[key],
+            )
+            for key in step_keys
         ],
     )
 

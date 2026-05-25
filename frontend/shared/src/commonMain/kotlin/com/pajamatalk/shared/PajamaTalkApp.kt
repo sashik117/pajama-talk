@@ -1324,6 +1324,8 @@ private fun AddWordCard(
     var term by remember { mutableStateOf("") }
     CozyCard(background = Lavender.copy(alpha = 0.48f)) {
         Text("New word", fontWeight = FontWeight.SemiBold, fontSize = 19.sp, color = Graphite)
+        Spacer(Modifier.height(6.dp))
+        Text("Add a word or phrase. PajamaTalk will show the translation, examples, and put it into SRS.", color = InkMuted)
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
@@ -1353,6 +1355,7 @@ private fun StorageScreen() {
     val appState = LocalPajamaState.current
     val scope = rememberCoroutineScope()
     var tab by remember { mutableIntStateOf(0) }
+    var lastAdded by remember { mutableStateOf<WordDto?>(null) }
 
     ScreenFrame {
         Text("My Storage", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
@@ -1364,8 +1367,19 @@ private fun StorageScreen() {
         AddWordCard(
             selectedLanguage = appState.selectedLanguage,
             isAdding = appState.isAddingWord,
-            onAdd = { term -> scope.launch { appState.addWord(term) } },
+            onAdd = { term -> scope.launch { lastAdded = appState.addWord(term) } },
         )
+        lastAdded?.let { word ->
+            CozyCard(background = Mint.copy(alpha = 0.28f)) {
+                Text("Added to dictionary", color = InkMuted)
+                Spacer(Modifier.height(6.dp))
+                Text(word.term, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
+                Text(word.translation, color = Graphite, fontWeight = FontWeight.Medium)
+                Text(word.transcription, color = InkMuted)
+                Spacer(Modifier.height(8.dp))
+                Text(word.exampleOne, color = InkMuted)
+            }
+        }
         SecondaryTabRow(selectedTabIndex = tab, containerColor = Color.Transparent, contentColor = Graphite) {
             Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("My words") })
             Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Review time") })

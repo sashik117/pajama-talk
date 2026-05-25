@@ -220,13 +220,13 @@ class PajamaAppState(
         }
     }
 
-    suspend fun addWord(term: String, sourceContext: String = "") {
+    suspend fun addWord(term: String, sourceContext: String = ""): WordDto? {
         val cleanTerm = term.trim()
-        if (cleanTerm.isBlank()) return
+        if (cleanTerm.isBlank()) return null
 
         isAddingWord = true
         errorMessage = null
-        runCatching {
+        val createdWord = runCatching {
             val created = requireClient().enrichWord(
                 token = requireToken(),
                 term = cleanTerm,
@@ -237,10 +237,12 @@ class PajamaAppState(
             words = listOf(created) + words.filterNot { it.id == created.id }
             dueWords = listOf(created) + dueWords.filterNot { it.id == created.id }
             loadStats()
+            created
         }.onFailure {
             errorMessage = it.friendlyMessage()
-        }
+        }.getOrNull()
         isAddingWord = false
+        return createdWord
     }
 
     suspend fun analyzeContext(text: String) {
@@ -429,6 +431,7 @@ class PajamaAppState(
         runCatching {
             user = requireClient().updateProfile(requireToken(), payload)
             loadStats()
+            loadLearningPath()
         }.onFailure {
             errorMessage = it.friendlyMessage()
         }

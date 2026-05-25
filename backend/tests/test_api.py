@@ -367,6 +367,18 @@ def test_learning_path_and_grammar_follow_selected_language(client: TestClient) 
     assert path_body["language_code"] == "pl"
     assert "Poproszę kawę" in path_body["next_room_prompt"]
 
+    client.patch(
+        "/auth/me",
+        headers=headers,
+        json={"current_level": "B1", "target_level": "C1", "effort_level": "Intense"},
+    )
+    personalized = client.get("/learning/path?language_code=pl", headers=headers)
+    assert personalized.status_code == 200
+    personalized_body = personalized.json()
+    assert "B1 -> C1" in personalized_body["level"]
+    assert personalized_body["steps"][0]["id"] == "pl-question"
+    assert "3-turn mini dialogue" in personalized_body["steps"][0]["micro_task"]
+
     topics = client.get("/grammar/topics?language_code=pl", headers=headers)
     assert topics.status_code == 200
     topic_body = topics.json()

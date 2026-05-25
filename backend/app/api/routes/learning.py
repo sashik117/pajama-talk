@@ -17,4 +17,10 @@ def learning_path(
 ) -> LearningPathResponse:
     code = normalize_language_code(language_code or user.active_language_code)
     explanation_code = normalize_native_language_code(target_language_code or user.native_language_code)
-    return build_learning_path(code, explanation_code)
+    return build_learning_path(
+        code,
+        explanation_code,
+        current_level=user.current_level,
+        target_level=user.target_level,
+        effort_level=user.effort_level,
+    )
