@@ -1771,6 +1771,11 @@ textarea {
     gap: 9px;
   }
 
+  .call-mic {
+    width: 68px;
+    height: 68px;
+  }
+
   .example-grid,
   .option-grid {
     grid-template-columns: 1fr;
