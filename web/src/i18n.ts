@@ -856,9 +856,10 @@ export const learningLanguages = [
 ] as const satisfies readonly LearningLanguageOption[];
 
 export const nativeLanguages = [
-  { code: "uk", label: "Ukrainian", short: "UK", flag: "🇺🇦" },
-  { code: "ru", label: "Russian", short: "RU", flag: "🇷🇺" },
-  ...learningLanguages.filter((language) => !["uk", "ru"].includes(language.code)).map((language) => ({
+  { code: "en", label: "English", short: "ENG", flag: "GB" },
+  { code: "uk", label: "Ukrainian", short: "UK", flag: "UA" },
+  { code: "ru", label: "Russian", short: "RU", flag: "RU" },
+  ...learningLanguages.filter((language) => !["en", "uk", "ru"].includes(language.code)).map((language) => ({
     code: language.code,
     label: language.label,
     short: language.short,

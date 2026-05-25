@@ -34,10 +34,11 @@ val SupportedLearningLanguages = listOf(
 )
 
 val SupportedNativeLanguages = listOf(
+    NativeLanguage("en", "English", "ENG", "GB"),
     NativeLanguage("uk", "Ukrainian", "UK", "🇺🇦"),
     NativeLanguage("ru", "Russian", "RU", "🇷🇺"),
 ) + SupportedLearningLanguages
-    .filterNot { it.code == "uk" || it.code == "ru" }
+    .filterNot { it.code == "en" || it.code == "uk" || it.code == "ru" }
     .map { NativeLanguage(it.code, it.label, it.shortLabel, it.flag) }
 
 fun languageByCode(code: String): LearningLanguage =

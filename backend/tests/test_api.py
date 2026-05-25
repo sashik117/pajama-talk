@@ -96,7 +96,7 @@ def test_profile_update_persists_language_and_vibe(client: TestClient) -> None:
             "native_language_code": "uk",
             "learning_vibe": "Normal",
             "daily_vibe_minutes": 15,
-            "ai_tone": "strict British aristocrat",
+            "ai_tone": "Precise examiner",
         },
     )
     assert response.status_code == 200
@@ -105,7 +105,7 @@ def test_profile_update_persists_language_and_vibe(client: TestClient) -> None:
     assert body["native_language_code"] == "uk"
     assert body["learning_vibe"] == "Normal"
     assert body["daily_vibe_minutes"] == 15
-    assert body["ai_tone"] == "strict British aristocrat"
+    assert body["ai_tone"] == "Precise examiner"
 
     profile = client.get("/auth/me", headers=headers)
     assert profile.status_code == 200

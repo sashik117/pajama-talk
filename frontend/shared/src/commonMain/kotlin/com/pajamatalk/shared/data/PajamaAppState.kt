@@ -69,7 +69,7 @@ class PajamaAppState(
         val client = findWorkingClient()
         if (client == null) {
             isBooting = false
-            errorMessage = "Backend is offline. Start FastAPI and tap Refresh."
+            errorMessage = "Backend is offline. Start FastAPI on :8000."
             return
         }
 
@@ -125,7 +125,7 @@ class PajamaAppState(
         errorMessage = null
         val client = activeClient ?: findWorkingClient()
         if (client == null) {
-            errorMessage = "Backend is offline. Start FastAPI and tap Refresh."
+            errorMessage = "Backend is offline. Start FastAPI on :8000."
             isAuthenticating = false
             return
         }

@@ -436,12 +436,7 @@ private fun AuraScreen() {
         ) {
             Column {
                 Text("Головна", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
-                Text(
-                    "${appState.stats?.dailyVibeMinutes ?: 5} min ${appState.selectedLanguage.label}",
-                    color = InkMuted,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Normal,
-                )
+                Text(appState.selectedLanguage.label, color = InkMuted, fontSize = 13.sp, fontWeight = FontWeight.Normal)
             }
             LanguageHeaderChip(
                 selected = appState.selectedLanguage,
@@ -464,7 +459,7 @@ private fun AuraScreen() {
         CozyCard(background = Color.White.copy(alpha = 0.84f)) {
             Text("Alex is waiting in ${appState.selectedLanguage.label}", fontSize = 21.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
             Spacer(Modifier.height(8.dp))
-            Text("Five calm minutes, one real conversation, zero pressure.", color = InkMuted, fontSize = 13.sp)
+            Text("One real conversation, zero pressure.", color = InkMuted, fontSize = 13.sp)
             Spacer(Modifier.height(14.dp))
             SoftAction("Enter room", Icons.Rounded.Coffee, Peach, onClick = {})
         }
@@ -773,18 +768,10 @@ private fun flagResourceForLanguage(code: String): DrawableResource = when (code
 
 @Composable
 private fun ConnectionStatus(appState: PajamaAppState) {
-    val scope = rememberCoroutineScope()
     when {
         appState.isBooting -> LoadingCard("Connecting")
         appState.errorMessage != null -> CozyCard(background = Peach.copy(alpha = 0.44f)) {
             Text(appState.errorMessage ?: "API is resting.", color = Graphite, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(10.dp))
-            SoftAction(
-                text = "Refresh",
-                icon = Icons.Rounded.AutoAwesome,
-                color = Mint,
-                onClick = { scope.launch { appState.refreshAll() } },
-            )
         }
     }
 }
@@ -826,7 +813,7 @@ private fun LanguagePicker(
                 TextButton(
                     onClick = { onSelect(language) },
                     modifier = Modifier
-                        .height(44.dp)
+                        .height(38.dp)
                         .clip(RoundedCornerShape(22.dp))
                         .background(if (isSelected) Lavender else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
@@ -854,7 +841,7 @@ private fun NativeLanguagePicker(
                 TextButton(
                     onClick = { onSelect(language) },
                     modifier = Modifier
-                        .height(44.dp)
+                        .height(38.dp)
                         .clip(RoundedCornerShape(22.dp))
                         .background(if (isSelected) Mint.copy(alpha = 0.62f) else SoftLilac),
                     colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
@@ -1224,7 +1211,6 @@ private fun StorageScreen() {
             WordList(
                 words = appState.words,
                 isLoading = appState.isWordsLoading || appState.isBooting,
-                onRefresh = { scope.launch { appState.refreshAll() } },
             )
         } else {
             SrsSwipeCard(
@@ -1241,7 +1227,6 @@ private fun StorageScreen() {
 private fun WordList(
     words: List<WordDto>,
     isLoading: Boolean,
-    onRefresh: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (isLoading) {
@@ -1250,7 +1235,7 @@ private fun WordList(
             CozyCard(background = Color.White.copy(alpha = 0.86f)) {
                 Text("Storage is waiting for its first word", fontWeight = FontWeight.SemiBold, color = Graphite)
                 Spacer(Modifier.height(10.dp))
-                SoftAction("Refresh", Icons.Rounded.AutoAwesome, Mint, onClick = onRefresh)
+                Text("Add a word above to start your storage.", color = InkMuted)
             }
         } else {
             words.forEach { word ->
@@ -1376,7 +1361,7 @@ private fun VibeScreen() {
     val scope = rememberCoroutineScope()
     val user = appState.user
     val vibeModes = listOf("Chill" to 5, "Normal" to 15, "Hardcore" to 30)
-    val tones = listOf("chill-bro from California", "strict British aristocrat", "soft sitcom bestie")
+    val tones = listOf("Neutral teacher", "Supportive coach", "Precise examiner")
 
     ScreenFrame {
         Text("Vibe Check", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
@@ -1386,21 +1371,6 @@ private fun VibeScreen() {
                 Stat("${appState.stats?.languageWords ?: appState.words.size}", "words")
                 Stat("${appState.stats?.dueReviews ?: 0}", "due")
                 Stat(appState.selectedLanguage.shortLabel, "language")
-            }
-        }
-        CozyCard(background = Color.White.copy(alpha = 0.58f)) {
-            Text("Learning loop", fontWeight = FontWeight.SemiBold, color = Graphite)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "Context words feed the dictionary, speaking reuses them, and grammar opens when mistakes repeat.",
-                color = InkMuted,
-                fontSize = 13.sp,
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Explanation:", color = Graphite, fontWeight = FontWeight.Medium)
-                Spacer(Modifier.width(8.dp))
-                CodeBadge(nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").code, nativeLanguageByCode(user?.nativeLanguageCode ?: "uk").shortLabel)
             }
         }
         LanguagePicker(
@@ -1414,7 +1384,7 @@ private fun VibeScreen() {
         CozyCard(background = Mint.copy(alpha = 0.42f)) {
             Text("Vibe mode", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = Graphite)
             Spacer(Modifier.height(12.dp))
-            vibeModes.forEach { (mode, minutes) ->
+            vibeModes.forEach { (mode, _) ->
                 val selected = user?.learningVibe == mode
                 Row(
                     modifier = Modifier
@@ -1432,7 +1402,7 @@ private fun VibeScreen() {
                             .background(if (selected) Mint else InkMuted.copy(alpha = 0.24f)),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text("$mode · $minutes min/day", color = Graphite, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+                    Text(mode, color = Graphite, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
                 }
                 Spacer(Modifier.height(8.dp))
             }

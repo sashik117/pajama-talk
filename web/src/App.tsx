@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
   Bot,
@@ -16,7 +16,6 @@ import {
   MicOff,
   Plane,
   Plus,
-  RefreshCw,
   Send,
   ShoppingBag,
   Sparkles,
@@ -105,7 +104,7 @@ type GrammarMicrocopy = {
 const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   uk: {
     intro: "Міні-урок, приклади і перевірка відповіді. Без полотна правил.",
-    loading: "Граматика завантажується. Якщо backend спить, натисни refresh.",
+    loading: "Граматика завантажується. Зачекай кілька секунд.",
     answerPlaceholder: "Впиши правильне речення",
     check: "Перевірити",
     next: "Далі",
@@ -114,7 +113,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   ru: {
     intro: "Мини-урок, примеры и проверка ответа. Без полотна правил.",
-    loading: "Грамматика загружается. Если backend спит, нажми refresh.",
+    loading: "Грамматика загружается. Подожди пару секунд.",
     answerPlaceholder: "Впиши правильное предложение",
     check: "Проверить",
     next: "Дальше",
@@ -123,7 +122,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   en: {
     intro: "Mini lesson, examples, and answer check. No wall of rules.",
-    loading: "Grammar is loading. If the backend is asleep, press refresh.",
+    loading: "Grammar is loading. Give it a few seconds.",
     answerPlaceholder: "Type the correct sentence",
     check: "Check",
     next: "Next",
@@ -132,7 +131,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   pl: {
     intro: "Mini-lekcja, przykłady i sprawdzenie odpowiedzi. Bez ściany zasad.",
-    loading: "Gramatyka się ładuje. Jeśli backend śpi, naciśnij refresh.",
+    loading: "Gramatyka się ładuje. Daj jej kilka sekund.",
     answerPlaceholder: "Wpisz poprawne zdanie",
     check: "Sprawdź",
     next: "Dalej",
@@ -141,7 +140,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   sk: {
     intro: "Mini lekcia, príklady a kontrola odpovede. Bez steny pravidiel.",
-    loading: "Gramatika sa načítava. Ak backend spí, stlač refresh.",
+    loading: "Gramatika sa načítava. Daj jej pár sekúnd.",
     answerPlaceholder: "Napíš správnu vetu",
     check: "Skontrolovať",
     next: "Ďalej",
@@ -150,7 +149,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   cs: {
     intro: "Mini lekce, příklady a kontrola odpovědi. Bez stěny pravidel.",
-    loading: "Gramatika se načítá. Pokud backend spí, stiskni refresh.",
+    loading: "Gramatika se načítá. Dej jí pár sekund.",
     answerPlaceholder: "Napiš správnou větu",
     check: "Zkontrolovat",
     next: "Dál",
@@ -159,7 +158,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   fr: {
     intro: "Mini-leçon, exemples et vérification. Pas de mur de règles.",
-    loading: "La grammaire charge. Si le backend dort, appuie sur refresh.",
+    loading: "La grammaire charge. Patiente quelques secondes.",
     answerPlaceholder: "Écris la phrase correcte",
     check: "Vérifier",
     next: "Suivant",
@@ -168,7 +167,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   es: {
     intro: "Mini lección, ejemplos y revisión. Nada de muro de reglas.",
-    loading: "La gramática se está cargando. Si el backend duerme, pulsa refresh.",
+    loading: "La gramática se está cargando. Dale unos segundos.",
     answerPlaceholder: "Escribe la frase correcta",
     check: "Comprobar",
     next: "Siguiente",
@@ -177,7 +176,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   it: {
     intro: "Mini-lezione, esempi e controllo risposta. Niente muro di regole.",
-    loading: "La grammatica sta caricando. Se il backend dorme, premi refresh.",
+    loading: "La grammatica sta caricando. Attendi qualche secondo.",
     answerPlaceholder: "Scrivi la frase corretta",
     check: "Controlla",
     next: "Avanti",
@@ -186,7 +185,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   de: {
     intro: "Mini-Lektion, Beispiele und Antwortcheck. Keine Regelwand.",
-    loading: "Grammatik lädt. Wenn das Backend schläft, drücke Refresh.",
+    loading: "Grammatik lädt. Gib ihr ein paar Sekunden.",
     answerPlaceholder: "Schreibe den richtigen Satz",
     check: "Prüfen",
     next: "Weiter",
@@ -195,7 +194,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   pt: {
     intro: "Mini-lição, exemplos e verificação. Sem parede de regras.",
-    loading: "A gramática está a carregar. Se o backend dorme, toca em refresh.",
+    loading: "A gramática está a carregar. Dá-lhe alguns segundos.",
     answerPlaceholder: "Escreve a frase correta",
     check: "Verificar",
     next: "Seguinte",
@@ -204,7 +203,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   tr: {
     intro: "Mini ders, örnekler ve cevap kontrolü. Kural duvarı yok.",
-    loading: "Gramer yükleniyor. Backend uyuyorsa refresh'e bas.",
+    loading: "Gramer yükleniyor. Birkaç saniye ver.",
     answerPlaceholder: "Doğru cümleyi yaz",
     check: "Kontrol et",
     next: "Sonraki",
@@ -213,7 +212,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   ja: {
     intro: "ミニレッスン、例、答えチェック。長いルール説明なし。",
-    loading: "文法を読み込み中です。backend が止まっていたら refresh を押してください。",
+    loading: "文法を読み込み中です。少し待ってください。",
     answerPlaceholder: "正しい文を入力",
     check: "確認",
     next: "次へ",
@@ -222,7 +221,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   ko: {
     intro: "미니 레슨, 예문, 답 확인. 긴 규칙 설명은 없어요.",
-    loading: "문법을 불러오는 중이에요. backend가 잠들었으면 refresh를 눌러요.",
+    loading: "문법을 불러오는 중이에요. 잠깐만 기다려 주세요.",
     answerPlaceholder: "올바른 문장을 입력하세요",
     check: "확인",
     next: "다음",
@@ -231,7 +230,7 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   },
   zh: {
     intro: "迷你课程、例句和答案检查。不堆规则。",
-    loading: "语法正在加载。如果 backend 睡着了，点 refresh。",
+    loading: "语法正在加载。请稍等几秒。",
     answerPlaceholder: "输入正确句子",
     check: "检查",
     next: "下一题",
@@ -526,7 +525,7 @@ export function App() {
           <div className="topbar-title">
             <h1>{copy(activeTab)}</h1>
             <p>
-              PajamaTalk · <LanguageBadge option={selectedLanguage} /> · {stats?.daily_vibe_minutes ?? 5} min
+              PajamaTalk · <LanguageBadge option={selectedLanguage} />
             </p>
           </div>
           <div className="topbar-actions">
@@ -539,9 +538,6 @@ export function App() {
                 setNativeCode={(code) => void updateNative(code)}
               />
             )}
-            <button className="icon-button" onClick={() => void loadData()} aria-label="Refresh">
-              <RefreshCw size={19} />
-            </button>
           </div>
         </header>
 
@@ -906,6 +902,7 @@ function SpeakingScreen({
   const [transcript, setTranscript] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState("");
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const roomIcon = useMemo(() => {
     if (!activeRoom) return null;
     if (activeRoom.id.includes("airport")) return <Plane size={28} />;
@@ -918,7 +915,19 @@ function SpeakingScreen({
     return <Coffee size={28} />;
   }, [activeRoom]);
 
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort?.();
+      recognitionRef.current = null;
+    };
+  }, []);
+
   function startVoice() {
+    if (isListening) {
+      recognitionRef.current?.stop?.();
+      setIsListening(false);
+      return;
+    }
     const SpeechCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechCtor) {
       setSpeechError(copy("speechUnsupported"));
@@ -931,6 +940,7 @@ function SpeakingScreen({
     setSpeechError("");
     setTranscript("");
     setIsListening(true);
+    recognitionRef.current = recognition;
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       const text = Array.from(event.results)
         .map((result) => result[0]?.transcript ?? "")
@@ -941,15 +951,23 @@ function SpeakingScreen({
     recognition.onerror = () => {
       setSpeechError(copy("speechError"));
       setIsListening(false);
+      recognitionRef.current = null;
     };
     recognition.onend = () => {
       setIsListening(false);
+      recognitionRef.current = null;
       setTranscript((current) => {
         if (current.trim()) void sendMessage(current);
         return current;
       });
     };
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setIsListening(false);
+      setSpeechError(copy("speechError"));
+    }
   }
 
   function sendDraft() {
@@ -1290,7 +1308,7 @@ function ProfileScreen({
   setTone: (tone: string) => void;
   logout: () => void;
 }) {
-  const tones = ["soft sitcom bestie", "chill-bro from California", "strict British aristocrat"];
+  const tones = ["Neutral teacher", "Supportive coach", "Precise examiner"];
   const learning = learningLanguages.find((language) => language.code === learningCode) ?? learningLanguages[0];
   const native = nativeLanguages.find((language) => language.code === user.native_language_code) ?? nativeLanguages[0];
   const plan =
@@ -1315,9 +1333,9 @@ function ProfileScreen({
       <section className="stats-grid">
         <Stat value={`${stats?.due_reviews ?? 0}`} label={copy("due")} />
         <Stat value={`${stats?.learned_words ?? 0}`} label={copy("learned")} />
-        <Stat value={`${user.daily_vibe_minutes}`} label="min/day" />
+        <Stat value={`${stats?.language_words ?? 0}`} label={copy("myWords")} />
       </section>
-      <section className="profile-insights card">
+      <section className="profile-insights card" hidden>
         <div className="profile-row">
           <span>
             <small>{copy("learningLanguage")}</small>
@@ -1346,9 +1364,11 @@ function ProfileScreen({
           {copy("contextTitle")} → {copy("myWords")} → {copy("speak")} → {copy("grammar")}
         </p>
       </section>
-      <DropdownSelect title={copy("uiLanguage")} value={locale} options={uiLocales} onChange={(value) => setLocale(value as UiLocale)} />
-      <DropdownSelect title={copy("learningLanguage")} value={learningCode} options={learningLanguages} onChange={setLearningCode} />
-      <DropdownSelect title={copy("nativeLanguage")} value={user.native_language_code} options={nativeLanguages} onChange={setNativeCode} />
+      <section className="profile-controls">
+        <DropdownSelect title={copy("uiLanguage")} value={locale} options={uiLocales} onChange={(value) => setLocale(value as UiLocale)} />
+        <DropdownSelect title={copy("learningLanguage")} value={learningCode} options={learningLanguages} onChange={setLearningCode} />
+        <DropdownSelect title={copy("nativeLanguage")} value={user.native_language_code} options={nativeLanguages} onChange={setNativeCode} />
+      </section>
 
       <section className="card settings-card">
         <h2>{copy("learningVibe")}</h2>
@@ -1693,6 +1713,8 @@ type SpeechRecognition = {
   onerror: (() => void) | null;
   onend: (() => void) | null;
   start: () => void;
+  stop?: () => void;
+  abort?: () => void;
 };
 
 type SpeechRecognitionEvent = {
