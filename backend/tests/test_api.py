@@ -98,6 +98,19 @@ def test_meme_puzzle_skips_harsh_terms(client: TestClient) -> None:
     assert response.json()["target_word"] == "cozy"
 
 
+def test_meme_puzzle_skips_phrase_terms(client: TestClient) -> None:
+    headers = auth_headers(client)
+    client.post(
+        "/words/enrich",
+        headers=headers,
+        json={"term": "it hits different", "language_code": "en", "source_context": "slang phrase"},
+    )
+
+    response = client.get("/engagement/meme-puzzle?language_code=en", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["target_word"] == "cozy"
+
+
 def test_words_can_be_filtered_by_learning_language(client: TestClient) -> None:
     headers = auth_headers(client)
     english = client.post(

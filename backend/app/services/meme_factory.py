@@ -61,7 +61,7 @@ def _fallback_word(code: str) -> str:
 def _is_soft_enough(word: str) -> bool:
     clean = word.strip().lower()
     blocked = {"shit", "fuck", "bitch", "asshole", "holy shit"}
-    return bool(clean) and not any(item in clean for item in blocked)
+    return bool(clean) and len(clean.split()) == 1 and not any(item in clean for item in blocked)
 
 
 def _stable_shuffle(words: list[str]) -> list[str]:

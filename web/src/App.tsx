@@ -1168,7 +1168,7 @@ function HomeScreen({
         </div>
       </section>
 
-      <EngagementStrip oracle={oracle} slang={slang} memePuzzle={memePuzzle} addWord={addWord} refreshPuzzle={refreshPuzzle} />
+      <EngagementStrip copy={copy} oracle={oracle} slang={slang} memePuzzle={memePuzzle} addWord={addWord} refreshPuzzle={refreshPuzzle} />
 
       {learningPath && <LearningPathPanel copy={copy} path={learningPath} openSpeak={openSpeak} />}
 
@@ -1219,26 +1219,35 @@ function HomeScreen({
 }
 
 function EngagementStrip({
+  copy,
   oracle,
   slang,
   memePuzzle,
   addWord,
   refreshPuzzle
 }: {
+  copy: (key: Parameters<typeof t>[1]) => string;
   oracle: OracleDto | null;
   slang: SlangDto | null;
   memePuzzle: MemePuzzleDto | null;
   addWord: (word: string, source?: string) => void;
   refreshPuzzle: () => void;
 }) {
-  const [oracleOpen, setOracleOpen] = useState(false);
+  const [oracleOpen, setOracleOpen] = useState(true);
   const [pickedPieces, setPickedPieces] = useState<string[]>([]);
+  const [savedNote, setSavedNote] = useState("");
   const answer = pickedPieces.join(" ");
   const solved = Boolean(memePuzzle && answer === memePuzzle.answer);
 
   useEffect(() => {
     setPickedPieces([]);
   }, [memePuzzle?.answer]);
+
+  function saveWord(word: string, source: string) {
+    addWord(word, source);
+    setSavedNote(`${copy("add")}: ${word}`);
+    window.setTimeout(() => setSavedNote(""), 1800);
+  }
 
   return (
     <section className="engagement-grid">
@@ -1252,7 +1261,7 @@ function EngagementStrip({
             <p>{oracle.prediction}</p>
             <div className="chip-row">
               {oracle.idioms.map((idiom) => (
-                <button key={idiom.phrase} className="chip" onClick={() => addWord(idiom.phrase, "Pajama Oracle")}>
+                <button key={idiom.phrase} className="chip" onClick={() => saveWord(idiom.phrase, "Pajama Oracle")}>
                   <Plus size={13} />
                   {idiom.phrase}
                 </button>
@@ -1268,9 +1277,9 @@ function EngagementStrip({
           <strong>{slang.term}</strong>
           <p>{slang.meaning}</p>
           <span>{slang.example}</span>
-          <button className="soft-action mint" onClick={() => addWord(slang.term, "Slang Wheel")}>
+          <button className="soft-action mint" onClick={() => saveWord(slang.term, "Slang Wheel")}>
             <Plus size={15} />
-            SRS
+            {copy("add")}
           </button>
         </article>
       )}
@@ -1295,13 +1304,14 @@ function EngagementStrip({
             <button className="soft-action" onClick={() => setPickedPieces([])}>
               <X size={15} />
             </button>
-            <button className="soft-action mint" onClick={solved ? refreshPuzzle : () => addWord(memePuzzle.target_word, "Puzzle Meme")}>
+            <button className="soft-action mint" onClick={solved ? refreshPuzzle : () => saveWord(memePuzzle.target_word, "Puzzle Meme")}>
               <Plus size={15} />
-              {solved ? "Next" : "SRS"}
+              {solved ? "Next" : copy("add")}
             </button>
           </div>
         </article>
       )}
+      {savedNote && <div className="save-toast">{savedNote}</div>}
     </section>
   );
 }
@@ -1632,7 +1642,7 @@ function SpeakingScreen({
     <section className="card speaking-card messenger-card">
       <div className="room-head">
         <button className="ghost-action inline" onClick={back}>
-          {copy("rooms")}
+          {copy("rooms")} · {rooms.length}
         </button>
         <span className="room-icon" style={{ background: activeRoom.accent_color }}>
           {roomIcon}
@@ -1652,6 +1662,22 @@ function SpeakingScreen({
           <Headphones size={16} />
           {labels.call}
         </button>
+      </div>
+
+      <div className="room-switcher">
+        {rooms.map((room) => (
+          <button
+            key={room.id}
+            className={room.id === activeRoom.id ? "active" : ""}
+            disabled={room.id === activeRoom.id}
+            onClick={() => {
+              back();
+              setPendingRoom(room);
+            }}
+          >
+            {room.title}
+          </button>
+        ))}
       </div>
 
       {mode === "call" ? (
