@@ -249,6 +249,9 @@ data class UserDto(
     @SerialName("native_language_code") val nativeLanguageCode: String,
     @SerialName("daily_vibe_minutes") val dailyVibeMinutes: Int,
     @SerialName("ai_tone") val aiTone: String,
+    @SerialName("current_level") val currentLevel: String = "Starter",
+    @SerialName("target_level") val targetLevel: String = "B1",
+    @SerialName("effort_level") val effortLevel: String = "Steady",
 )
 
 @Serializable
@@ -259,6 +262,9 @@ data class ProfileUpdateRequest(
     @SerialName("native_language_code") val nativeLanguageCode: String? = null,
     @SerialName("daily_vibe_minutes") val dailyVibeMinutes: Int? = null,
     @SerialName("ai_tone") val aiTone: String? = null,
+    @SerialName("current_level") val currentLevel: String? = null,
+    @SerialName("target_level") val targetLevel: String? = null,
+    @SerialName("effort_level") val effortLevel: String? = null,
 )
 
 @Serializable

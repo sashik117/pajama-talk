@@ -10,6 +10,9 @@ export type UserDto = {
   native_language_code: string;
   daily_vibe_minutes: number;
   ai_tone: string;
+  current_level: string;
+  target_level: string;
+  effort_level: string;
 };
 export type StatsDto = {
   active_language_code: string;

@@ -1418,6 +1418,38 @@ textarea {
   padding: 5px 7px;
 }
 
+.preference-grid,
+.choice-group {
+  display: grid;
+  gap: 9px;
+}
+
+.choice-group small {
+  color: #7a7082;
+  font-size: 11px;
+}
+
+.choice-pills {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.choice-pills button {
+  min-height: 32px;
+  padding: 6px 7px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(247, 241, 255, 0.78);
+  color: #292632;
+  font-size: 12px;
+  font-weight: 540;
+}
+
+.choice-pills button.selected {
+  background: rgba(157, 206, 192, 0.72);
+}
+
 .profile-insights {
   display: grid;
   gap: 11px;

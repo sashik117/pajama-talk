@@ -20,6 +20,9 @@ def to_user_response(user: User) -> UserResponse:
         native_language_code=user.native_language_code,
         daily_vibe_minutes=user.daily_vibe_minutes,
         ai_tone=user.ai_tone,
+        current_level=user.current_level,
+        target_level=user.target_level,
+        effort_level=user.effort_level,
     )
 
 

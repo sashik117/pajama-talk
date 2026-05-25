@@ -1360,8 +1360,12 @@ private fun VibeScreen() {
     val appState = LocalPajamaState.current
     val scope = rememberCoroutineScope()
     val user = appState.user
+    val nativeCode = user?.nativeLanguageCode ?: "en"
     val vibeModes = listOf("Chill" to 5, "Normal" to 15, "Hardcore" to 30)
     val tones = listOf("Neutral teacher", "Supportive coach", "Precise examiner")
+    val currentLevels = listOf("Starter", "A1", "A2", "B1", "B2", "C1")
+    val targetLevels = listOf("A1", "A2", "B1", "B2", "C1", "Fluent")
+    val effortLevels = listOf("Light", "Steady", "Intense")
 
     ScreenFrame {
         Text("Vibe Check", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
@@ -1381,6 +1385,31 @@ private fun VibeScreen() {
             selected = nativeLanguageByCode(user?.nativeLanguageCode ?: "uk"),
             onSelect = { language -> scope.launch { appState.selectNativeLanguage(language) } },
         )
+        CozyCard(background = Color.White.copy(alpha = 0.58f)) {
+            Text(profileLabel(nativeCode, "Learning profile"), fontWeight = FontWeight.SemiBold, color = Graphite)
+            Spacer(Modifier.height(10.dp))
+            ProfileOptionRow(
+                title = profileLabel(nativeCode, "Current level"),
+                selected = user?.currentLevel ?: "Starter",
+                options = currentLevels,
+                nativeCode = nativeCode,
+                onSelect = { level -> scope.launch { appState.setCurrentLevel(level) } },
+            )
+            ProfileOptionRow(
+                title = profileLabel(nativeCode, "Goal level"),
+                selected = user?.targetLevel ?: "B1",
+                options = targetLevels,
+                nativeCode = nativeCode,
+                onSelect = { level -> scope.launch { appState.setTargetLevel(level) } },
+            )
+            ProfileOptionRow(
+                title = profileLabel(nativeCode, "Effort"),
+                selected = user?.effortLevel ?: "Steady",
+                options = effortLevels,
+                nativeCode = nativeCode,
+                onSelect = { level -> scope.launch { appState.setEffortLevel(level) } },
+            )
+        }
         CozyCard(background = Mint.copy(alpha = 0.42f)) {
             Text("Vibe mode", fontWeight = FontWeight.SemiBold, fontSize = 20.sp, color = Graphite)
             Spacer(Modifier.height(12.dp))
@@ -1402,7 +1431,7 @@ private fun VibeScreen() {
                             .background(if (selected) Mint else InkMuted.copy(alpha = 0.24f)),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text(mode, color = Graphite, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+                    Text(profileLabel(nativeCode, mode), color = Graphite, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
                 }
                 Spacer(Modifier.height(8.dp))
             }
@@ -1428,7 +1457,7 @@ private fun VibeScreen() {
                             .background(if (selected) Mint else InkMuted.copy(alpha = 0.24f)),
                     )
                     Spacer(Modifier.width(10.dp))
-                    Text(tone, color = Graphite, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+                    Text(profileLabel(nativeCode, tone), color = Graphite, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
                 }
                 Spacer(Modifier.height(8.dp))
             }
@@ -1446,6 +1475,76 @@ private fun VibeScreen() {
             Text("Native: ${(user?.nativeLanguageCode ?: "uk").uppercase()} · ${user?.email ?: "dev user"}", color = InkMuted)
         }
     }
+}
+
+@Composable
+private fun ProfileOptionRow(
+    title: String,
+    selected: String,
+    options: List<String>,
+    nativeCode: String,
+    onSelect: (String) -> Unit,
+) {
+    Text(title, color = InkMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+    Spacer(Modifier.height(6.dp))
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(options) { option ->
+            val isSelected = option == selected
+            TextButton(
+                onClick = { onSelect(option) },
+                modifier = Modifier
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(if (isSelected) Mint.copy(alpha = 0.68f) else SoftLilac),
+                colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
+            ) {
+                Text(profileLabel(nativeCode, option), fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal, fontSize = 12.sp)
+            }
+        }
+    }
+    Spacer(Modifier.height(10.dp))
+}
+
+private fun profileLabel(nativeCode: String, key: String): String {
+    val uk = mapOf(
+        "Learning profile" to "Профіль навчання",
+        "Current level" to "Поточний рівень",
+        "Goal level" to "Цільовий рівень",
+        "Effort" to "Зусилля",
+        "Starter" to "З нуля",
+        "Fluent" to "Вільно",
+        "Light" to "Легко",
+        "Steady" to "Стабільно",
+        "Intense" to "Інтенсивно",
+        "Chill" to "Спокійно",
+        "Normal" to "Нормально",
+        "Hardcore" to "Потужно",
+        "Neutral teacher" to "Нейтральний вчитель",
+        "Supportive coach" to "Підтримуючий коуч",
+        "Precise examiner" to "Точний екзаменатор",
+    )
+    val ru = mapOf(
+        "Learning profile" to "Профиль обучения",
+        "Current level" to "Текущий уровень",
+        "Goal level" to "Целевой уровень",
+        "Effort" to "Усилия",
+        "Starter" to "С нуля",
+        "Fluent" to "Свободно",
+        "Light" to "Легко",
+        "Steady" to "Стабильно",
+        "Intense" to "Интенсивно",
+        "Chill" to "Спокойно",
+        "Normal" to "Нормально",
+        "Hardcore" to "Мощно",
+        "Neutral teacher" to "Нейтральный учитель",
+        "Supportive coach" to "Поддерживающий коуч",
+        "Precise examiner" to "Точный экзаменатор",
+    )
+    return when (nativeCode) {
+        "uk" -> uk[key]
+        "ru" -> ru[key]
+        else -> null
+    } ?: key
 }
 
 @Composable

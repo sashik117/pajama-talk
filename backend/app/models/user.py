@@ -18,6 +18,9 @@ class User(Base):
     native_language_code: Mapped[str] = mapped_column(String(12), default="uk")
     daily_vibe_minutes: Mapped[int] = mapped_column(Integer, default=5)
     ai_tone: Mapped[str] = mapped_column(String(80), default="Neutral teacher")
+    current_level: Mapped[str] = mapped_column(String(24), default="Starter")
+    target_level: Mapped[str] = mapped_column(String(24), default="B1")
+    effort_level: Mapped[str] = mapped_column(String(24), default="Steady")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
     words = relationship("Word", back_populates="user", cascade="all, delete-orphan")

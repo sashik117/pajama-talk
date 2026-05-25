@@ -412,6 +412,18 @@ class PajamaAppState(
         updateProfile(ProfileUpdateRequest(aiTone = tone))
     }
 
+    suspend fun setCurrentLevel(level: String) {
+        updateProfile(ProfileUpdateRequest(currentLevel = level))
+    }
+
+    suspend fun setTargetLevel(level: String) {
+        updateProfile(ProfileUpdateRequest(targetLevel = level))
+    }
+
+    suspend fun setEffortLevel(level: String) {
+        updateProfile(ProfileUpdateRequest(effortLevel = level))
+    }
+
     private suspend fun updateProfile(payload: ProfileUpdateRequest) {
         errorMessage = null
         runCatching {

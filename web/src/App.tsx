@@ -42,9 +42,25 @@ import { languageName, learningLanguages, nativeLanguages, t, UiLocale, uiLocale
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type ChatLine = { role: "user" | "assistant"; text: string };
 type SelectOption = { code: string; label: string; short: string; flag: string };
+type ProfileChoiceCopy = {
+  setup: string;
+  currentLevel: string;
+  targetLevel: string;
+  effortLevel: string;
+  levels: Record<string, string>;
+  targets: Record<string, string>;
+  efforts: Record<string, string>;
+  vibes: Record<string, string>;
+  tones: Record<string, string>;
+};
 
 const demoEmail = "dreamer@pajamatalk.dev";
 const demoPassword = "pajama-dev-secret";
+const currentLevelOptions = ["Starter", "A1", "A2", "B1", "B2", "C1"] as const;
+const targetLevelOptions = ["A1", "A2", "B1", "B2", "C1", "Fluent"] as const;
+const effortOptions = ["Light", "Steady", "Intense"] as const;
+const vibeOptions = ["Chill", "Normal", "Hardcore"] as const;
+const toneOptions = ["Neutral teacher", "Supportive coach", "Precise examiner"] as const;
 
 const grammarTopics = [
   {
@@ -239,6 +255,60 @@ const grammarMicrocopy: Record<UiLocale, GrammarMicrocopy> = {
   }
 };
 
+const enProfileCopy: ProfileChoiceCopy = {
+  setup: "Learning profile",
+  currentLevel: "Current level",
+  targetLevel: "Goal level",
+  effortLevel: "Effort",
+  levels: { Starter: "Starter", A1: "A1", A2: "A2", B1: "B1", B2: "B2", C1: "C1" },
+  targets: { A1: "A1", A2: "A2", B1: "B1", B2: "B2", C1: "C1", Fluent: "Fluent" },
+  efforts: { Light: "Light", Steady: "Steady", Intense: "Intense" },
+  vibes: { Chill: "Chill", Normal: "Normal", Hardcore: "Hardcore" },
+  tones: { "Neutral teacher": "Neutral teacher", "Supportive coach": "Supportive coach", "Precise examiner": "Precise examiner" },
+};
+
+const profileCopy: Record<UiLocale, ProfileChoiceCopy> = {
+  en: enProfileCopy,
+  uk: {
+    setup: "Профіль навчання",
+    currentLevel: "Поточний рівень",
+    targetLevel: "Цільовий рівень",
+    effortLevel: "Зусилля",
+    levels: { Starter: "З нуля", A1: "A1", A2: "A2", B1: "B1", B2: "B2", C1: "C1" },
+    targets: { A1: "A1 база", A2: "A2 впевнено", B1: "B1 розмовний", B2: "B2 сильний", C1: "C1 вільний", Fluent: "Вільно" },
+    efforts: { Light: "Легко", Steady: "Стабільно", Intense: "Інтенсивно" },
+    vibes: { Chill: "Спокійно", Normal: "Нормально", Hardcore: "Потужно" },
+    tones: { "Neutral teacher": "Нейтральний вчитель", "Supportive coach": "Підтримуючий коуч", "Precise examiner": "Точний екзаменатор" },
+  },
+  ru: {
+    setup: "Профиль обучения",
+    currentLevel: "Текущий уровень",
+    targetLevel: "Целевой уровень",
+    effortLevel: "Усилия",
+    levels: { Starter: "С нуля", A1: "A1", A2: "A2", B1: "B1", B2: "B2", C1: "C1" },
+    targets: { A1: "A1 база", A2: "A2 уверенно", B1: "B1 разговорный", B2: "B2 сильный", C1: "C1 свободный", Fluent: "Свободно" },
+    efforts: { Light: "Легко", Steady: "Стабильно", Intense: "Интенсивно" },
+    vibes: { Chill: "Спокойно", Normal: "Нормально", Hardcore: "Мощно" },
+    tones: { "Neutral teacher": "Нейтральный учитель", "Supportive coach": "Поддерживающий коуч", "Precise examiner": "Точный экзаменатор" },
+  },
+  pl: { ...enProfileCopy, setup: "Profil nauki", currentLevel: "Obecny poziom", targetLevel: "Cel", effortLevel: "Wysiłek", efforts: { Light: "Lekko", Steady: "Regularnie", Intense: "Intensywnie" }, vibes: { Chill: "Spokojnie", Normal: "Normalnie", Hardcore: "Mocno" }, tones: { "Neutral teacher": "Neutralny nauczyciel", "Supportive coach": "Wspierający coach", "Precise examiner": "Precyzyjny egzaminator" } },
+  sk: { ...enProfileCopy, setup: "Profil učenia", currentLevel: "Aktuálna úroveň", targetLevel: "Cieľ", effortLevel: "Úsilie", efforts: { Light: "Ľahko", Steady: "Pravidelne", Intense: "Intenzívne" }, vibes: { Chill: "Pokojne", Normal: "Normálne", Hardcore: "Naplno" }, tones: { "Neutral teacher": "Neutrálny učiteľ", "Supportive coach": "Podporný kouč", "Precise examiner": "Presný skúšajúci" } },
+  cs: { ...enProfileCopy, setup: "Profil učení", currentLevel: "Aktuální úroveň", targetLevel: "Cíl", effortLevel: "Úsilí", efforts: { Light: "Lehce", Steady: "Pravidelně", Intense: "Intenzivně" }, vibes: { Chill: "V klidu", Normal: "Normálně", Hardcore: "Naplno" }, tones: { "Neutral teacher": "Neutrální učitel", "Supportive coach": "Podporující kouč", "Precise examiner": "Přesný zkoušející" } },
+  fr: { ...enProfileCopy, setup: "Profil d'apprentissage", currentLevel: "Niveau actuel", targetLevel: "Objectif", effortLevel: "Effort", efforts: { Light: "Léger", Steady: "Régulier", Intense: "Intense" }, vibes: { Chill: "Calme", Normal: "Normal", Hardcore: "Intensif" }, tones: { "Neutral teacher": "Prof neutre", "Supportive coach": "Coach encourageant", "Precise examiner": "Examinateur précis" } },
+  es: { ...enProfileCopy, setup: "Perfil de aprendizaje", currentLevel: "Nivel actual", targetLevel: "Meta", effortLevel: "Esfuerzo", efforts: { Light: "Ligero", Steady: "Constante", Intense: "Intenso" }, vibes: { Chill: "Tranquilo", Normal: "Normal", Hardcore: "Intenso" }, tones: { "Neutral teacher": "Profesor neutral", "Supportive coach": "Coach de apoyo", "Precise examiner": "Examinador preciso" } },
+  it: { ...enProfileCopy, setup: "Profilo di studio", currentLevel: "Livello attuale", targetLevel: "Obiettivo", effortLevel: "Impegno", efforts: { Light: "Leggero", Steady: "Costante", Intense: "Intenso" }, vibes: { Chill: "Calmo", Normal: "Normale", Hardcore: "Intenso" }, tones: { "Neutral teacher": "Insegnante neutro", "Supportive coach": "Coach di supporto", "Precise examiner": "Esaminatore preciso" } },
+  de: { ...enProfileCopy, setup: "Lernprofil", currentLevel: "Aktuelles Niveau", targetLevel: "Ziel", effortLevel: "Einsatz", efforts: { Light: "Leicht", Steady: "Regelmäßig", Intense: "Intensiv" }, vibes: { Chill: "Ruhig", Normal: "Normal", Hardcore: "Intensiv" }, tones: { "Neutral teacher": "Neutraler Lehrer", "Supportive coach": "Unterstützender Coach", "Precise examiner": "Präziser Prüfer" } },
+  pt: { ...enProfileCopy, setup: "Perfil de estudo", currentLevel: "Nível atual", targetLevel: "Meta", effortLevel: "Esforço", efforts: { Light: "Leve", Steady: "Constante", Intense: "Intenso" }, vibes: { Chill: "Calmo", Normal: "Normal", Hardcore: "Intenso" }, tones: { "Neutral teacher": "Professor neutro", "Supportive coach": "Coach de apoio", "Precise examiner": "Examinador preciso" } },
+  tr: { ...enProfileCopy, setup: "Öğrenme profili", currentLevel: "Mevcut seviye", targetLevel: "Hedef", effortLevel: "Çaba", efforts: { Light: "Hafif", Steady: "Düzenli", Intense: "Yoğun" }, vibes: { Chill: "Sakin", Normal: "Normal", Hardcore: "Yoğun" }, tones: { "Neutral teacher": "Nötr öğretmen", "Supportive coach": "Destekleyici koç", "Precise examiner": "Net sınavcı" } },
+  ja: { ...enProfileCopy, setup: "学習プロフィール", currentLevel: "現在のレベル", targetLevel: "目標レベル", effortLevel: "努力量", efforts: { Light: "軽め", Steady: "安定", Intense: "集中" }, vibes: { Chill: "ゆるく", Normal: "普通", Hardcore: "集中" }, tones: { "Neutral teacher": "中立の先生", "Supportive coach": "応援コーチ", "Precise examiner": "正確な試験官" } },
+  ko: { ...enProfileCopy, setup: "학습 프로필", currentLevel: "현재 레벨", targetLevel: "목표 레벨", effortLevel: "노력량", efforts: { Light: "가볍게", Steady: "꾸준히", Intense: "집중" }, vibes: { Chill: "편하게", Normal: "보통", Hardcore: "집중" }, tones: { "Neutral teacher": "중립 선생님", "Supportive coach": "응원 코치", "Precise examiner": "정확한 시험관" } },
+  zh: { ...enProfileCopy, setup: "学习档案", currentLevel: "当前水平", targetLevel: "目标水平", effortLevel: "投入程度", efforts: { Light: "轻松", Steady: "稳定", Intense: "高强度" }, vibes: { Chill: "轻松", Normal: "正常", Hardcore: "高强度" }, tones: { "Neutral teacher": "中立老师", "Supportive coach": "支持型教练", "Precise examiner": "精准考官" } },
+};
+
+function uiLocaleFromCode(code: string): UiLocale {
+  return uiLocales.some((locale) => locale.code === code) ? (code as UiLocale) : "en";
+}
+
 function getSpeechLang(code: string) {
   return (
     {
@@ -309,6 +379,7 @@ export function App() {
       localStorage.setItem("pajama-token", nextToken);
       setUser(profile);
       setLearningCode(profile.active_language_code);
+      setUiLocale(uiLocaleFromCode(profile.native_language_code));
       await loadData(nextToken, profile.active_language_code, profile.native_language_code);
     } catch (err) {
       localStorage.removeItem("pajama-token");
@@ -387,8 +458,10 @@ export function App() {
     if (!token) return;
     setHints(null);
     setContextResult(null);
+    setUiLocale(uiLocaleFromCode(code));
     const profile = await api.updateProfile(token, { native_language_code: code });
     setUser(profile);
+    setUiLocale(uiLocaleFromCode(profile.native_language_code));
     await loadData(token, learningCode, profile.native_language_code);
   }
 
@@ -403,6 +476,11 @@ export function App() {
   async function updateTone(tone: string) {
     if (!token) return;
     setUser(await api.updateProfile(token, { ai_tone: tone }));
+  }
+
+  async function updateProfileSettings(payload: Partial<Record<string, string | number>>) {
+    if (!token) return;
+    setUser(await api.updateProfile(token, payload));
   }
 
   async function addWord(term: string, source = "") {
@@ -603,7 +681,6 @@ export function App() {
           <ProfileScreen
             copy={copy}
             locale={uiLocale}
-            setLocale={setUiLocale}
             user={user}
             stats={stats}
             learningCode={learningCode}
@@ -611,6 +688,7 @@ export function App() {
             setNativeCode={(code) => void updateNative(code)}
             setVibe={(vibe) => void updateVibe(vibe)}
             setTone={(tone) => void updateTone(tone)}
+            setProfile={(payload) => void updateProfileSettings(payload)}
             logout={logout}
           />
         )}
@@ -669,7 +747,7 @@ function AuthScreen({
         </div>
 
         <DropdownSelect
-          title={copy("uiLanguage")}
+          title={copy("nativeLanguage")}
           value={locale}
           options={uiLocales}
           onChange={(value) => setLocale(value as UiLocale)}
@@ -1286,7 +1364,6 @@ function FlagSticker({ code }: { code: string }) {
 function ProfileScreen({
   copy,
   locale,
-  setLocale,
   user,
   stats,
   learningCode,
@@ -1294,11 +1371,11 @@ function ProfileScreen({
   setNativeCode,
   setVibe,
   setTone,
+  setProfile,
   logout
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
   locale: UiLocale;
-  setLocale: (locale: UiLocale) => void;
   user: UserDto;
   stats: StatsDto | null;
   learningCode: string;
@@ -1306,9 +1383,10 @@ function ProfileScreen({
   setNativeCode: (code: string) => void;
   setVibe: (vibe: string) => void;
   setTone: (tone: string) => void;
+  setProfile: (payload: Partial<Record<string, string | number>>) => void;
   logout: () => void;
 }) {
-  const tones = ["Neutral teacher", "Supportive coach", "Precise examiner"];
+  const labels = profileCopy[locale] ?? enProfileCopy;
   const learning = learningLanguages.find((language) => language.code === learningCode) ?? learningLanguages[0];
   const native = nativeLanguages.find((language) => language.code === user.native_language_code) ?? nativeLanguages[0];
   const plan =
@@ -1365,17 +1443,25 @@ function ProfileScreen({
         </p>
       </section>
       <section className="profile-controls">
-        <DropdownSelect title={copy("uiLanguage")} value={locale} options={uiLocales} onChange={(value) => setLocale(value as UiLocale)} />
         <DropdownSelect title={copy("learningLanguage")} value={learningCode} options={learningLanguages} onChange={setLearningCode} />
         <DropdownSelect title={copy("nativeLanguage")} value={user.native_language_code} options={nativeLanguages} onChange={setNativeCode} />
       </section>
 
       <section className="card settings-card">
+        <h2>{labels.setup}</h2>
+        <div className="preference-grid">
+          <ChoiceGroup title={labels.currentLevel} value={user.current_level} options={currentLevelOptions} labels={labels.levels} onSelect={(value) => setProfile({ current_level: value })} />
+          <ChoiceGroup title={labels.targetLevel} value={user.target_level} options={targetLevelOptions} labels={labels.targets} onSelect={(value) => setProfile({ target_level: value })} />
+          <ChoiceGroup title={labels.effortLevel} value={user.effort_level} options={effortOptions} labels={labels.efforts} onSelect={(value) => setProfile({ effort_level: value })} />
+        </div>
+      </section>
+
+      <section className="card settings-card">
         <h2>{copy("learningVibe")}</h2>
         <div className="button-grid">
-          {["Chill", "Normal", "Hardcore"].map((vibe) => (
+          {vibeOptions.map((vibe) => (
             <button key={vibe} className={user.learning_vibe === vibe ? "selected" : ""} onClick={() => setVibe(vibe)}>
-              {vibe}
+              {labels.vibes[vibe]}
             </button>
           ))}
         </div>
@@ -1384,10 +1470,10 @@ function ProfileScreen({
       <section className="card settings-card">
         <h2>{copy("aiTone")}</h2>
         <div className="tone-list">
-          {tones.map((tone) => (
+          {toneOptions.map((tone) => (
             <button key={tone} className={user.ai_tone === tone ? "selected" : ""} onClick={() => setTone(tone)}>
               <Bot size={17} />
-              {tone}
+              {labels.tones[tone]}
             </button>
           ))}
         </div>
@@ -1514,6 +1600,33 @@ function DropdownSelect({
         </div>
       )}
     </section>
+  );
+}
+
+function ChoiceGroup({
+  title,
+  value,
+  options,
+  labels,
+  onSelect
+}: {
+  title: string;
+  value: string;
+  options: readonly string[];
+  labels: Record<string, string>;
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <div className="choice-group">
+      <small>{title}</small>
+      <div className="choice-pills">
+        {options.map((option) => (
+          <button key={option} className={value === option ? "selected" : ""} onClick={() => onSelect(option)}>
+            {labels[option] ?? option}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
