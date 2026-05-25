@@ -8,10 +8,11 @@ from app.db.session import SessionLocal, get_db
 from app.models.chat import ChatMessage
 from app.models.user import User
 from app.models.word import Word
-from app.schemas.speaking import SpeakingHintsRequest, SpeakingHintsResponse, SpeakingRoom
+from app.schemas.speaking import EchoRequest, EchoResponse, SpeakingHintsRequest, SpeakingHintsResponse, SpeakingRoom
 from app.services.ai_service import generate_speaking_hints, stream_roleplay_reply
 from app.services.grammar import detect_mistake_tag
 from app.services.language_course import starter_pack
+from app.services.pronunciation_service import echo_feedback
 
 router = APIRouter(prefix="/speaking", tags=["speaking"])
 
@@ -124,6 +125,14 @@ def speaking_hints(
     )
 
 
+@router.post("/echo", response_model=EchoResponse)
+def speaking_echo(
+    payload: EchoRequest,
+    user: User = Depends(get_current_user),
+) -> EchoResponse:
+    return echo_feedback(payload.phrase, payload.transcript, user.native_language_code)
+
+
 def _learning_terms(db: Session, user: User) -> list[str]:
     return [
         row[0]
@@ -148,6 +157,7 @@ async def _stream_assistant_reply(
     room_id: str,
     message: str,
     token_type: str,
+    mood: str = "steady",
 ) -> str:
     reply_parts: list[str] = []
     async for token_text in stream_roleplay_reply(
@@ -157,6 +167,7 @@ async def _stream_assistant_reply(
         language_code=user.active_language_code,
         learning_terms=_learning_terms(db, user),
         target_language_code=user.native_language_code,
+        mood=mood,
     ):
         reply_parts.append(token_text)
         await websocket.send_json({"type": token_type, "value": token_text})
@@ -213,6 +224,7 @@ def _user_from_ws_token(websocket: WebSocket, db: Session) -> User | None:
 @router.websocket("/ws")
 async def speaking_ws(websocket: WebSocket) -> None:
     room_id = websocket.query_params.get("room_id", "coffee-alex")
+    mood = websocket.query_params.get("mood", "steady")
     db: Session = SessionLocal()
     user = _user_from_ws_token(websocket, db)
     if user is None:
@@ -235,7 +247,7 @@ async def speaking_ws(websocket: WebSocket) -> None:
             )
             db.commit()
 
-            await _stream_assistant_reply(websocket, db, user, room_id, message, "token")
+            await _stream_assistant_reply(websocket, db, user, room_id, message, "token", mood=mood)
             await websocket.send_json({"type": "done"})
     except WebSocketDisconnect:
         return
@@ -246,6 +258,7 @@ async def speaking_ws(websocket: WebSocket) -> None:
 @router.websocket("/voice-ws")
 async def speaking_voice_ws(websocket: WebSocket) -> None:
     room_id = websocket.query_params.get("room_id", "coffee-alex")
+    mood = websocket.query_params.get("mood", "steady")
     db: Session = SessionLocal()
     user = _user_from_ws_token(websocket, db)
     if user is None:
@@ -289,7 +302,7 @@ async def speaking_voice_ws(websocket: WebSocket) -> None:
             )
             db.commit()
             await websocket.send_json({"type": "transcript", "value": message})
-            reply = await _stream_assistant_reply(websocket, db, user, room_id, message, "assistant_token")
+            reply = await _stream_assistant_reply(websocket, db, user, room_id, message, "assistant_token", mood=mood)
             await websocket.send_json(
                 {
                     "type": "tts",

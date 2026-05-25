@@ -931,22 +931,34 @@ private fun SpeakingRoomsScreen() {
     val scope = rememberCoroutineScope()
     val rooms = appState.speakingRooms.map { it.toRoom() }.ifEmpty { fallbackRooms() }
     var activeRoom by remember { mutableStateOf<Room?>(null) }
+    var pendingRoom by remember { mutableStateOf<Room?>(null) }
 
     ScreenFrame {
         Text("Speaking Rooms", fontSize = 28.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
         ConnectionStatus(appState)
-        AnimatedVisibility(activeRoom == null) {
+        AnimatedVisibility(activeRoom == null && pendingRoom == null) {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 rooms.forEach { room ->
                     RoomCard(
                         room = room,
                         onClick = {
-                            activeRoom = room
-                            appState.startSpeakingConversation(room.prompt)
+                            pendingRoom = room
                         },
                     )
                 }
             }
+        }
+        AnimatedVisibility(activeRoom == null && pendingRoom != null) {
+            val room = pendingRoom ?: rooms.first()
+            MoodGateCard(
+                room = room,
+                onBack = { pendingRoom = null },
+                onMood = { mood ->
+                    pendingRoom = null
+                    activeRoom = room
+                    appState.startSpeakingConversation(composeMoodIntro(room, mood))
+                },
+            )
         }
         AnimatedVisibility(activeRoom != null) {
             val room = activeRoom ?: rooms.first()
@@ -966,10 +978,50 @@ private fun SpeakingRoomsScreen() {
                 onBack = {
                     appState.clearSpeakingConversation()
                     activeRoom = null
+                    pendingRoom = null
                 },
             )
         }
     }
+}
+
+@Composable
+private fun MoodGateCard(room: Room, onBack: () -> Unit, onMood: (String) -> Unit) {
+    CozyCard(background = Color.White.copy(alpha = 0.86f)) {
+        TextButton(onClick = onBack, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+            Text("Rooms")
+        }
+        Text("Mood check", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
+        Text("${room.character} adapts the first questions to your energy.", color = InkMuted, fontSize = 13.sp)
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(
+                Triple("tired", "🥱", "Soft"),
+                Triple("charged", "⚡", "Live"),
+                Triple("hard", "🫠", "Kind"),
+            ).forEach { (mood, emoji, label) ->
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White.copy(alpha = 0.58f))
+                        .clickable { onMood(mood) }
+                        .padding(vertical = 14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(emoji, fontSize = 26.sp)
+                    Text(label, color = Graphite, fontWeight = FontWeight.Medium, fontSize = 12.sp)
+                }
+            }
+        }
+    }
+}
+
+private fun composeMoodIntro(room: Room, mood: String): String = when (mood) {
+    "tired" -> "Low-energy mode. ${room.character} will keep it short, soft, and easy today."
+    "charged" -> "Charged mode. ${room.character} will make the pace livelier and a bit more playful."
+    "hard" -> "No-pressure mode. ${room.character} will keep the conversation simple and kind."
+    else -> room.prompt
 }
 
 @Composable

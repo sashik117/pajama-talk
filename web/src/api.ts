@@ -85,6 +85,32 @@ export type CallSummaryDto = {
   grammar_feedback: string;
   turns: number;
 };
+export type OracleDto = {
+  language_code: string;
+  prediction: string;
+  idioms: Array<{ phrase: string; explanation: string }>;
+};
+export type SlangDto = {
+  language_code: string;
+  term: string;
+  meaning: string;
+  example: string;
+  source_note: string;
+};
+export type MemePuzzleDto = {
+  language_code: string;
+  prompt: string;
+  template: string;
+  pieces: string[];
+  answer: string;
+  target_word: string;
+};
+export type EchoFeedbackDto = {
+  score: number;
+  feedback: string;
+  next_tip: string;
+  matched_text: string;
+};
 export type LearningPathDto = {
   language_code: string;
   language_name: string;
@@ -188,6 +214,18 @@ export const api = {
     request<SpeakingRoomDto[]>(withQuery("/speaking/rooms", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
   learningPath: (token: string, languageCode: string, targetLanguageCode?: string) =>
     request<LearningPathDto>(withQuery("/learning/path", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
+  oracle: (token: string, languageCode: string, targetLanguageCode?: string) =>
+    request<OracleDto>(withQuery("/engagement/oracle", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
+  slang: (token: string, languageCode: string) =>
+    request<SlangDto>(withQuery("/engagement/slang", { language_code: languageCode }), { token }),
+  memePuzzle: (token: string, languageCode: string) =>
+    request<MemePuzzleDto>(withQuery("/engagement/meme-puzzle", { language_code: languageCode }), { token }),
+  echoFeedback: (token: string, phrase: string, transcript: string, languageCode: string) =>
+    request<EchoFeedbackDto>("/speaking/echo", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ phrase, transcript, language_code: languageCode })
+    }),
   speakingHints: (token: string, roomId: string, lastMessage: string, languageCode: string) =>
     request<SpeakingHintsDto>("/speaking/hints", {
       method: "POST",

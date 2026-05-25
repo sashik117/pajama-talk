@@ -63,6 +63,41 @@ def test_context_buddy(client: TestClient) -> None:
     assert "deadline" in body["suggested_words"]
 
 
+def test_engagement_widgets(client: TestClient) -> None:
+    headers = auth_headers(client)
+    client.post(
+        "/words/enrich",
+        headers=headers,
+        json={"term": "cozy", "language_code": "en", "source_context": "a cozy night"},
+    )
+
+    oracle = client.get("/engagement/oracle?language_code=en&target_language_code=uk", headers=headers)
+    assert oracle.status_code == 200
+    assert oracle.json()["idioms"]
+
+    slang = client.get("/engagement/slang?language_code=en", headers=headers)
+    assert slang.status_code == 200
+    assert slang.json()["term"]
+
+    puzzle = client.get("/engagement/meme-puzzle?language_code=en", headers=headers)
+    assert puzzle.status_code == 200
+    assert puzzle.json()["target_word"] == "cozy"
+    assert puzzle.json()["pieces"]
+
+
+def test_meme_puzzle_skips_harsh_terms(client: TestClient) -> None:
+    headers = auth_headers(client)
+    client.post(
+        "/words/enrich",
+        headers=headers,
+        json={"term": "holy shit", "language_code": "en", "source_context": "rough slang"},
+    )
+
+    response = client.get("/engagement/meme-puzzle?language_code=en", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["target_word"] == "cozy"
+
+
 def test_words_can_be_filtered_by_learning_language(client: TestClient) -> None:
     headers = auth_headers(client)
     english = client.post(
@@ -169,6 +204,36 @@ def test_speaking_websocket_streams_reply(client: TestClient) -> None:
             tokens.append(event["value"])
 
     assert "".join(tokens).strip().startswith("Nice choice")
+
+
+def test_speaking_websocket_uses_mood(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex&mood=tired") as websocket:
+        websocket.send_text("Could I get a latte?")
+        tokens: list[str] = []
+        while True:
+            event = websocket.receive_json()
+            if event["type"] == "done":
+                break
+            assert event["type"] == "token"
+            tokens.append(event["value"])
+
+    assert "легкий режим" in "".join(tokens)
+
+
+def test_speaking_echo_feedback(client: TestClient) -> None:
+    headers = auth_headers(client)
+    response = client.post(
+        "/speaking/echo",
+        headers=headers,
+        json={"phrase": "It hits different", "transcript": "it hits different", "language_code": "en"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["score"] == 100
+    assert body["feedback"]
 
 
 def test_speaking_websocket_uses_learning_words(client: TestClient) -> None:

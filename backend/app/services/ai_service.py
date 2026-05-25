@@ -150,8 +150,9 @@ async def stream_roleplay_reply(
     language_code: str = "en",
     learning_terms: list[str] | None = None,
     target_language_code: str = "uk",
+    mood: str = "steady",
 ) -> AsyncIterator[str]:
-    reply = _roleplay_reply(room_id, user_text, tone, language_code, learning_terms or [], target_language_code)
+    reply = _roleplay_reply(room_id, user_text, tone, language_code, learning_terms or [], target_language_code, mood)
     for word in reply.split(" "):
         await asyncio.sleep(0.03)
         yield word + " "
@@ -164,6 +165,7 @@ def _roleplay_reply(
     language_code: str,
     learning_terms: list[str],
     target_language_code: str,
+    mood: str,
 ) -> str:
     pack = starter_pack(language_code)
     copy = _coach_copy(target_language_code)
@@ -171,33 +173,58 @@ def _roleplay_reply(
     if learning_terms:
         term = learning_terms[0]
         learning_hook = copy["learning_hook"].format(term=term)
+    mood_hook = _mood_hook(mood, target_language_code)
 
     if language_code != "en":
         if "coffee" in room_id:
-            return copy["roleplay_coffee"].format(thanks=pack["thanks"][0], want=pack["want"][0], hook=learning_hook)
+            return f"{mood_hook}{copy['roleplay_coffee'].format(thanks=pack['thanks'][0], want=pack['want'][0], hook=learning_hook)}"
         if "airport" in room_id:
-            return copy["roleplay_airport"].format(question=pack["question"][0], hook=learning_hook)
+            return f"{mood_hook}{copy['roleplay_airport'].format(question=pack['question'][0], hook=learning_hook)}"
         if "interview" in room_id:
-            return copy["roleplay_interview"].format(hello=pack["hello"][0], hook=learning_hook)
-        return copy["roleplay_default"].format(question=pack["question"][0], hook=learning_hook)
+            return f"{mood_hook}{copy['roleplay_interview'].format(hello=pack['hello'][0], hook=learning_hook)}"
+        return f"{mood_hook}{copy['roleplay_default'].format(question=pack['question'][0], hook=learning_hook)}"
 
     if "coffee" in room_id:
-        return f"Nice choice. Want it iced, hot, or emotionally supportive with oat milk?{learning_hook}"
+        return f"{mood_hook}Nice choice. Want it iced, hot, or emotionally supportive with oat milk?{learning_hook}"
     if "airport" in room_id:
-        return f"No panic. Show me your boarding pass and we will find the right gate together.{learning_hook}"
+        return f"{mood_hook}No panic. Show me your boarding pass and we will find the right gate together.{learning_hook}"
     if "interview" in room_id:
-        return f"Good start. Try adding one concrete result, like performance, users, or a bug you fixed.{learning_hook}"
+        return f"{mood_hook}Good start. Try adding one concrete result, like performance, users, or a bug you fixed.{learning_hook}"
     if "market" in room_id:
-        return f"Sure. Ask me for the price, size, or a smaller option, and keep it to one clean sentence.{learning_hook}"
+        return f"{mood_hook}Sure. Ask me for the price, size, or a smaller option, and keep it to one clean sentence.{learning_hook}"
     if "doctor" in room_id:
-        return f"Tell me one symptom and when it started. Short answers are perfect here.{learning_hook}"
+        return f"{mood_hook}Tell me one symptom and when it started. Short answers are perfect here.{learning_hook}"
     if "street" in room_id:
-        return f"You are close. Ask me where the station is, then repeat the direction back to me.{learning_hook}"
+        return f"{mood_hook}You are close. Ask me where the station is, then repeat the direction back to me.{learning_hook}"
     if "date" in room_id:
-        return f"Nice. Ask one easy question back, like what music or coffee they like.{learning_hook}"
+        return f"{mood_hook}Nice. Ask one easy question back, like what music or coffee they like.{learning_hook}"
     if "campus" in room_id:
-        return f"Start with your name, then ask where the class is or what the homework is.{learning_hook}"
-    return f"I hear you. In my {tone} mode, I would answer a little softer and keep the conversation moving.{learning_hook}"
+        return f"{mood_hook}Start with your name, then ask where the class is or what the homework is.{learning_hook}"
+    return f"{mood_hook}I hear you. In my {tone} mode, I would answer a little softer and keep the conversation moving.{learning_hook}"
+
+
+def _mood_hook(mood: str, target_language_code: str) -> str:
+    normalized = mood if mood in {"tired", "charged", "hard"} else "steady"
+    if normalized == "steady":
+        return ""
+    copy = {
+        "uk": {
+            "tired": "Окей, сьогодні легкий режим. ",
+            "charged": "Бачу енергію, підкину трохи живіший темп. ",
+            "hard": "Все складно, тому йдемо м'яко і без тиску. ",
+        },
+        "ru": {
+            "tired": "Окей, сегодня легкий режим. ",
+            "charged": "Вижу энергию, дам чуть более живой темп. ",
+            "hard": "Все сложно, поэтому идем мягко и без давления. ",
+        },
+        "en": {
+            "tired": "Low-energy mode today. ",
+            "charged": "I see the energy, so I will keep the pace lively. ",
+            "hard": "Hard day mode: soft, simple, no pressure. ",
+        },
+    }
+    return copy.get(target_language_code, copy["en"])[normalized]
 
 
 def generate_speaking_hints(

@@ -31,10 +31,14 @@ import {
   api,
   CallSummaryDto,
   ContextAnalyzeDto,
+  EchoFeedbackDto,
   GrammarCheckDto,
   GrammarDropDto,
   GrammarTopicDto,
   LearningPathDto,
+  MemePuzzleDto,
+  OracleDto,
+  SlangDto,
   SpeakingHintsDto,
   SpeakingRoomDto,
   StatsDto,
@@ -49,6 +53,7 @@ type SelectOption = { code: string; label: string; short: string; flag: string }
 type SpeakingTransport = "text" | "voice";
 type SpeakingMode = "text" | "call";
 type VoiceSpeed = "slow" | "natural" | "fast";
+type MoodKey = "tired" | "charged" | "hard" | "steady";
 type SpeakingModeCopy = {
   text: string;
   call: string;
@@ -58,6 +63,13 @@ type SpeakingModeCopy = {
   speedFast: string;
   hangUp: string;
   callSummary: string;
+  moodTitle: string;
+  echo: string;
+  echoCheck: string;
+  echoPlaceholder: string;
+  moodTired?: string;
+  moodCharged?: string;
+  moodHard?: string;
 };
 type ProfileChoiceCopy = {
   setup: string;
@@ -89,7 +101,14 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Natural",
     speedFast: "Fast",
     hangUp: "Hang up",
-    callSummary: "Call summary"
+    callSummary: "Call summary",
+    moodTitle: "Mood check",
+    echo: "Echo",
+    echoCheck: "Check echo",
+    echoPlaceholder: "Type what you said",
+    moodTired: "soft mode",
+    moodCharged: "more energy",
+    moodHard: "no pressure"
   },
   uk: {
     text: "Текст",
@@ -99,7 +118,14 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Нормально",
     speedFast: "Швидко",
     hangUp: "Завершити",
-    callSummary: "Підсумок дзвінка"
+    callSummary: "Підсумок дзвінка",
+    moodTitle: "Настрій перед кімнатою",
+    echo: "Ехо",
+    echoCheck: "Перевірити ехо",
+    echoPlaceholder: "Впиши, що сказала",
+    moodTired: "м'яко",
+    moodCharged: "енергійно",
+    moodHard: "без тиску"
   },
   ru: {
     text: "Текст",
@@ -109,7 +135,14 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Нормально",
     speedFast: "Быстро",
     hangUp: "Завершить",
-    callSummary: "Итог звонка"
+    callSummary: "Итог звонка",
+    moodTitle: "Настрой перед комнатой",
+    echo: "Эхо",
+    echoCheck: "Проверить эхо",
+    echoPlaceholder: "Впиши, что сказала",
+    moodTired: "мягко",
+    moodCharged: "энергично",
+    moodHard: "без давления"
   },
   pl: {
     text: "Tekst",
@@ -119,7 +152,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Naturalnie",
     speedFast: "Szybko",
     hangUp: "Zakończ",
-    callSummary: "Podsumowanie"
+    callSummary: "Podsumowanie",
+    moodTitle: "Nastrój przed pokojem",
+    echo: "Echo",
+    echoCheck: "Sprawdź echo",
+    echoPlaceholder: "Wpisz, co powiedziałaś"
   },
   sk: {
     text: "Text",
@@ -129,7 +166,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Prirodzene",
     speedFast: "Rýchlo",
     hangUp: "Ukončiť",
-    callSummary: "Zhrnutie hovoru"
+    callSummary: "Zhrnutie hovoru",
+    moodTitle: "Nálada pred izbou",
+    echo: "Echo",
+    echoCheck: "Skontrolovať echo",
+    echoPlaceholder: "Napíš, čo si povedala"
   },
   cs: {
     text: "Text",
@@ -139,7 +180,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Přirozeně",
     speedFast: "Rychle",
     hangUp: "Ukončit",
-    callSummary: "Shrnutí hovoru"
+    callSummary: "Shrnutí hovoru",
+    moodTitle: "Nálada před pokojem",
+    echo: "Echo",
+    echoCheck: "Zkontrolovat echo",
+    echoPlaceholder: "Napiš, co jsi řekla"
   },
   fr: {
     text: "Texte",
@@ -149,7 +194,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Naturel",
     speedFast: "Rapide",
     hangUp: "Raccrocher",
-    callSummary: "Résumé d'appel"
+    callSummary: "Résumé d'appel",
+    moodTitle: "Humeur avant la room",
+    echo: "Écho",
+    echoCheck: "Vérifier l'écho",
+    echoPlaceholder: "Écris ce que tu as dit"
   },
   es: {
     text: "Texto",
@@ -159,7 +208,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Natural",
     speedFast: "Rápido",
     hangUp: "Colgar",
-    callSummary: "Resumen"
+    callSummary: "Resumen",
+    moodTitle: "Ánimo antes de entrar",
+    echo: "Eco",
+    echoCheck: "Revisar eco",
+    echoPlaceholder: "Escribe lo que dijiste"
   },
   it: {
     text: "Testo",
@@ -169,7 +222,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Naturale",
     speedFast: "Veloce",
     hangUp: "Chiudi",
-    callSummary: "Riepilogo"
+    callSummary: "Riepilogo",
+    moodTitle: "Umore prima della stanza",
+    echo: "Eco",
+    echoCheck: "Controlla eco",
+    echoPlaceholder: "Scrivi cosa hai detto"
   },
   de: {
     text: "Text",
@@ -179,7 +236,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Natürlich",
     speedFast: "Schnell",
     hangUp: "Auflegen",
-    callSummary: "Anrufübersicht"
+    callSummary: "Anrufübersicht",
+    moodTitle: "Stimmung vor dem Raum",
+    echo: "Echo",
+    echoCheck: "Echo prüfen",
+    echoPlaceholder: "Schreib, was du gesagt hast"
   },
   pt: {
     text: "Texto",
@@ -189,7 +250,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Natural",
     speedFast: "Rápido",
     hangUp: "Desligar",
-    callSummary: "Resumo"
+    callSummary: "Resumo",
+    moodTitle: "Humor antes da sala",
+    echo: "Eco",
+    echoCheck: "Verificar eco",
+    echoPlaceholder: "Escreve o que disseste"
   },
   tr: {
     text: "Metin",
@@ -199,7 +264,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "Doğal",
     speedFast: "Hızlı",
     hangUp: "Bitir",
-    callSummary: "Arama özeti"
+    callSummary: "Arama özeti",
+    moodTitle: "Odaya girmeden ruh hali",
+    echo: "Eko",
+    echoCheck: "Ekoyu kontrol et",
+    echoPlaceholder: "Söylediğini yaz"
   },
   ja: {
     text: "テキスト",
@@ -209,7 +278,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "自然",
     speedFast: "速い",
     hangUp: "終了",
-    callSummary: "通話まとめ"
+    callSummary: "通話まとめ",
+    moodTitle: "入室前の気分",
+    echo: "エコー",
+    echoCheck: "エコー確認",
+    echoPlaceholder: "言った内容を書く"
   },
   ko: {
     text: "텍스트",
@@ -219,7 +292,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "자연스럽게",
     speedFast: "빠르게",
     hangUp: "종료",
-    callSummary: "통화 요약"
+    callSummary: "통화 요약",
+    moodTitle: "방에 들어가기 전 기분",
+    echo: "에코",
+    echoCheck: "에코 확인",
+    echoPlaceholder: "말한 내용을 적어줘"
   },
   zh: {
     text: "文字",
@@ -229,7 +306,11 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     speedNatural: "自然",
     speedFast: "快速",
     hangUp: "挂断",
-    callSummary: "通话总结"
+    callSummary: "通话总结",
+    moodTitle: "进入房间前的心情",
+    echo: "回声",
+    echoCheck: "检查回声",
+    echoPlaceholder: "写下你说的话"
   }
 };
 
@@ -514,11 +595,15 @@ export function App() {
   const [grammarDrops, setGrammarDrops] = useState<GrammarDropDto[]>([]);
   const [grammarTopics, setGrammarTopics] = useState<GrammarTopicDto[]>([]);
   const [learningPath, setLearningPath] = useState<LearningPathDto | null>(null);
+  const [oracle, setOracle] = useState<OracleDto | null>(null);
+  const [slang, setSlang] = useState<SlangDto | null>(null);
+  const [memePuzzle, setMemePuzzle] = useState<MemePuzzleDto | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("aura");
   const [learningCode, setLearningCode] = useState("en");
   const [contextText, setContextText] = useState("");
   const [contextResult, setContextResult] = useState<ContextAnalyzeDto | null>(null);
   const [activeRoom, setActiveRoom] = useState<SpeakingRoomDto | null>(null);
+  const [activeMood, setActiveMood] = useState<MoodKey>("steady");
   const [chat, setChat] = useState<ChatLine[]>([]);
   const [hints, setHints] = useState<SpeakingHintsDto | null>(null);
   const [error, setError] = useState("");
@@ -564,14 +649,17 @@ export function App() {
 
   async function loadData(nextToken = token, languageCode = learningCode, targetCode = explanationCode) {
     if (!nextToken) return;
-    const [nextStats, nextWords, nextDue, nextRooms, nextDrops, nextTopics, nextPath] = await Promise.all([
+    const [nextStats, nextWords, nextDue, nextRooms, nextDrops, nextTopics, nextPath, nextOracle, nextSlang, nextPuzzle] = await Promise.all([
       api.stats(nextToken),
       api.words(nextToken, languageCode),
       api.dueWords(nextToken, languageCode),
       api.speakingRooms(nextToken, languageCode, targetCode),
       api.grammarDrops(nextToken, languageCode, targetCode),
       api.grammarTopics(nextToken, languageCode, targetCode),
-      api.learningPath(nextToken, languageCode, targetCode)
+      api.learningPath(nextToken, languageCode, targetCode),
+      api.oracle(nextToken, languageCode, targetCode),
+      api.slang(nextToken, languageCode),
+      api.memePuzzle(nextToken, languageCode)
     ]);
     setStats(nextStats);
     setWords(nextWords);
@@ -580,6 +668,9 @@ export function App() {
     setGrammarDrops(nextDrops);
     setGrammarTopics(nextTopics);
     setLearningPath(nextPath);
+    setOracle(nextOracle);
+    setSlang(nextSlang);
+    setMemePuzzle(nextPuzzle);
   }
 
   async function login(email: string, password: string, displayName?: string) {
@@ -617,6 +708,7 @@ export function App() {
     if (!token) return;
     setLearningCode(code);
     setActiveRoom(null);
+    setActiveMood("steady");
     setChat([]);
     setHints(null);
     setContextResult(null);
@@ -694,6 +786,16 @@ export function App() {
     setHints(await api.speakingHints(token, activeRoom.id, last, learningCode));
   }
 
+  async function refreshEngagementPuzzle() {
+    if (!token) return;
+    setMemePuzzle(await api.memePuzzle(token, learningCode));
+  }
+
+  async function checkEcho(phrase: string, transcript: string): Promise<EchoFeedbackDto> {
+    if (!token) throw new Error("No active session.");
+    return api.echoFeedback(token, phrase, transcript, learningCode);
+  }
+
   async function sendMessage(message: string, speechRate = 1, transport: SpeakingTransport = "text") {
     if (!token || !activeRoom || !message.trim()) return;
     const userLine: ChatLine = { role: "user", text: message.trim() };
@@ -702,7 +804,9 @@ export function App() {
     let finalReply = "";
     await new Promise<void>((resolve, reject) => {
       const socket = new WebSocket(
-        api.wsUrl(`/speaking/${transport === "voice" ? "voice-ws" : "ws"}?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(activeRoom.id)}`)
+        api.wsUrl(
+          `/speaking/${transport === "voice" ? "voice-ws" : "ws"}?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(activeRoom.id)}&mood=${encodeURIComponent(activeMood)}`
+        )
       );
       let reply = "";
       socket.onopen = () => {
@@ -774,9 +878,13 @@ export function App() {
     setStats(null);
     setContextResult(null);
     setChat([]);
+    setActiveMood("steady");
     setGrammarDrops([]);
     setGrammarTopics([]);
     setLearningPath(null);
+    setOracle(null);
+    setSlang(null);
+    setMemePuzzle(null);
   }
 
   if (!user) {
@@ -825,6 +933,9 @@ export function App() {
             activeDrop={activeDrop}
             grammarTopics={grammarTopics}
             learningPath={learningPath}
+            oracle={oracle}
+            slang={slang}
+            memePuzzle={memePuzzle}
             learningCode={learningCode}
             contextText={contextText}
             setContextText={setContextText}
@@ -833,6 +944,7 @@ export function App() {
             analyzeContext={analyzeContext}
             addWord={addWord}
             checkGrammar={checkGrammar}
+            refreshPuzzle={() => void refreshEngagementPuzzle()}
             clearContext={() => setContextResult(null)}
             openSpeak={() => setActiveTab("speak")}
             openReview={() => setActiveTab("storage")}
@@ -847,13 +959,15 @@ export function App() {
             chat={chat}
             hints={hints}
             learningCode={learningCode}
-            setActiveRoom={(room) => {
+            setActiveRoom={(room, mood) => {
               setActiveRoom(room);
+              setActiveMood(mood);
               setHints(null);
-              setChat([{ role: "assistant", text: room.prompt }]);
+              setChat([{ role: "assistant", text: moodIntro(room, mood, uiLocale) }]);
             }}
             back={() => {
               setActiveRoom(null);
+              setActiveMood("steady");
               setChat([]);
               setHints(null);
             }}
@@ -861,6 +975,7 @@ export function App() {
             sendMessage={sendMessage}
             loadCallSummary={loadCallSummary}
             addWord={addWord}
+            checkEcho={checkEcho}
             labels={speakingModeCopy[uiLocale]}
           />
         )}
@@ -995,6 +1110,9 @@ function HomeScreen({
   activeDrop,
   grammarTopics,
   learningPath,
+  oracle,
+  slang,
+  memePuzzle,
   learningCode,
   contextText,
   setContextText,
@@ -1003,6 +1121,7 @@ function HomeScreen({
   analyzeContext,
   addWord,
   checkGrammar,
+  refreshPuzzle,
   clearContext,
   openSpeak,
   openReview
@@ -1012,6 +1131,9 @@ function HomeScreen({
   activeDrop?: GrammarDropDto;
   grammarTopics: GrammarTopicDto[];
   learningPath: LearningPathDto | null;
+  oracle: OracleDto | null;
+  slang: SlangDto | null;
+  memePuzzle: MemePuzzleDto | null;
   learningCode: string;
   contextText: string;
   setContextText: (value: string) => void;
@@ -1020,6 +1142,7 @@ function HomeScreen({
   analyzeContext: () => void;
   addWord: (word: string, source?: string) => void;
   checkGrammar: (topicId: string, exerciseId: string, answer: string) => Promise<GrammarCheckDto>;
+  refreshPuzzle: () => void;
   clearContext: () => void;
   openSpeak: () => void;
   openReview: () => void;
@@ -1044,6 +1167,8 @@ function HomeScreen({
           </div>
         </div>
       </section>
+
+      <EngagementStrip oracle={oracle} slang={slang} memePuzzle={memePuzzle} addWord={addWord} refreshPuzzle={refreshPuzzle} />
 
       {learningPath && <LearningPathPanel copy={copy} path={learningPath} openSpeak={openSpeak} />}
 
@@ -1090,6 +1215,94 @@ function HomeScreen({
 
       <GrammarLab copy={copy} locale={locale} drop={activeDrop} topics={grammarTopics} checkGrammar={checkGrammar} />
     </>
+  );
+}
+
+function EngagementStrip({
+  oracle,
+  slang,
+  memePuzzle,
+  addWord,
+  refreshPuzzle
+}: {
+  oracle: OracleDto | null;
+  slang: SlangDto | null;
+  memePuzzle: MemePuzzleDto | null;
+  addWord: (word: string, source?: string) => void;
+  refreshPuzzle: () => void;
+}) {
+  const [oracleOpen, setOracleOpen] = useState(false);
+  const [pickedPieces, setPickedPieces] = useState<string[]>([]);
+  const answer = pickedPieces.join(" ");
+  const solved = Boolean(memePuzzle && answer === memePuzzle.answer);
+
+  useEffect(() => {
+    setPickedPieces([]);
+  }, [memePuzzle?.answer]);
+
+  return (
+    <section className="engagement-grid">
+      <article className={`card oracle-card ${oracleOpen ? "open" : ""}`}>
+        <button className="oracle-cookie" onClick={() => setOracleOpen((value) => !value)}>
+          <Sparkles size={18} />
+          <span>Pajama Oracle</span>
+        </button>
+        {oracleOpen && oracle && (
+          <div className="oracle-body">
+            <p>{oracle.prediction}</p>
+            <div className="chip-row">
+              {oracle.idioms.map((idiom) => (
+                <button key={idiom.phrase} className="chip" onClick={() => addWord(idiom.phrase, "Pajama Oracle")}>
+                  <Plus size={13} />
+                  {idiom.phrase}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </article>
+
+      {slang && (
+        <article className="card slang-card">
+          <small>Slang Wheel</small>
+          <strong>{slang.term}</strong>
+          <p>{slang.meaning}</p>
+          <span>{slang.example}</span>
+          <button className="soft-action mint" onClick={() => addWord(slang.term, "Slang Wheel")}>
+            <Plus size={15} />
+            SRS
+          </button>
+        </article>
+      )}
+
+      {memePuzzle && (
+        <article className={`card meme-card ${solved ? "solved" : ""}`}>
+          <small>Puzzle Meme</small>
+          <strong>{memePuzzle.target_word}</strong>
+          <p>{memePuzzle.template}</p>
+          <div className="meme-answer">{answer || memePuzzle.prompt}</div>
+          <div className="puzzle-pieces">
+            {memePuzzle.pieces.map((piece, index) => {
+              const used = pickedPieces.includes(piece);
+              return (
+                <button key={`${piece}-${index}`} disabled={used || solved} onClick={() => setPickedPieces((current) => [...current, piece])}>
+                  {piece}
+                </button>
+              );
+            })}
+          </div>
+          <div className="action-row">
+            <button className="soft-action" onClick={() => setPickedPieces([])}>
+              <X size={15} />
+            </button>
+            <button className="soft-action mint" onClick={solved ? refreshPuzzle : () => addWord(memePuzzle.target_word, "Puzzle Meme")}>
+              <Plus size={15} />
+              {solved ? "Next" : "SRS"}
+            </button>
+          </div>
+        </article>
+      )}
+    </section>
   );
 }
 
@@ -1166,6 +1379,7 @@ function SpeakingScreen({
   sendMessage,
   loadCallSummary,
   addWord,
+  checkEcho,
   labels
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
@@ -1174,21 +1388,26 @@ function SpeakingScreen({
   chat: ChatLine[];
   hints: SpeakingHintsDto | null;
   learningCode: string;
-  setActiveRoom: (room: SpeakingRoomDto) => void;
+  setActiveRoom: (room: SpeakingRoomDto, mood: MoodKey) => void;
   back: () => void;
   loadHints: () => void;
   sendMessage: (message: string, speechRate?: number, transport?: SpeakingTransport) => void;
   loadCallSummary: (roomId: string) => Promise<CallSummaryDto>;
   addWord: (word: string, source?: string) => void;
+  checkEcho: (phrase: string, transcript: string) => Promise<EchoFeedbackDto>;
   labels: SpeakingModeCopy;
 }) {
   const [draft, setDraft] = useState("");
+  const [pendingRoom, setPendingRoom] = useState<SpeakingRoomDto | null>(null);
   const [transcript, setTranscript] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState("");
   const [mode, setMode] = useState<SpeakingMode>("text");
   const [voiceSpeed, setVoiceSpeed] = useState<VoiceSpeed>("natural");
   const [callSummary, setCallSummary] = useState<CallSummaryDto | null>(null);
+  const [echoPhrase, setEchoPhrase] = useState("");
+  const [echoDraft, setEchoDraft] = useState("");
+  const [echoResult, setEchoResult] = useState<EchoFeedbackDto | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const speechRate = voiceSpeedRate[voiceSpeed];
   const roomIcon = useMemo(() => {
@@ -1215,6 +1434,10 @@ function SpeakingScreen({
     setCallSummary(null);
     setTranscript("");
     setSpeechError("");
+    setPendingRoom(null);
+    setEchoPhrase("");
+    setEchoDraft("");
+    setEchoResult(null);
   }, [activeRoom?.id]);
 
   function startVoice() {
@@ -1269,6 +1492,60 @@ function SpeakingScreen({
     setIsListening(false);
   }
 
+  async function submitEcho(phrase = echoPhrase, transcript = echoDraft) {
+    if (!phrase.trim() || !transcript.trim()) return;
+    try {
+      setEchoResult(await checkEcho(phrase, transcript));
+    } catch (err) {
+      setSpeechError(err instanceof Error ? err.message : copy("speechError"));
+    }
+  }
+
+  function startEcho(phrase: string) {
+    setEchoPhrase(phrase);
+    setEchoDraft("");
+    setEchoResult(null);
+    const SpeechCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechCtor) {
+      setSpeechError(copy("speechUnsupported"));
+      return;
+    }
+    const recognition = new SpeechCtor();
+    recognition.lang = getSpeechLang(learningCode);
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    setSpeechError("");
+    setIsListening(true);
+    recognitionRef.current = recognition;
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const text = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? "")
+        .join(" ")
+        .trim();
+      setEchoDraft(text);
+    };
+    recognition.onerror = () => {
+      setSpeechError(copy("speechError"));
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+      setEchoDraft((current) => {
+        if (current.trim()) void submitEcho(phrase, current);
+        return current;
+      });
+    };
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setIsListening(false);
+      setSpeechError(copy("speechError"));
+    }
+  }
+
   async function finishCall() {
     stopVoice();
     window.speechSynthesis?.cancel();
@@ -1289,10 +1566,37 @@ function SpeakingScreen({
   }
 
   if (!activeRoom) {
+    if (pendingRoom) {
+      return (
+        <section className="card mood-card">
+          <button className="ghost-action inline" onClick={() => setPendingRoom(null)}>
+            {copy("rooms")}
+          </button>
+          <div>
+            <small>{pendingRoom.character}</small>
+            <h2>{labels.moodTitle}</h2>
+            <p>{pendingRoom.prompt}</p>
+          </div>
+          <div className="mood-options">
+            {[
+              ["tired", "🥱", labels.moodTired ?? "soft mode"],
+              ["charged", "⚡", labels.moodCharged ?? "more energy"],
+              ["hard", "🫠", labels.moodHard ?? "no pressure"]
+            ].map(([mood, emoji, label]) => (
+              <button key={mood} onClick={() => setActiveRoom(pendingRoom, mood as MoodKey)}>
+                <span>{emoji}</span>
+                <strong>{label}</strong>
+              </button>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className="room-grid">
         {rooms.map((room) => (
-          <button className="room-card card" key={room.id} onClick={() => setActiveRoom(room)}>
+          <button className="room-card card" key={room.id} onClick={() => setPendingRoom(room)}>
             <span className="room-icon" style={{ background: room.accent_color }}>
               {room.id.includes("airport") ? (
                 <Plane />
@@ -1410,10 +1714,36 @@ function SpeakingScreen({
           <div className="chat-log">
             {chat.map((line, index) => (
               <div key={`${line.role}-${index}`} className={`bubble ${line.role}`}>
-                {line.text || "..."}
+                <span>{line.text || "..."}</span>
+                {line.role === "assistant" && line.text && line.text !== "..." && (
+                  <button className="echo-action" onClick={() => startEcho(line.text)}>
+                    <Mic size={13} />
+                    {labels.echo}
+                  </button>
+                )}
               </div>
             ))}
           </div>
+
+          {echoPhrase && (
+            <div className="echo-panel">
+              <small>{labels.echo}</small>
+              <strong>{echoPhrase}</strong>
+              <div className="send-row">
+                <input value={echoDraft} onChange={(event) => setEchoDraft(event.target.value)} placeholder={labels.echoPlaceholder} />
+                <button className="soft-action mint" disabled={!echoDraft.trim()} onClick={() => void submitEcho()}>
+                  {labels.echoCheck}
+                </button>
+              </div>
+              {echoResult && (
+                <div className="echo-result">
+                  <strong>{echoResult.score}%</strong>
+                  <p>{echoResult.feedback}</p>
+                  <span>{echoResult.next_tip}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="speaker-tools">
             <button className="soft-action" onClick={loadHints}>
@@ -1677,6 +2007,30 @@ function buildLocalCallSummary(room: SpeakingRoomDto, chat: ChatLine[]): CallSum
     grammar_feedback: "No repeated grammar pattern yet. Keep answers short, clear, and alive.",
     turns: chat.filter((line) => line.role === "user").length,
   };
+}
+
+function moodIntro(room: SpeakingRoomDto, mood: MoodKey, locale: UiLocale): string {
+  const base = {
+    uk: {
+      tired: `Окей, легкий режим. ${room.character} не буде валити складними питаннями: просто коротка жива розмова.`,
+      charged: `Енергія є. ${room.character} дасть трохи швидший темп і більше живих фраз.`,
+      hard: `Все складно, тому без тиску. ${room.character} тримає розмову м'якою і простою.`,
+      steady: room.prompt,
+    },
+    ru: {
+      tired: `Окей, легкий режим. ${room.character} не будет грузить сложными вопросами: просто короткий живой разговор.`,
+      charged: `Энергия есть. ${room.character} даст чуть быстрее темп и больше живых фраз.`,
+      hard: `Все сложно, поэтому без давления. ${room.character} держит разговор мягким и простым.`,
+      steady: room.prompt,
+    },
+    en: {
+      tired: `Low-energy mode. ${room.character} will keep it short, soft, and easy today.`,
+      charged: `Charged mode. ${room.character} will make the pace livelier and a bit more playful.`,
+      hard: `No-pressure mode. ${room.character} will keep the conversation simple and kind.`,
+      steady: room.prompt,
+    },
+  };
+  return (base[locale as "uk" | "ru" | "en"] ?? base.en)[mood];
 }
 
 function ProfileScreen({
