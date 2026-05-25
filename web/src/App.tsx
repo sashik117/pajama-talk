@@ -1642,7 +1642,7 @@ function SpeakingScreen({
     <section className="card speaking-card messenger-card">
       <div className="room-head">
         <button className="ghost-action inline" onClick={back}>
-          {copy("rooms")} · {rooms.length}
+          {copy("rooms")}
         </button>
         <span className="room-icon" style={{ background: activeRoom.accent_color }}>
           {roomIcon}
@@ -1662,22 +1662,6 @@ function SpeakingScreen({
           <Headphones size={16} />
           {labels.call}
         </button>
-      </div>
-
-      <div className="room-switcher">
-        {rooms.map((room) => (
-          <button
-            key={room.id}
-            className={room.id === activeRoom.id ? "active" : ""}
-            disabled={room.id === activeRoom.id}
-            onClick={() => {
-              back();
-              setPendingRoom(room);
-            }}
-          >
-            {room.title}
-          </button>
-        ))}
       </div>
 
       {mode === "call" ? (

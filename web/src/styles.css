@@ -1236,34 +1236,6 @@ textarea {
   background: rgba(255, 255, 255, 0.5);
 }
 
-.room-switcher {
-  display: flex;
-  gap: 7px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-  scrollbar-width: none;
-}
-
-.room-switcher::-webkit-scrollbar {
-  display: none;
-}
-
-.room-switcher button {
-  flex: 0 0 auto;
-  min-height: 32px;
-  border: 0;
-  border-radius: 999px;
-  padding: 0 10px;
-  color: #292632;
-  background: rgba(255, 255, 255, 0.62);
-  font-size: 12px;
-  font-weight: 560;
-}
-
-.room-switcher button.active {
-  background: rgba(232, 222, 248, 0.9);
-}
-
 .mode-toggle button,
 .speed-row button,
 .summary-phrases button {
