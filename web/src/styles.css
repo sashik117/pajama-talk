@@ -464,14 +464,27 @@ textarea {
 .flag-sticker {
   flex: 0 0 auto;
   position: relative;
-  width: 25px;
+  width: 24px;
   height: 18px;
   display: inline-block;
   overflow: hidden;
   border: 1px solid rgba(41, 38, 50, 0.12);
   border-radius: 5px;
-  background: #f7f1ff;
+  background: #fff;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28), 0 3px 8px rgba(73, 55, 98, 0.08);
+}
+
+.flag-sticker img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.flag-sticker::before,
+.flag-sticker::after {
+  content: none;
+  display: none;
 }
 
 .flag-uk {

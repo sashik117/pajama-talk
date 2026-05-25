@@ -1238,8 +1238,31 @@ function LanguageBadge({ option }: { option: SelectOption }) {
   );
 }
 
+const flagCountryByLanguage: Record<string, string> = {
+  en: "gb",
+  uk: "ua",
+  ru: "ru",
+  pl: "pl",
+  sk: "sk",
+  cs: "cz",
+  fr: "fr",
+  es: "es",
+  it: "it",
+  de: "de",
+  pt: "pt",
+  tr: "tr",
+  ja: "jp",
+  ko: "kr",
+  zh: "cn",
+};
+
 function FlagSticker({ code }: { code: string }) {
-  return <span className={`flag-sticker flag-${code}`} aria-hidden="true" />;
+  const countryCode = flagCountryByLanguage[code] ?? "gb";
+  return (
+    <span className="flag-sticker" aria-hidden="true">
+      <img src={`/flags/${countryCode}.png`} alt="" loading="lazy" draggable={false} />
+    </span>
+  );
 }
 
 function ProfileScreen({

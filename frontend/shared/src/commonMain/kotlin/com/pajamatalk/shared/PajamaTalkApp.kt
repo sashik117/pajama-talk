@@ -9,6 +9,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -89,6 +90,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -116,6 +118,24 @@ import com.pajamatalk.shared.data.SupportedNativeLanguages
 import com.pajamatalk.shared.data.WordDto
 import com.pajamatalk.shared.data.nativeLanguageByCode
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
+import pajamatalk.shared.generated.resources.Res
+import pajamatalk.shared.generated.resources.flag_cn
+import pajamatalk.shared.generated.resources.flag_cz
+import pajamatalk.shared.generated.resources.flag_de
+import pajamatalk.shared.generated.resources.flag_es
+import pajamatalk.shared.generated.resources.flag_fr
+import pajamatalk.shared.generated.resources.flag_gb
+import pajamatalk.shared.generated.resources.flag_it
+import pajamatalk.shared.generated.resources.flag_jp
+import pajamatalk.shared.generated.resources.flag_kr
+import pajamatalk.shared.generated.resources.flag_pl
+import pajamatalk.shared.generated.resources.flag_pt
+import pajamatalk.shared.generated.resources.flag_ru
+import pajamatalk.shared.generated.resources.flag_sk
+import pajamatalk.shared.generated.resources.flag_tr
+import pajamatalk.shared.generated.resources.flag_ua
 import kotlin.math.roundToInt
 
 private val Lavender = Color(0xFFE8DEF8)
@@ -716,174 +736,39 @@ private fun CodeBadge(code: String, shortLabel: String) {
 @Composable
 private fun FlagBadge(code: String) {
     val shape = RoundedCornerShape(5.dp)
-    Canvas(
+    Box(
         modifier = Modifier
-            .width(25.dp)
+            .width(24.dp)
             .height(18.dp)
             .clip(shape)
             .border(1.dp, Graphite.copy(alpha = 0.12f), shape),
     ) {
-        fun horizontal(colors: List<Color>) {
-            colors.forEachIndexed { index, color ->
-                drawRect(
-                    color = color,
-                    topLeft = Offset(0f, size.height * index / colors.size),
-                    size = Size(size.width, size.height / colors.size),
-                )
-            }
-        }
-        fun vertical(colors: List<Color>) {
-            colors.forEachIndexed { index, color ->
-                drawRect(
-                    color = color,
-                    topLeft = Offset(size.width * index / colors.size, 0f),
-                    size = Size(size.width / colors.size, size.height),
-                )
-            }
-        }
-        fun drawStar(center: Offset, radius: Float, color: Color) {
-            drawPath(
-                Path().apply {
-                    moveTo(center.x, center.y - radius)
-                    lineTo(center.x + radius * 0.3f, center.y - radius * 0.25f)
-                    lineTo(center.x + radius, center.y - radius * 0.18f)
-                    lineTo(center.x + radius * 0.44f, center.y + radius * 0.18f)
-                    lineTo(center.x + radius * 0.6f, center.y + radius)
-                    lineTo(center.x, center.y + radius * 0.48f)
-                    lineTo(center.x - radius * 0.6f, center.y + radius)
-                    lineTo(center.x - radius * 0.44f, center.y + radius * 0.18f)
-                    lineTo(center.x - radius, center.y - radius * 0.18f)
-                    lineTo(center.x - radius * 0.3f, center.y - radius * 0.25f)
-                    close()
-                },
-                color,
-            )
-        }
-
-        when (code) {
-            "en" -> {
-                drawRect(Color.White)
-                drawRect(Color(0xFFC8102E), topLeft = Offset(size.width * 0.4f, 0f), size = Size(size.width * 0.2f, size.height))
-                drawRect(Color(0xFFC8102E), topLeft = Offset(0f, size.height * 0.34f), size = Size(size.width, size.height * 0.32f))
-            }
-            "uk" -> horizontal(listOf(Color(0xFF0057B7), Color(0xFFFFD700)))
-            "ru" -> horizontal(listOf(Color.White, Color(0xFF0039A6), Color(0xFFD52B1E)))
-            "pl" -> horizontal(listOf(Color.White, Color(0xFFDC143C)))
-            "sk" -> {
-                horizontal(listOf(Color.White, Color(0xFF0B4EA2), Color(0xFFEE1C25)))
-                val shieldX = size.width * 0.15f
-                val shieldY = size.height * 0.22f
-                val shieldW = size.width * 0.34f
-                val shieldH = size.height * 0.62f
-                drawRoundRect(
-                    color = Color.White,
-                    topLeft = Offset(shieldX - 1f, shieldY - 1f),
-                    size = Size(shieldW + 2f, shieldH + 2f),
-                )
-                drawRoundRect(
-                    color = Color(0xFFEE1C25),
-                    topLeft = Offset(shieldX, shieldY),
-                    size = Size(shieldW, shieldH),
-                )
-                drawRect(
-                    color = Color(0xFF0B4EA2),
-                    topLeft = Offset(shieldX + shieldW * 0.12f, shieldY + shieldH * 0.6f),
-                    size = Size(shieldW * 0.76f, shieldH * 0.28f),
-                )
-                drawRect(
-                    color = Color.White,
-                    topLeft = Offset(shieldX + shieldW * 0.44f, shieldY + shieldH * 0.18f),
-                    size = Size(shieldW * 0.12f, shieldH * 0.62f),
-                )
-                drawRect(
-                    color = Color.White,
-                    topLeft = Offset(shieldX + shieldW * 0.24f, shieldY + shieldH * 0.3f),
-                    size = Size(shieldW * 0.52f, shieldH * 0.1f),
-                )
-                drawRect(
-                    color = Color.White,
-                    topLeft = Offset(shieldX + shieldW * 0.18f, shieldY + shieldH * 0.48f),
-                    size = Size(shieldW * 0.64f, shieldH * 0.1f),
-                )
-            }
-            "cs" -> {
-                horizontal(listOf(Color.White, Color(0xFFD7141A)))
-                drawPath(
-                    Path().apply {
-                        moveTo(0f, 0f)
-                        lineTo(size.width * 0.56f, size.height / 2f)
-                        lineTo(0f, size.height)
-                        close()
-                    },
-                    Color(0xFF11457E),
-                )
-            }
-            "fr" -> vertical(listOf(Color(0xFF0055A4), Color.White, Color(0xFFEF4135)))
-            "es" -> {
-                horizontal(listOf(Color(0xFFAA151B), Color(0xFFF1BF00), Color(0xFFAA151B)))
-                drawRoundRect(
-                    color = Color(0xFFAA151B),
-                    topLeft = Offset(size.width * 0.2f, size.height * 0.34f),
-                    size = Size(size.width * 0.2f, size.height * 0.36f),
-                )
-                drawRect(
-                    color = Color(0xFFF1BF00),
-                    topLeft = Offset(size.width * 0.23f, size.height * 0.46f),
-                    size = Size(size.width * 0.14f, size.height * 0.08f),
-                )
-            }
-            "it" -> vertical(listOf(Color(0xFF009246), Color.White, Color(0xFFCE2B37)))
-            "de" -> horizontal(listOf(Color.Black, Color(0xFFDD0000), Color(0xFFFFCE00)))
-            "pt" -> {
-                drawRect(Color(0xFFDA291C))
-                drawRect(Color(0xFF046A38), size = Size(size.width * 0.4f, size.height))
-                val emblem = Offset(size.width * 0.4f, size.height / 2f)
-                drawCircle(Color(0xFFFFCC00), radius = size.minDimension * 0.26f, center = emblem)
-                drawCircle(Color(0xFFDA291C), radius = size.minDimension * 0.19f, center = emblem)
-                drawCircle(Color(0xFFFFCC00), radius = size.minDimension * 0.08f, center = emblem)
-                drawRect(
-                    color = Color.White,
-                    topLeft = Offset(emblem.x - size.width * 0.045f, emblem.y - size.height * 0.17f),
-                    size = Size(size.width * 0.09f, size.height * 0.34f),
-                )
-                drawRect(
-                    color = Color(0xFF0055A4),
-                    topLeft = Offset(emblem.x - size.width * 0.03f, emblem.y - size.height * 0.06f),
-                    size = Size(size.width * 0.06f, size.height * 0.12f),
-                )
-            }
-            "ja" -> {
-                drawRect(Color.White)
-                drawCircle(Color(0xFFBC002D), radius = size.minDimension * 0.28f)
-            }
-            "ko" -> {
-                drawRect(Color.White)
-                drawCircle(Color(0xFFC60C30), radius = size.minDimension * 0.24f, center = Offset(size.width / 2, size.height * 0.42f))
-                drawCircle(Color(0xFF003478), radius = size.minDimension * 0.24f, center = Offset(size.width / 2, size.height * 0.58f))
-            }
-            "zh" -> {
-                drawRect(Color(0xFFDE2910))
-                drawStar(Offset(size.width * 0.26f, size.height * 0.34f), size.minDimension * 0.19f, Color(0xFFFFDE00))
-                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.04f, center = Offset(size.width * 0.56f, size.height * 0.24f))
-                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.04f, center = Offset(size.width * 0.66f, size.height * 0.42f))
-                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.04f, center = Offset(size.width * 0.66f, size.height * 0.62f))
-                drawCircle(Color(0xFFFFDE00), radius = size.minDimension * 0.04f, center = Offset(size.width * 0.56f, size.height * 0.78f))
-            }
-            "tr" -> {
-                drawRect(Color(0xFFE30A17))
-                drawCircle(Color.White, radius = size.minDimension * 0.18f, center = Offset(size.width * 0.42f, size.height / 2))
-                drawCircle(Color(0xFFE30A17), radius = size.minDimension * 0.14f, center = Offset(size.width * 0.48f, size.height / 2))
-                drawStar(Offset(size.width * 0.67f, size.height / 2), size.minDimension * 0.12f, Color.White)
-            }
-            else -> {
-                drawRect(Color(0xFF012169))
-                drawRect(Color.White, topLeft = Offset(size.width * 0.42f, 0f), size = Size(size.width * 0.16f, size.height))
-                drawRect(Color.White, topLeft = Offset(0f, size.height * 0.38f), size = Size(size.width, size.height * 0.24f))
-                drawRect(Color(0xFFC8102E), topLeft = Offset(size.width * 0.46f, 0f), size = Size(size.width * 0.08f, size.height))
-                drawRect(Color(0xFFC8102E), topLeft = Offset(0f, size.height * 0.44f), size = Size(size.width, size.height * 0.12f))
-            }
-        }
+        Image(
+            painter = painterResource(flagResourceForLanguage(code)),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
+}
+
+private fun flagResourceForLanguage(code: String): DrawableResource = when (code) {
+    "en" -> Res.drawable.flag_gb
+    "uk" -> Res.drawable.flag_ua
+    "ru" -> Res.drawable.flag_ru
+    "pl" -> Res.drawable.flag_pl
+    "sk" -> Res.drawable.flag_sk
+    "cs" -> Res.drawable.flag_cz
+    "fr" -> Res.drawable.flag_fr
+    "es" -> Res.drawable.flag_es
+    "it" -> Res.drawable.flag_it
+    "de" -> Res.drawable.flag_de
+    "pt" -> Res.drawable.flag_pt
+    "tr" -> Res.drawable.flag_tr
+    "ja" -> Res.drawable.flag_jp
+    "ko" -> Res.drawable.flag_kr
+    "zh" -> Res.drawable.flag_cn
+    else -> Res.drawable.flag_gb
 }
 
 @Composable
