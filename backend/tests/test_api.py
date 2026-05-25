@@ -50,6 +50,12 @@ def test_word_enrichment_and_review(client: TestClient) -> None:
     assert reviewed.status_code == 200
     assert reviewed.json()["repetitions"] == 1
 
+    deleted = client.delete(f"/words/{word['id']}", headers=headers)
+    assert deleted.status_code == 204
+    words = client.get("/words?language_code=en", headers=headers)
+    assert words.status_code == 200
+    assert words.json() == []
+
 
 def test_context_buddy(client: TestClient) -> None:
     headers = auth_headers(client)

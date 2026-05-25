@@ -23,6 +23,7 @@ import {
   ShoppingBag,
   Sparkles,
   Stethoscope,
+  Trash2,
   User,
   WandSparkles,
   X
@@ -92,7 +93,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   en: {
     text: "Text",
     call: "Call",
-    holdToTalk: "Hold to talk. Release to listen.",
+    holdToTalk: "Tap the mic to speak. Tap again to stop.",
     speedSlow: "Slow",
     speedNatural: "Natural",
     speedFast: "Fast",
@@ -109,7 +110,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   uk: {
     text: "Текст",
     call: "Дзвінок",
-    holdToTalk: "Затисни, щоб говорити. Відпусти, щоб слухати.",
+    holdToTalk: "Натисни мікрофон, щоб говорити. Натисни ще раз, щоб зупинити.",
     speedSlow: "Повільно",
     speedNatural: "Нормально",
     speedFast: "Швидко",
@@ -126,7 +127,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   ru: {
     text: "Текст",
     call: "Звонок",
-    holdToTalk: "Зажми, чтобы говорить. Отпусти, чтобы слушать.",
+    holdToTalk: "Нажми микрофон, чтобы говорить. Нажми ещё раз, чтобы остановить.",
     speedSlow: "Медленно",
     speedNatural: "Нормально",
     speedFast: "Быстро",
@@ -143,7 +144,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   pl: {
     text: "Tekst",
     call: "Połączenie",
-    holdToTalk: "Przytrzymaj, aby mówić. Puść, aby słuchać.",
+    holdToTalk: "Kliknij mikrofon, aby mówić. Kliknij ponownie, aby zatrzymać.",
     speedSlow: "Wolno",
     speedNatural: "Naturalnie",
     speedFast: "Szybko",
@@ -157,7 +158,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   sk: {
     text: "Text",
     call: "Hovor",
-    holdToTalk: "Podrž a hovor. Pusť a počúvaj.",
+    holdToTalk: "Ťukni na mikrofón a hovor. Ťukni znova pre stop.",
     speedSlow: "Pomaly",
     speedNatural: "Prirodzene",
     speedFast: "Rýchlo",
@@ -171,7 +172,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   cs: {
     text: "Text",
     call: "Hovor",
-    holdToTalk: "Podrž a mluv. Pusť a poslouchej.",
+    holdToTalk: "Klepni na mikrofon a mluv. Klepni znovu pro stop.",
     speedSlow: "Pomalu",
     speedNatural: "Přirozeně",
     speedFast: "Rychle",
@@ -185,7 +186,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   fr: {
     text: "Texte",
     call: "Appel",
-    holdToTalk: "Maintiens pour parler. Relâche pour écouter.",
+    holdToTalk: "Appuie sur le micro pour parler. Appuie encore pour arrêter.",
     speedSlow: "Lent",
     speedNatural: "Naturel",
     speedFast: "Rapide",
@@ -199,7 +200,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   es: {
     text: "Texto",
     call: "Llamada",
-    holdToTalk: "Mantén para hablar. Suelta para escuchar.",
+    holdToTalk: "Toca el micro para hablar. Toca otra vez para parar.",
     speedSlow: "Lento",
     speedNatural: "Natural",
     speedFast: "Rápido",
@@ -213,7 +214,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   it: {
     text: "Testo",
     call: "Chiamata",
-    holdToTalk: "Tieni premuto per parlare. Rilascia per ascoltare.",
+    holdToTalk: "Tocca il microfono per parlare. Tocca ancora per fermarti.",
     speedSlow: "Lento",
     speedNatural: "Naturale",
     speedFast: "Veloce",
@@ -227,7 +228,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   de: {
     text: "Text",
     call: "Anruf",
-    holdToTalk: "Gedrückt halten zum Sprechen. Loslassen zum Hören.",
+    holdToTalk: "Tippe aufs Mikro zum Sprechen. Tippe erneut zum Stoppen.",
     speedSlow: "Langsam",
     speedNatural: "Natürlich",
     speedFast: "Schnell",
@@ -241,7 +242,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   pt: {
     text: "Texto",
     call: "Chamada",
-    holdToTalk: "Mantém premido para falar. Solta para ouvir.",
+    holdToTalk: "Toca no microfone para falar. Toca outra vez para parar.",
     speedSlow: "Lento",
     speedNatural: "Natural",
     speedFast: "Rápido",
@@ -255,7 +256,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   tr: {
     text: "Metin",
     call: "Arama",
-    holdToTalk: "Konuşmak için basılı tut. Dinlemek için bırak.",
+    holdToTalk: "Konuşmak için mikrofona dokun. Durdurmak için tekrar dokun.",
     speedSlow: "Yavaş",
     speedNatural: "Doğal",
     speedFast: "Hızlı",
@@ -269,7 +270,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   ja: {
     text: "テキスト",
     call: "通話",
-    holdToTalk: "押して話す。離すと聞く。",
+    holdToTalk: "マイクをタップして話す。もう一度タップで停止。",
     speedSlow: "ゆっくり",
     speedNatural: "自然",
     speedFast: "速い",
@@ -283,7 +284,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   ko: {
     text: "텍스트",
     call: "통화",
-    holdToTalk: "누르고 말해요. 놓으면 들어요.",
+    holdToTalk: "마이크를 눌러 말하고, 다시 눌러 멈춰요.",
     speedSlow: "천천히",
     speedNatural: "자연스럽게",
     speedFast: "빠르게",
@@ -297,7 +298,7 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   zh: {
     text: "文字",
     call: "通话",
-    holdToTalk: "按住说话，松开聆听。",
+    holdToTalk: "点按麦克风开始说话，再点一次停止。",
     speedSlow: "慢速",
     speedNatural: "自然",
     speedFast: "快速",
@@ -615,6 +616,7 @@ export function App() {
   const [contextResult, setContextResult] = useState<ContextAnalyzeDto | null>(null);
   const [activeRoom, setActiveRoom] = useState<SpeakingRoomDto | null>(null);
   const [activeMood, setActiveMood] = useState<MoodKey>("steady");
+  const [storageMode, setStorageMode] = useState<"words" | "review">("words");
   const [chat, setChat] = useState<ChatLine[]>([]);
   const [hints, setHints] = useState<SpeakingHintsDto | null>(null);
   const [error, setError] = useState("");
@@ -784,16 +786,32 @@ export function App() {
     }
   }
 
-  async function reviewWord(grade: "remember" | "forgot") {
-    if (!token || !dueWord) return;
-    await api.reviewWord(token, dueWord.id, grade);
+  async function reviewWord(grade: "remember" | "forgot", wordId = dueWord?.id) {
+    if (!token || !wordId) return;
+    await api.reviewWord(token, wordId, grade);
     await loadData(token, learningCode);
+  }
+
+  async function deleteWord(wordId: number) {
+    if (!token) return;
+    try {
+      await api.deleteWord(token, wordId);
+      setWords((current) => current.filter((word) => word.id !== wordId));
+      setDueWords((current) => current.filter((word) => word.id !== wordId));
+      setStats(await api.stats(token));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete word.");
+    }
   }
 
   async function loadHints() {
     if (!token || !activeRoom) return;
     const last = [...chat].reverse().find((line: ChatLine) => line.role === "assistant")?.text ?? activeRoom.prompt;
-    setHints(await api.speakingHints(token, activeRoom.id, last, learningCode));
+    try {
+      setHints(await api.speakingHints(token, activeRoom.id, last, learningCode));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Hints failed.");
+    }
   }
 
   async function sendMessage(message: string, speechRate = 1, transport: SpeakingTransport = "text") {
@@ -930,6 +948,7 @@ export function App() {
             activeDrop={activeDrop}
             grammarTopics={grammarTopics}
             learningPath={learningPath}
+            dueWord={dueWord}
             learningCode={learningCode}
             contextText={contextText}
             setContextText={setContextText}
@@ -940,7 +959,10 @@ export function App() {
             checkGrammar={checkGrammar}
             clearContext={() => setContextResult(null)}
             openSpeak={() => setActiveTab("speak")}
-            openReview={() => setActiveTab("storage")}
+            openReview={() => {
+              setStorageMode("review");
+              setActiveTab("storage");
+            }}
           />
         )}
 
@@ -980,8 +1002,10 @@ export function App() {
             dueWord={dueWord}
             busy={busy}
             sample={selectedLanguage.sample}
+            initialMode={storageMode}
             addWord={addWord}
-            reviewWord={reviewWord}
+            reviewWord={(grade, word) => void reviewWord(grade, word?.id)}
+            deleteWord={(word) => deleteWord(word.id)}
           />
         )}
 
@@ -1009,7 +1033,14 @@ export function App() {
           ["storage", BookOpen, copy("storage")],
           ["vibe", User, copy("vibe")]
         ].map(([key, Icon, label]) => (
-          <button key={key as string} className={activeTab === key ? "active" : ""} onClick={() => setActiveTab(key as TabKey)}>
+          <button
+            key={key as string}
+            className={activeTab === key ? "active" : ""}
+            onClick={() => {
+              if (key === "storage") setStorageMode("words");
+              setActiveTab(key as TabKey);
+            }}
+          >
             <Icon size={20} />
             <span>{label as string}</span>
           </button>
@@ -1103,6 +1134,7 @@ function HomeScreen({
   activeDrop,
   grammarTopics,
   learningPath,
+  dueWord,
   learningCode,
   contextText,
   setContextText,
@@ -1120,6 +1152,7 @@ function HomeScreen({
   activeDrop?: GrammarDropDto;
   grammarTopics: GrammarTopicDto[];
   learningPath: LearningPathDto | null;
+  dueWord?: WordDto;
   learningCode: string;
   contextText: string;
   setContextText: (value: string) => void;
@@ -1133,6 +1166,28 @@ function HomeScreen({
   openReview: () => void;
 }) {
   const contextExamples = contextExamplesByLanguage[learningCode] ?? contextExamplesByLanguage.en;
+  const [contextSavedNote, setContextSavedNote] = useState("");
+
+  async function saveContextWord(word: string) {
+    const created = await addWord(word, contextResult?.summary ?? copy("contextTitle"));
+    if (created) {
+      setContextSavedNote(`${copy("add")}: ${created.term}`);
+      window.setTimeout(() => setContextSavedNote(""), 1800);
+    }
+  }
+
+  async function saveContextWords(words: string[]) {
+    let saved = 0;
+    for (const word of words) {
+      const created = await addWord(word, contextResult?.summary ?? copy("contextTitle"));
+      if (created) saved += 1;
+    }
+    if (saved) {
+      setContextSavedNote(`${copy("addWords")}: ${saved}`);
+      window.setTimeout(() => setContextSavedNote(""), 2200);
+    }
+  }
+
   return (
     <>
       <section className="home-summary">
@@ -1140,6 +1195,16 @@ function HomeScreen({
           <small>{copy("today")}</small>
           <h2>{copy("dailyFocus")}</h2>
           <p>{copy("dailyFocusSub")}</p>
+          <div className="daily-actions">
+            <button onClick={openSpeak}>
+              <Mic size={16} />
+              <span>{learningPath?.steps[0]?.examples[0]?.phrase ?? copy("speak")}</span>
+            </button>
+            <button onClick={openReview}>
+              <BookOpen size={16} />
+              <span>{dueWord ? dueWord.term : copy("reviewEmpty")}</span>
+            </button>
+          </div>
           <div className="action-row">
             <button className="primary-action" onClick={openSpeak}>
               <Mic size={18} />
@@ -1153,7 +1218,7 @@ function HomeScreen({
         </div>
       </section>
 
-      {learningPath && <LearningPathPanel copy={copy} path={learningPath} openSpeak={openSpeak} />}
+      {learningPath && <LearningPathPanel copy={copy} path={learningPath} openSpeak={openSpeak} addWord={addWord} />}
 
       <section className="card context-card">
         <div className="section-title">
@@ -1178,20 +1243,21 @@ function HomeScreen({
             <p>{contextResult.hidden_meaning}</p>
             <div className="chip-row">
               {contextResult.suggested_words.slice(0, 8).map((word) => (
-                <button key={word} className="chip" disabled={busy} onClick={() => addWord(word, contextResult.summary)}>
+                <button key={word} className="chip" disabled={busy} onClick={() => void saveContextWord(word)}>
                   <Plus size={14} />
                   {word}
                 </button>
               ))}
             </div>
             <div className="action-row">
-              <button className="soft-action" onClick={() => contextResult.suggested_words.slice(0, 5).forEach((word) => addWord(word, contextResult.summary))}>
+              <button className="soft-action" disabled={busy} onClick={() => void saveContextWords(contextResult.suggested_words.slice(0, 5))}>
                 {copy("addWords")}
               </button>
               <button className="soft-action pale" onClick={clearContext}>
                 <X size={16} />
               </button>
             </div>
+            {contextSavedNote && <div className="inline-note">{contextSavedNote}</div>}
           </div>
         )}
       </section>
@@ -1204,11 +1270,13 @@ function HomeScreen({
 function LearningPathPanel({
   copy,
   path,
-  openSpeak
+  openSpeak,
+  addWord
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
   path: LearningPathDto;
   openSpeak: () => void;
+  addWord: (word: string, source?: string) => Promise<WordDto | undefined>;
 }) {
   const [activeStep, setActiveStep] = useState(path.steps[0]?.id ?? "");
   const step = path.steps.find((item) => item.id === activeStep) ?? path.steps[0];
@@ -1249,6 +1317,10 @@ function LearningPathPanel({
               <strong>{example.phrase}</strong>
               <span>{example.pronunciation}</span>
               <p>{example.meaning}</p>
+              <button className="phrase-add" onClick={() => void addWord(example.phrase, step.title)}>
+                <Plus size={14} />
+                {copy("add")}
+              </button>
             </div>
           ))}
         </div>
@@ -1508,15 +1580,7 @@ function SpeakingScreen({
           <div className="call-controls">
             <button
               className={`call-mic ${isListening ? "listening" : ""}`}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                if (!isListening) startVoice();
-              }}
-              onPointerUp={(event) => {
-                event.preventDefault();
-                if (isListening) stopVoice();
-              }}
-              onPointerCancel={stopVoice}
+              onClick={startVoice}
             >
               {isListening ? <MicOff size={30} /> : <Mic size={30} />}
             </button>
@@ -1605,8 +1669,10 @@ function StorageScreen({
   dueWord,
   busy,
   sample,
+  initialMode,
   addWord,
-  reviewWord
+  reviewWord,
+  deleteWord
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
   locale: UiLocale;
@@ -1614,8 +1680,10 @@ function StorageScreen({
   dueWord?: WordDto;
   busy: boolean;
   sample: string;
+  initialMode: "words" | "review";
   addWord: (word: string) => Promise<WordDto | undefined>;
-  reviewWord: (grade: "remember" | "forgot") => void;
+  reviewWord: (grade: "remember" | "forgot", word?: WordDto) => void;
+  deleteWord: (word: WordDto) => Promise<void>;
 }) {
   const [term, setTerm] = useState("");
   const [mode, setMode] = useState<"words" | "review">("words");
@@ -1638,6 +1706,10 @@ function StorageScreen({
   const learningCount = words.filter((word) => word.status === "learning").length;
   const learnedCount = words.filter((word) => word.status === "learned").length;
   const nextDue = dueWord?.due_at ? compactDate(dueWord.due_at) : copy("reviewEmpty");
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
 
   return (
     <>
@@ -1694,6 +1766,16 @@ function StorageScreen({
           </div>
           <p>{lastAdded.example_one}</p>
           <p>{lastAdded.example_two}</p>
+          <button
+            className="soft-action pale"
+            aria-label="Delete word"
+            onClick={async () => {
+              await deleteWord(lastAdded);
+              setLastAdded(null);
+            }}
+          >
+            <Trash2 size={15} />
+          </button>
         </section>
       )}
       <div className="segmented">
@@ -1763,6 +1845,24 @@ function StorageScreen({
                   <p>{word.meme}</p>
                   <p>{word.example_one}</p>
                   <p>{word.example_two}</p>
+                  <div className="action-row word-actions">
+                    <button className="soft-action peach" onClick={() => reviewWord("forgot", word)}>
+                      {copy("forgot")}
+                    </button>
+                    <button className="soft-action mint" onClick={() => reviewWord("remember", word)}>
+                      {copy("remember")}
+                    </button>
+                    <button
+                      className="soft-action pale icon-only"
+                      onClick={async () => {
+                        await deleteWord(word);
+                        if (lastAdded?.id === word.id) setLastAdded(null);
+                      }}
+                      aria-label="Delete word"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </details>
               ))
             ) : (

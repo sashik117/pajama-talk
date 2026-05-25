@@ -413,6 +413,34 @@ textarea {
   gap: 10px;
 }
 
+.daily-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.daily-actions button {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 16px;
+  padding: 8px 10px;
+  color: #292632;
+  background: rgba(255, 255, 255, 0.54);
+  text-align: left;
+}
+
+.daily-actions span {
+  min-width: 0;
+  color: #4f4858;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .engagement-grid {
   position: relative;
   display: grid;
@@ -922,6 +950,16 @@ textarea {
   gap: 10px;
 }
 
+.inline-note {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 7px 10px;
+  color: #1f3934;
+  background: rgba(157, 206, 192, 0.48);
+  font-size: 12px;
+  font-weight: 560;
+}
+
 .learning-path-card,
 .learning-step {
   display: grid;
@@ -976,6 +1014,21 @@ textarea {
 .phrase-card span {
   color: #8a7f91;
   font-size: 12px;
+}
+
+.phrase-add {
+  width: fit-content;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 10px;
+  color: #1f3934;
+  background: rgba(157, 206, 192, 0.52);
+  font-size: 12px;
+  font-weight: 540;
 }
 
 .micro-task {
@@ -1667,6 +1720,10 @@ textarea {
   padding: 0 14px 11px;
 }
 
+.word-actions {
+  padding: 0 14px 14px;
+}
+
 .status-pill {
   flex: 0 0 auto;
   border-radius: 999px;
@@ -1891,6 +1948,7 @@ textarea {
 
 @media (max-width: 640px) {
   .home-summary,
+  .daily-actions,
   .engagement-grid,
   .two-selects {
     grid-template-columns: 1fr;

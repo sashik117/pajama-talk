@@ -1,26 +1,34 @@
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.core.languages import normalize_language_code
+from app.core.languages import language_name, normalize_language_code
 from app.db.session import get_db
 from app.models.user import User
 from app.models.word import ReviewGrade, SrsData, Word
 from app.schemas.word import ReviewRequest, ReviewResponse, WordCreate, WordEnrichRequest, WordResponse
-from app.services.ai_service import enrich_word
+from app.services.ai_service import enrich_word, fallback_translate
 from app.services.srs import schedule_review
 
 router = APIRouter(prefix="/words", tags=["words"])
 
 
-def to_word_response(word: Word) -> WordResponse:
+def _display_translation(word: Word, user: User) -> str:
+    translation = word.translation.strip()
+    stale_suffixes = tuple(f" ({name})" for name in ("Ukrainian", "Russian", "English"))
+    if not translation or translation == word.term or translation.endswith(stale_suffixes):
+        return fallback_translate(word.term, language_name(user.native_language_code), word.language_code)
+    return translation
+
+
+def to_word_response(word: Word, user: User) -> WordResponse:
     return WordResponse(
         id=word.id,
         language_code=word.language_code,
         term=word.term,
-        translation=word.translation,
+        translation=_display_translation(word, user),
         transcription=word.transcription,
         meme=word.meme,
         example_one=word.example_one,
@@ -42,7 +50,7 @@ def list_words(
     if language_code is not None:
         query = query.filter(Word.language_code == normalize_language_code(language_code))
     words = query.order_by(Word.created_at.desc()).all()
-    return [to_word_response(word) for word in words]
+    return [to_word_response(word, user) for word in words]
 
 
 @router.post("", response_model=WordResponse, status_code=status.HTTP_201_CREATED)
@@ -56,7 +64,7 @@ def create_word(
     db.add(word)
     db.commit()
     db.refresh(word)
-    return to_word_response(word)
+    return to_word_response(word, user)
 
 
 @router.get("/review-due", response_model=list[WordResponse])
@@ -78,7 +86,7 @@ def review_due_words(
         .limit(20)
         .all()
     )
-    return [to_word_response(word) for word in words]
+    return [to_word_response(word, user) for word in words]
 
 
 @router.post("/enrich", response_model=WordResponse, status_code=status.HTTP_201_CREATED)
@@ -98,7 +106,7 @@ def enrich_and_create_word(
     db.add(word)
     db.commit()
     db.refresh(word)
-    return to_word_response(word)
+    return to_word_response(word, user)
 
 
 @router.post("/{word_id}/review", response_model=ReviewResponse)
@@ -135,3 +143,18 @@ def review_word(
         due_at=word.srs.due_at,
         color_level=word.color_level,
     )
+
+
+@router.delete("/{word_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_word(
+    word_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Response:
+    word = db.query(Word).filter(Word.id == word_id, Word.owner_id == user.id).first()
+    if word is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Word not found.")
+
+    db.delete(word)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

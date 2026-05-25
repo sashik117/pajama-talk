@@ -293,6 +293,10 @@ def _target_code_from_language(target_language: str) -> str:
     return "en"
 
 
+def fallback_translate(term: str, target_language: str, source_language_code: str = "en") -> str:
+    return _mock_translate(term, target_language, source_language_code)
+
+
 def _mock_translate(term: str, target_language: str, source_language_code: str = "en") -> str:
     target_code = _target_code_from_language(target_language)
     normalized = term.strip().lower()

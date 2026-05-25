@@ -145,6 +145,7 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
     }
     throw new Error(detail);
   }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
@@ -204,6 +205,8 @@ export const api = {
     }),
   reviewWord: (token: string, wordId: number, grade: "remember" | "forgot") =>
     request(`/words/${wordId}/review`, { method: "POST", token, body: JSON.stringify({ grade }) }),
+  deleteWord: (token: string, wordId: number) =>
+    request<void>(`/words/${wordId}`, { method: "DELETE", token }),
   analyzeContext: (token: string, text: string, languageCode: string, targetLanguage: string) =>
     request<ContextAnalyzeDto>("/context/analyze", {
       method: "POST",
