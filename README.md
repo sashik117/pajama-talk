@@ -87,6 +87,13 @@ cd frontend
 
 Copy `backend/.env.example` to `backend/.env`. Real AI providers are optional for now; without keys the backend returns deterministic cozy mock responses so the app can be developed offline.
 
+Useful provider settings:
+
+- `PAJAMA_GEMINI_API_KEY` enables Gemini enrichment, context analysis, hints, and speaking replies.
+- `PAJAMA_OPENAI_API_KEY` enables the optional OpenAI audio adapters for speech-to-text and text-to-speech.
+- `PAJAMA_OPENAI_STT_MODEL`, `PAJAMA_OPENAI_TTS_MODEL`, `PAJAMA_OPENAI_TTS_VOICE`, and `PAJAMA_OPENAI_TTS_FORMAT` tune the voice provider layer.
+- `PAJAMA_VOICE_PROVIDER_TIMEOUT_SECONDS` controls the backend timeout for external voice calls.
+
 ## Project Shape
 
 ```text
@@ -172,7 +179,10 @@ The voice socket now has a real domain/service layer:
 - `VoiceRealtimeService` keeps per-call audio buffer state.
 - `audio_chunk` events report accepted chunk count, byte count, and provider metadata.
 - `end_audio` / `commit_audio` turns transcript hints into a normal speaking turn.
-- `tts` events include provider, format, speed, and future audio payload metadata.
+- `tts` events include provider, format, speed, and optional base64 audio payload metadata.
+- The backend can use OpenAI transcription and speech generation when `PAJAMA_OPENAI_API_KEY` is configured, then falls back to browser/client speech behavior if the provider fails or no key is present.
+- Web call mode can play provider audio payloads directly and falls back to `speechSynthesis` when only text is available.
+- Web speaking turns retry once after a failed socket turn so short local disconnects do not feel like a dead button.
 - Web call mode has a compact text fallback that still goes through `WS /speaking/voice-ws`.
 - Kotlin Compose has the matching voice text fallback client path.
 
@@ -194,7 +204,8 @@ The Vibe Check tab also lets the user choose the explanation/native language, in
 
 ## Still Not Done
 
-- Production-grade voice providers: real Whisper/TTS adapters, binary audio playback, provider fallback, reconnect queue, and richer retry handling.
+- Production-grade voice capture: the provider adapters and web audio playback are scaffolded and tested, but real microphone binary capture still needs a MediaRecorder pass in web and the equivalent native capture path in KMP.
+- Production realtime resilience: the web client has heartbeat, timeout, and one retry, but not a durable reconnect queue for restoring a whole interrupted call session.
 - Full UI decomposition: the React preview now has domain/state/controllers, but large screen components still live in `App.tsx`.
 - Frontend E2E coverage depth: the suite now covers speaking, call fallback, context, storage, profile, and grammar smoke flows, but not every edge case.
 - KMP parity pass: Compose has voice fallback sync, but the full mobile UX still needs another visual polish pass after web stabilizes.

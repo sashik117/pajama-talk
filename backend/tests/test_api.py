@@ -4,7 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.db.session import Base, engine
+from app.domain.voice import VoiceSessionBuffer
 from app.main import app
+from app.services.voice_service import OpenAISpeechToTextProvider, OpenAITextToSpeechProvider
 
 
 @pytest.fixture()
@@ -534,3 +536,69 @@ def test_review_due_queue_returns_due_words_and_removes_reviewed(client: TestCli
     due_after_review = client.get("/words/review-due?language_code=en", headers=headers)
     assert due_after_review.status_code == 200
     assert due_after_review.json() == []
+
+
+def test_openai_stt_provider_transcribes_audio_chunks(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class Response:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {"text": "Could I get a latte?"}
+
+    def fake_post(url: str, **kwargs: object) -> Response:
+        captured["url"] = url
+        captured["kwargs"] = kwargs
+        return Response()
+
+    monkeypatch.setattr("app.services.voice_service.httpx.post", fake_post)
+    provider = OpenAISpeechToTextProvider(api_key="test-key", model="gpt-4o-mini-transcribe", timeout_seconds=7)
+    buffer = VoiceSessionBuffer(chunks=1, bytes_received=10, audio_chunks=[b"fake-audio"], mime_type="audio/webm")
+
+    transcript = provider.transcribe(buffer)
+
+    assert transcript.text == "Could I get a latte?"
+    assert transcript.provider == "openai_audio_transcriptions"
+    assert captured["url"] == "https://api.openai.com/v1/audio/transcriptions"
+    kwargs = captured["kwargs"]
+    assert kwargs["data"] == {"model": "gpt-4o-mini-transcribe", "response_format": "json"}
+    assert kwargs["timeout"] == 7
+
+
+def test_openai_tts_provider_returns_base64_audio(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    class Response:
+        content = b"fake-mp3"
+
+        def raise_for_status(self) -> None:
+            return None
+
+    def fake_post(url: str, **kwargs: object) -> Response:
+        captured["url"] = url
+        captured["kwargs"] = kwargs
+        return Response()
+
+    monkeypatch.setattr("app.services.voice_service.httpx.post", fake_post)
+    provider = OpenAITextToSpeechProvider(
+        api_key="test-key",
+        model="gpt-4o-mini-tts",
+        voice="coral",
+        response_format="mp3",
+        timeout_seconds=9,
+    )
+
+    speech = provider.synthesize("Nice choice.", speed=1.2, language_code="en")
+
+    assert speech.provider == "openai_audio_speech"
+    assert speech.format == "audio_base64"
+    assert speech.audio_base64 == "ZmFrZS1tcDM="
+    assert speech.mime_type == "audio/mpeg"
+    assert captured["url"] == "https://api.openai.com/v1/audio/speech"
+    kwargs = captured["kwargs"]
+    assert kwargs["json"]["model"] == "gpt-4o-mini-tts"
+    assert kwargs["json"]["voice"] == "coral"
+    assert kwargs["json"]["speed"] == 1.2
+    assert kwargs["timeout"] == 9

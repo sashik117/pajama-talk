@@ -1,5 +1,6 @@
 import type { CallSummaryDto } from "../api";
 import type { MoodKey } from "../state/chatState";
+import type { AudioPayload } from "../utils/audio";
 
 export type SpeakingTransport = "text" | "voice";
 
@@ -24,6 +25,7 @@ type SpeakingUrlBuilder = (path: string) => string;
 type RealtimeGuardOptions = {
   heartbeatMs?: number;
   timeoutMs?: number;
+  retries?: number;
 };
 
 function parseSpeakingEvent(raw: string): SpeakingServerEvent {
@@ -50,6 +52,18 @@ function speakingPath(input: {
   return `/speaking/${channel}?${params.toString()}`;
 }
 
+function turnResult(finalReply: string, audio?: AudioPayload): { finalReply: string; audio?: AudioPayload } {
+  return audio ? { finalReply, audio } : { finalReply };
+}
+
+function voiceAudioResult(
+  finalReply: string,
+  transcript: string,
+  audio?: AudioPayload
+): { finalReply: string; transcript: string; audio?: AudioPayload } {
+  return audio ? { finalReply, transcript, audio } : { finalReply, transcript };
+}
+
 export async function sendSpeakingTurn({
   wsUrl,
   token,
@@ -60,7 +74,8 @@ export async function sendSpeakingTurn({
   transport,
   onToken,
   heartbeatMs = 15000,
-  timeoutMs = 45000
+  timeoutMs = 45000,
+  retries = 0
 }: {
   wsUrl: SpeakingUrlBuilder;
   token: string;
@@ -70,11 +85,65 @@ export async function sendSpeakingTurn({
   speechRate: number;
   transport: SpeakingTransport;
   onToken: (reply: string, event: SpeakingTokenEvent) => void;
-} & RealtimeGuardOptions): Promise<{ finalReply: string }> {
+} & RealtimeGuardOptions): Promise<{ finalReply: string; audio?: AudioPayload }> {
+  try {
+    return await openSpeakingTurn({
+      wsUrl,
+      token,
+      roomId,
+      mood,
+      message,
+      speechRate,
+      transport,
+      onToken,
+      heartbeatMs,
+      timeoutMs
+    });
+  } catch (err) {
+    if (retries <= 0) throw err;
+    return openSpeakingTurn({
+      wsUrl,
+      token,
+      roomId,
+      mood,
+      message,
+      speechRate,
+      transport,
+      onToken,
+      heartbeatMs,
+      timeoutMs
+    });
+  }
+}
+
+async function openSpeakingTurn({
+  wsUrl,
+  token,
+  roomId,
+  mood,
+  message,
+  speechRate,
+  transport,
+  onToken,
+  heartbeatMs,
+  timeoutMs
+}: {
+  wsUrl: SpeakingUrlBuilder;
+  token: string;
+  roomId: string;
+  mood: MoodKey;
+  message: string;
+  speechRate: number;
+  transport: SpeakingTransport;
+  onToken: (reply: string, event: SpeakingTokenEvent) => void;
+  heartbeatMs: number;
+  timeoutMs: number;
+}): Promise<{ finalReply: string; audio?: AudioPayload }> {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(wsUrl(speakingPath({ token, roomId, mood, transport })));
     let streamedReply = "";
     let finalReply = "";
+    let audio: AudioPayload | undefined;
     let settled = false;
     let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
     const timeoutTimer = setTimeout(() => {
@@ -123,6 +192,9 @@ export async function sendSpeakingTurn({
           break;
         case "tts":
           if (payload.text) finalReply = payload.text;
+          if (payload.audio_base64 && payload.mime_type) {
+            audio = { audioBase64: payload.audio_base64, mimeType: payload.mime_type };
+          }
           break;
         case "pong":
           break;
@@ -132,7 +204,7 @@ export async function sendSpeakingTurn({
           break;
         case "done":
           socket.close();
-          settle(() => resolve({ finalReply: finalReply.trim() }));
+          settle(() => resolve(turnResult(finalReply.trim(), audio)));
           break;
         default:
           break;
@@ -217,12 +289,13 @@ export async function sendVoiceAudioTurn({
   speechRate: number;
   onToken: (reply: string, event: SpeakingTokenEvent) => void;
   onStatus?: (event: SpeakingServerEvent) => void;
-} & RealtimeGuardOptions): Promise<{ finalReply: string; transcript: string }> {
+} & RealtimeGuardOptions): Promise<{ finalReply: string; transcript: string; audio?: AudioPayload }> {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(wsUrl(speakingPath({ token, roomId, mood, transport: "voice" })));
     let streamedReply = "";
     let finalReply = "";
     let transcript = "";
+    let audio: AudioPayload | undefined;
     let settled = false;
     let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
     const timeoutTimer = setTimeout(() => {
@@ -279,6 +352,9 @@ export async function sendVoiceAudioTurn({
           break;
         case "tts":
           if (payload.text) finalReply = payload.text;
+          if (payload.audio_base64 && payload.mime_type) {
+            audio = { audioBase64: payload.audio_base64, mimeType: payload.mime_type };
+          }
           onStatus?.(payload);
           break;
         case "pong":
@@ -289,7 +365,7 @@ export async function sendVoiceAudioTurn({
           break;
         case "done":
           socket.close();
-          settle(() => resolve({ finalReply: finalReply.trim(), transcript }));
+          settle(() => resolve(voiceAudioResult(finalReply.trim(), transcript, audio)));
           break;
         default:
           break;

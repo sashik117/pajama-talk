@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.0-flash"
     openai_api_key: str | None = None
+    openai_stt_model: str = "gpt-4o-mini-transcribe"
+    openai_tts_model: str = "gpt-4o-mini-tts"
+    openai_tts_voice: str = "coral"
+    openai_tts_format: str = "mp3"
+    voice_provider_timeout_seconds: int = 20
 
     model_config = SettingsConfigDict(
         env_file=".env",

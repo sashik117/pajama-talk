@@ -104,6 +104,61 @@ describe("sendSpeakingTurn", () => {
     await expect(turn).resolves.toEqual({ finalReply: "Soft mode." });
   });
 
+  it("returns provider audio when the tts event includes audio_base64", async () => {
+    const turn = sendSpeakingTurn({
+      wsUrl,
+      token: "token-1",
+      roomId: "coffee-alex",
+      mood: "tired",
+      message: "I want coffee",
+      speechRate: 1,
+      transport: "voice",
+      onToken: vi.fn()
+    });
+    const socket = FakeWebSocket.instances[0];
+
+    socket.open();
+    socket.message({
+      type: "tts",
+      text: "Soft mode.",
+      audio_base64: "ZmFrZS1tcDM=",
+      mime_type: "audio/mpeg"
+    });
+    socket.message({ type: "done" });
+
+    await expect(turn).resolves.toEqual({
+      finalReply: "Soft mode.",
+      audio: { audioBase64: "ZmFrZS1tcDM=", mimeType: "audio/mpeg" }
+    });
+  });
+
+  it("retries one failed turn when retries are enabled", async () => {
+    const turn = sendSpeakingTurn({
+      wsUrl,
+      token: "token-1",
+      roomId: "coffee-alex",
+      mood: "steady",
+      message: "Retry please",
+      speechRate: 1,
+      transport: "text",
+      retries: 1,
+      onToken: vi.fn()
+    });
+    const first = FakeWebSocket.instances[0];
+
+    first.open();
+    first.error();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const second = FakeWebSocket.instances[1];
+    second.open();
+    expect(second.sent).toEqual(["Retry please"]);
+    second.message({ type: "token", value: "Recovered." });
+    second.message({ type: "done" });
+
+    await expect(turn).resolves.toEqual({ finalReply: "Recovered." });
+    expect(FakeWebSocket.instances).toHaveLength(2);
+  });
+
   it("sends heartbeat pings while a turn is open", async () => {
     vi.useFakeTimers();
     const turn = sendSpeakingTurn({
@@ -201,12 +256,20 @@ describe("sendVoiceAudioTurn", () => {
     socket.message({ type: "stt_status", chunks: 1, bytes: 10, provider: "browser_speech_recognition" });
     socket.message({ type: "transcript", value: "Could I get a latte?", provider: "audio_chunk_metadata" });
     socket.message({ type: "assistant_token", value: "Nice choice. " });
-    socket.message({ type: "tts", text: "Nice choice.", speed: 0.85, provider: "client_speech_synthesis" });
+    socket.message({
+      type: "tts",
+      text: "Nice choice.",
+      speed: 0.85,
+      provider: "openai_audio_speech",
+      audio_base64: "ZmFrZS1tcDM=",
+      mime_type: "audio/mpeg"
+    });
     socket.message({ type: "done" });
 
     await expect(turn).resolves.toEqual({
       finalReply: "Nice choice.",
-      transcript: "Could I get a latte?"
+      transcript: "Could I get a latte?",
+      audio: { audioBase64: "ZmFrZS1tcDM=", mimeType: "audio/mpeg" }
     });
     expect(streamed).toEqual(["Nice choice. "]);
     expect(statuses).toHaveLength(4);

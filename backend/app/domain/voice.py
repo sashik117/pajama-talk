@@ -23,8 +23,16 @@ class VoiceSessionBuffer:
     chunks: int = 0
     bytes_received: int = 0
     transcript_hints: list[str] = field(default_factory=list)
+    audio_chunks: list[bytes] = field(default_factory=list)
+    mime_type: str = "audio/webm"
+
+    @property
+    def audio_bytes(self) -> bytes:
+        return b"".join(self.audio_chunks)
 
     def clear(self) -> None:
         self.chunks = 0
         self.bytes_received = 0
         self.transcript_hints.clear()
+        self.audio_chunks.clear()
+        self.mime_type = "audio/webm"
