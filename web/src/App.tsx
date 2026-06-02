@@ -43,14 +43,13 @@ import {
   WordDto
 } from "./api";
 import { languageName, learningLanguages, nativeLanguages, t, UiLocale, uiLocales } from "./i18n";
+import { ChatProvider, useChatDispatch, useChatState, type ChatLine, type MoodKey } from "./state/chatState";
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
-type ChatLine = { role: "user" | "assistant"; text: string };
 type SelectOption = { code: string; label: string; short: string; flag: string };
 type SpeakingTransport = "text" | "voice";
 type SpeakingMode = "text" | "call";
 type VoiceSpeed = "slow" | "natural" | "fast";
-type MoodKey = "tired" | "charged" | "hard" | "steady";
 type SpeakingModeCopy = {
   text: string;
   call: string;
@@ -607,8 +606,18 @@ function getSpeechLang(code: string) {
 }
 
 export function App() {
+  return (
+    <ChatProvider>
+      <PajamaTalkApp />
+    </ChatProvider>
+  );
+}
+
+function PajamaTalkApp() {
   const [uiLocale, setUiLocale] = useState<UiLocale>(() => (localStorage.getItem("pajama-ui") as UiLocale) || "uk");
   const copy = (key: Parameters<typeof t>[1]) => t(uiLocale, key);
+  const { activeRoom, activeMood, chat, hints } = useChatState();
+  const chatDispatch = useChatDispatch();
   const [token, setToken] = useState(() => localStorage.getItem("pajama-token") || "");
   const [user, setUser] = useState<UserDto | null>(null);
   const [stats, setStats] = useState<StatsDto | null>(null);
@@ -622,11 +631,7 @@ export function App() {
   const [learningCode, setLearningCode] = useState("en");
   const [contextText, setContextText] = useState("");
   const [contextResult, setContextResult] = useState<ContextAnalyzeDto | null>(null);
-  const [activeRoom, setActiveRoom] = useState<SpeakingRoomDto | null>(null);
-  const [activeMood, setActiveMood] = useState<MoodKey>("steady");
   const [storageMode, setStorageMode] = useState<"words" | "review">("words");
-  const [chat, setChat] = useState<ChatLine[]>([]);
-  const [hints, setHints] = useState<SpeakingHintsDto | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -722,10 +727,7 @@ export function App() {
   async function updateLearning(code: string) {
     if (!token) return;
     setLearningCode(code);
-    setActiveRoom(null);
-    setActiveMood("steady");
-    setChat([]);
-    setHints(null);
+    chatDispatch({ type: "resetSession" });
     setContextResult(null);
     const profile = await api.updateProfile(token, { active_language_code: code });
     setUser(profile);
@@ -734,7 +736,7 @@ export function App() {
 
   async function updateNative(code: string) {
     if (!token) return;
-    setHints(null);
+    chatDispatch({ type: "setHints", hints: null });
     setContextResult(null);
     setUiLocale(uiLocaleFromCode(code));
     const profile = await api.updateProfile(token, { native_language_code: code });
@@ -816,7 +818,7 @@ export function App() {
     if (!token || !activeRoom) return;
     const last = [...chat].reverse().find((line: ChatLine) => line.role === "assistant")?.text ?? activeRoom.prompt;
     try {
-      setHints(await api.speakingHints(token, activeRoom.id, last, learningCode));
+      chatDispatch({ type: "setHints", hints: await api.speakingHints(token, activeRoom.id, last, learningCode) });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Hints failed.");
     }
@@ -824,9 +826,8 @@ export function App() {
 
   async function sendMessage(message: string, speechRate = 1, transport: SpeakingTransport = "text") {
     if (!token || !activeRoom || !message.trim()) return;
-    const userLine: ChatLine = { role: "user", text: message.trim() };
-    setChat((current) => [...current, userLine, { role: "assistant", text: "" }]);
-    setHints(null);
+    const normalizedMessage = message.trim();
+    chatDispatch({ type: "appendUserTurn", message: normalizedMessage });
     let finalReply = "";
     await new Promise<void>((resolve, reject) => {
       const socket = new WebSocket(
@@ -837,9 +838,9 @@ export function App() {
       let reply = "";
       socket.onopen = () => {
         if (transport === "voice") {
-          socket.send(JSON.stringify({ type: "user_text", value: message.trim(), speed: speechRate }));
+          socket.send(JSON.stringify({ type: "user_text", value: normalizedMessage, speed: speechRate }));
         } else {
-          socket.send(message.trim());
+          socket.send(normalizedMessage);
         }
       };
       socket.onerror = () => reject(new Error("WebSocket failed."));
@@ -848,7 +849,7 @@ export function App() {
         if (payload.type === "token" || payload.type === "assistant_token") {
           reply += payload.value ?? "";
           finalReply = reply.trim();
-          setChat((current) => [...current.slice(0, -1), { role: "assistant", text: reply.trimStart() }]);
+          chatDispatch({ type: "replaceAssistantDraft", text: reply.trimStart() });
         }
         if (payload.type === "assistant_text" && payload.value) finalReply = payload.value;
         if (payload.type === "done") {
@@ -903,8 +904,7 @@ export function App() {
     setDueWords([]);
     setStats(null);
     setContextResult(null);
-    setChat([]);
-    setActiveMood("steady");
+    chatDispatch({ type: "resetSession" });
     setGrammarDrops([]);
     setGrammarTopics([]);
     setLearningPath(null);
@@ -983,16 +983,10 @@ export function App() {
             hints={hints}
             learningCode={learningCode}
             setActiveRoom={(room, mood) => {
-              setActiveRoom(room);
-              setActiveMood(mood);
-              setHints(null);
-              setChat([{ role: "assistant", text: moodIntro(room, mood, uiLocale) }]);
+              chatDispatch({ type: "enterRoom", room, mood, intro: moodIntro(room, mood, uiLocale) });
             }}
             back={() => {
-              setActiveRoom(null);
-              setActiveMood("steady");
-              setChat([]);
-              setHints(null);
+              chatDispatch({ type: "leaveRoom" });
             }}
             loadHints={loadHints}
             sendMessage={sendMessage}
