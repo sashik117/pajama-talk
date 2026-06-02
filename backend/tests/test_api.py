@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -385,6 +386,25 @@ def test_speaking_history_returns_persisted_room_messages(client: TestClient) ->
     assert body[1]["role"] == "assistant"
     assert body[1]["room_id"] == "coffee-alex"
     assert body[1]["created_at"]
+
+
+def test_speaking_history_keeps_partial_assistant_reply_after_disconnect(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex") as websocket:
+        websocket.send_text("Could I get a latte?")
+        first_token = websocket.receive_json()
+        assert first_token["type"] == "token"
+
+    time.sleep(0.1)
+    history = client.get("/speaking/history?room_id=coffee-alex&limit=10", headers=headers)
+
+    assert history.status_code == 200
+    body = history.json()
+    assert body[0]["role"] == "user"
+    assert body[1]["role"] == "assistant"
+    assert body[1]["content"].startswith(first_token["value"].strip())
 
 
 def test_voice_websocket_responds_to_ping(client: TestClient) -> None:

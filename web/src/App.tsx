@@ -29,7 +29,6 @@ import {
   X
 } from "lucide-react";
 import {
-  api,
   CallSummaryDto,
   ContextAnalyzeDto,
   GrammarCheckDto,
@@ -45,6 +44,7 @@ import {
 import { learningLanguages, nativeLanguages, t, UiLocale, uiLocales } from "./i18n";
 import { useLearningDataController } from "./hooks/useLearningDataController";
 import { useSpeakingController } from "./hooks/useSpeakingController";
+import { useSpeakingHistory } from "./hooks/useSpeakingHistory";
 import { useVoiceRecorder } from "./hooks/useVoiceRecorder";
 import type { SpeakingTransport, VoiceAudioChunk } from "./realtime/speakingClient";
 import { ChatProvider, useChatDispatch, useChatState, type ChatLine, type MoodKey } from "./state/chatState";
@@ -624,26 +624,7 @@ function PajamaTalkApp() {
     localStorage.setItem("pajama-ui", uiLocale);
   }, [uiLocale]);
 
-  useEffect(() => {
-    if (!token || !activeRoom) return;
-    const roomId = activeRoom.id;
-    let cancelled = false;
-
-    api
-      .speakingHistory(token, roomId, 40)
-      .then((history) => {
-        if (cancelled) return;
-        const restored: ChatLine[] = history.map((item) => ({ role: item.role, text: item.content }));
-        if (restored.length > 0) {
-          chatDispatch({ type: "hydrateHistory", roomId, chat: restored });
-        }
-      })
-      .catch(() => undefined);
-
-    return () => {
-      cancelled = true;
-    };
-  }, [token, activeRoom?.id, chatDispatch]);
+  useSpeakingHistory({ activeRoom, chatDispatch, token });
 
   async function analyzeContext() {
     const result = await learningActions.analyzeContext(contextText);

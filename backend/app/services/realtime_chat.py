@@ -28,20 +28,22 @@ class RealtimeChatService:
 
     async def stream_assistant_reply(self, user_text: str, mood: str = "steady") -> AsyncIterator[str]:
         reply_parts: list[str] = []
-        async for token_text in stream_roleplay_reply(
-            room_id=self.room_id,
-            user_text=user_text,
-            tone=self.user.ai_tone,
-            language_code=self.user.active_language_code,
-            learning_terms=self.repository.learning_terms(self.user),
-            target_language_code=self.user.native_language_code,
-            mood=mood,
-        ):
-            reply_parts.append(token_text)
-            yield token_text
-
-        reply = "".join(reply_parts).strip()
-        self.repository.save_assistant_turn(self.user, self.room_id, reply)
+        try:
+            async for token_text in stream_roleplay_reply(
+                room_id=self.room_id,
+                user_text=user_text,
+                tone=self.user.ai_tone,
+                language_code=self.user.active_language_code,
+                learning_terms=self.repository.learning_terms(self.user),
+                target_language_code=self.user.native_language_code,
+                mood=mood,
+            ):
+                reply_parts.append(token_text)
+                yield token_text
+        finally:
+            reply = "".join(reply_parts).strip()
+            if reply:
+                self.repository.save_assistant_turn(self.user, self.room_id, reply)
 
     def call_summary(self) -> dict[str, object]:
         return self.repository.call_summary(self.user, self.room_id)

@@ -68,6 +68,22 @@ npm run test:e2e
 
 `npm run test:e2e` expects FastAPI and the Vite dev server to already be running on `127.0.0.1:8001` and `127.0.0.1:3175`.
 
+### Safe Workspace Cleanup
+
+Generated files can be removed without touching source code:
+
+```powershell
+.\scripts\clean-workspace.ps1
+```
+
+For a larger cleanup that also removes dependency folders and Gradle caches, use:
+
+```powershell
+.\scripts\clean-workspace.ps1 -Deep
+```
+
+Deep cleanup saves much more disk space, but the next backend/web/KMP run will need to reinstall or redownload dependencies.
+
 ### Frontend Android
 
 Install Android Studio + Android SDK, or use the Android command-line tools. On this Windows workspace the local SDK is installed at `D:/Apps/AndroidSdk`; create `frontend/local.properties` if needed:
@@ -180,6 +196,7 @@ Realtime hardening currently includes:
 - Frontend heartbeat pings while a turn is open.
 - Client-side turn timeouts so stuck WebSocket calls fail clearly.
 - A local durable retry queue for failed text and audio turns, so interrupted turns can be retried instead of disappearing.
+- Backend stream finalization persists partial assistant replies if a WebSocket disconnects mid-answer.
 - Unit tests for reducer snapshots and realtime client behavior.
 - Playwright smoke tests for desktop and mobile web flows.
 
@@ -217,8 +234,7 @@ The Vibe Check tab also lets the user choose the explanation/native language, in
 
 ## Still Not Done
 
-- Native production voice capture: Android now has a compiled `MediaRecorder` path in shared KMP; iOS still needs its platform recorder actual.
-- Production realtime resilience: text and audio turns have heartbeat, timeout, retry, local queue support, and browser session restore; backend-side recovery of an interrupted in-flight WebSocket stream is still future work.
-- Full UI decomposition: the React preview now has domain/state/controllers and a dedicated voice recorder hook, but large screen components still live in `App.tsx`.
+- Native production voice capture: Android now has a compiled `MediaRecorder` path in shared KMP; iOS still needs a platform recorder actual on a macOS-capable build environment.
+- Full UI decomposition: the React preview now has domain/state/controllers and dedicated speaking/voice/history hooks, but large screen components still need another extraction pass.
 - Frontend E2E coverage depth: the suite now covers speaking, call fallback, context, storage, profile, and grammar smoke flows, but not every edge case.
 - KMP parity pass: Compose has voice fallback sync, but the full mobile UX still needs another visual polish pass after web stabilizes.
