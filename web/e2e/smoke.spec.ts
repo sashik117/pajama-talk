@@ -23,6 +23,11 @@ async function openFreshLearner(page: Page, request: APIRequestContext) {
 
 async function enterCoffeeRoom(page: Page) {
   await page.getByTestId("nav-speak").click();
+  const backToRooms = page.getByTestId("speaking-back-rooms");
+  if (await backToRooms.isVisible().catch(() => false)) {
+    await backToRooms.click();
+  }
+  await expect(page.getByTestId("room-coffee-alex")).toBeVisible();
   await page.getByTestId("room-coffee-alex").click();
   await page.getByTestId("mood-charged").click();
   await expect(page.getByTestId("speaking-mode-text")).toBeVisible();
@@ -88,8 +93,10 @@ test("storage can enrich a new word and expose it for review", async ({ page, re
   await page.getByTestId("word-input").fill("exam");
   await page.getByTestId("word-add").click();
   await expect(page.getByTestId("word-result")).toContainText("exam");
+  await expect(page.getByTestId("listen-word-last")).toBeVisible();
   await page.getByTestId("storage-review-tab").click();
   await expect(page.getByTestId("review-remember")).toBeVisible();
+  await expect(page.getByTestId("listen-review-word")).toBeVisible();
 });
 
 test("profile choices refresh the learning path", async ({ page, request }) => {
@@ -112,4 +119,14 @@ test("grammar lab checks an exercise answer", async ({ page, request }) => {
   await page.getByTestId("grammar-option").first().click();
   await page.getByTestId("grammar-check").click();
   await expect(page.getByTestId("grammar-feedback")).toBeVisible();
+});
+
+test("learning path exposes listen-and-repeat practice", async ({ page, request }) => {
+  await openFreshLearner(page, request);
+
+  await expect(page.getByTestId("listen-daily-phrase")).toBeVisible();
+  await expect(page.getByTestId("shadow-trainer")).toBeVisible();
+  await page.getByTestId("shadow-answer").fill("not the phrase");
+  await page.getByTestId("shadow-check").click();
+  await expect(page.getByText(/Almost|Майже|Prawie|Presque|Casi/i)).toBeVisible();
 });

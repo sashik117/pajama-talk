@@ -16,7 +16,7 @@ import {
 } from "../realtime/retryQueue";
 import type { ChatAction, ChatLine, MoodKey } from "../state/chatState";
 import { playAudioPayload, type AudioPayload } from "../utils/audio";
-import { getSpeechLang } from "../utils/speech";
+import { speakText } from "../utils/speech";
 
 type SpeakingControllerOptions = {
   activeMood: MoodKey;
@@ -46,15 +46,6 @@ export function useSpeakingController({
     setQueuedTurnsCount(queuedRealtimeCount(activeRoom?.id));
   }, [activeRoom?.id]);
 
-  function speakWithBrowser(text: string, speechRate: number) {
-    if (!text || !("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = getSpeechLang(learningCode);
-    utterance.rate = speechRate;
-    window.speechSynthesis.speak(utterance);
-  }
-
   async function playReply(finalReply: string, audio: AudioPayload | undefined, speechRate: number) {
     if (!finalReply) return;
     if (audio) {
@@ -62,11 +53,11 @@ export function useSpeakingController({
         await playAudioPayload(audio);
         return;
       } catch {
-        speakWithBrowser(finalReply, speechRate);
+        speakText(finalReply, learningCode, speechRate);
         return;
       }
     }
-    speakWithBrowser(finalReply, speechRate);
+    speakText(finalReply, learningCode, speechRate);
   }
 
   async function loadHints() {

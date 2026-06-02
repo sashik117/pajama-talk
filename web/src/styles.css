@@ -221,6 +221,7 @@ textarea {
 .bottom-nav button,
 .segmented button,
 .hint,
+.hint-main,
 .quest-list button,
 .topic-tabs button,
 .select-trigger,
@@ -415,7 +416,7 @@ textarea {
 
 .daily-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 8px;
   margin-top: 10px;
 }
@@ -439,6 +440,16 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.daily-actions .listen-button {
+  min-height: 48px;
+  width: 48px;
+  padding: 0;
+}
+
+.daily-actions .listen-button span {
+  display: none;
 }
 
 .engagement-grid {
@@ -573,7 +584,7 @@ textarea {
 
 .daily-task {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto auto;
   gap: 8px;
   align-items: center;
   border-radius: 18px;
@@ -640,6 +651,44 @@ textarea {
   background: rgba(232, 222, 248, 0.82);
   font-size: 12px;
   font-weight: 540;
+}
+
+.listen-button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 10px;
+  color: #31534d;
+  background: rgba(157, 206, 192, 0.5);
+  font-size: 12px;
+  font-weight: 580;
+  touch-action: manipulation;
+}
+
+.listen-button:disabled {
+  opacity: 0.45;
+}
+
+.compact-listen,
+.task-listen {
+  min-width: 34px;
+  padding: 0 9px;
+}
+
+.compact-listen span,
+.task-listen span,
+.inline-listen span {
+  display: none;
+}
+
+.inline-listen {
+  min-height: 26px;
+  margin-left: 8px;
+  padding: 0 8px;
 }
 
 .two-selects {
@@ -1022,6 +1071,20 @@ textarea {
   font-weight: 540;
 }
 
+.context-example-action,
+.word-suggestion,
+.summary-phrase-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.context-example-action .inline-listen,
+.word-suggestion .inline-listen,
+.summary-phrase-action .inline-listen {
+  flex: 0 0 auto;
+}
+
 .context-result,
 .srs-card,
 .grammar-topic,
@@ -1039,6 +1102,12 @@ textarea {
   background: rgba(157, 206, 192, 0.48);
   font-size: 12px;
   font-weight: 560;
+}
+
+.inline-note.try,
+.inline-note.wrong {
+  color: #553028;
+  background: rgba(243, 182, 168, 0.42);
 }
 
 .learning-path-card,
@@ -1092,6 +1161,35 @@ textarea {
   gap: 4px;
 }
 
+.phrase-card.selected {
+  outline: 2px solid rgba(157, 206, 192, 0.48);
+}
+
+.phrase-line,
+.word-title-line,
+.shadow-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.phrase-line button:first-child {
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  color: #292632;
+  background: transparent;
+  text-align: left;
+}
+
+.phrase-line strong,
+.word-title-line strong,
+.word-title-line h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .phrase-card span {
   color: #8a7f91;
   font-size: 12px;
@@ -1116,6 +1214,41 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.shadow-trainer {
+  display: grid;
+  gap: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(247, 241, 255, 0.58);
+}
+
+.review-practice {
+  display: grid;
+  gap: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 18px;
+  padding: 11px;
+  background: rgba(232, 222, 248, 0.42);
+}
+
+.shadow-head {
+  color: #5e506b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.shadow-trainer > strong {
+  color: #292632;
+  font-size: 17px;
+  font-weight: 620;
+}
+
+.shadow-trainer > span {
+  color: #8a7f91;
+  font-size: 12px;
 }
 
 .grammar-lab {
@@ -1171,6 +1304,11 @@ textarea {
   background: rgba(232, 222, 248, 0.52);
 }
 
+.adaptive-quests {
+  display: grid;
+  gap: 6px;
+}
+
 .lesson-card,
 .exercise-card,
 .mini-example {
@@ -1219,6 +1357,18 @@ textarea {
 .mini-example del {
   color: #94736d;
   font-size: 13px;
+}
+
+.mini-example-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mini-example-head strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .exercise-card {
@@ -1335,9 +1485,9 @@ textarea {
 }
 
 .messenger-card {
-  min-height: min(680px, calc(100dvh - 116px));
+  min-height: min(560px, calc(100dvh - 196px));
   display: grid;
-  grid-template-rows: auto auto minmax(220px, 1fr) auto auto auto;
+  grid-template-rows: auto auto minmax(150px, 1fr) auto auto auto;
   gap: 12px;
 }
 
@@ -1347,8 +1497,8 @@ textarea {
 
 .messenger-card .chat-log {
   align-content: end;
-  min-height: 220px;
-  max-height: 46dvh;
+  min-height: 150px;
+  max-height: 34dvh;
   overflow-y: auto;
   padding: 2px 2px 8px;
   scrollbar-width: none;
@@ -1370,6 +1520,7 @@ textarea {
 
 .mode-toggle button,
 .speed-row button,
+.hint-main,
 .summary-phrases button {
   border: 0;
   color: #292632;
@@ -1626,6 +1777,14 @@ textarea {
   background: rgba(243, 182, 168, 0.72);
 }
 
+.bubble .listen-button {
+  justify-self: start;
+}
+
+.bubble.user .listen-button {
+  justify-self: end;
+}
+
 .hint-stack,
 .quest-list,
 .tone-list {
@@ -1644,7 +1803,17 @@ textarea {
 
 .hint {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.hint-main {
+  min-width: 0;
+  display: grid;
   gap: 2px;
+  padding: 0;
+  text-align: left;
 }
 
 .hint small {
@@ -1710,6 +1879,12 @@ textarea {
   gap: 3px;
 }
 
+.word-result-card .word-title-line,
+.srs-card .word-title-line,
+.word-card .word-title-line {
+  display: flex;
+}
+
 .word-result-card strong {
   color: #1f3934;
   font-size: 16px;
@@ -1728,6 +1903,13 @@ textarea {
 .source-line {
   color: #7a7082;
   font-size: 12px;
+}
+
+.example-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .dictionary-tools {
@@ -2093,6 +2275,11 @@ textarea {
     width: fit-content;
   }
 
+  .task-listen {
+    grid-column: 2;
+    width: fit-content;
+  }
+
   .stats-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2148,7 +2335,7 @@ textarea {
   }
 
   .messenger-card {
-    min-height: calc(100dvh - 104px);
+    min-height: calc(100dvh - 176px);
   }
 
   .call-mode {

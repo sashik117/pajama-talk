@@ -19,3 +19,19 @@ export function getSpeechLang(code: string) {
     }[code] ?? "en-US"
   );
 }
+
+export function speakText(text: string, languageCode: string, rate = 0.92): boolean {
+  const cleanText = text.trim();
+  if (!cleanText || typeof window === "undefined") return false;
+
+  const synth = window.speechSynthesis;
+  const Utterance = globalThis.SpeechSynthesisUtterance;
+  if (!synth || !Utterance) return false;
+
+  synth.cancel();
+  const utterance = new Utterance(cleanText);
+  utterance.lang = getSpeechLang(languageCode);
+  utterance.rate = rate;
+  synth.speak(utterance);
+  return true;
+}

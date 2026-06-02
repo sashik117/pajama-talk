@@ -232,6 +232,22 @@ PajamaTalk is not English-only. Words are stored with `language_code`, and the f
 
 The Vibe Check tab also lets the user choose the explanation/native language, including Ukrainian and Russian, so AI enrichment and hints can target the learner's real comfort language.
 
+## Pronunciation And Real Practice Loop
+
+The web preview now treats every visible learning unit as something the learner can hear:
+
+- Daily focus phrases, learning-path examples, Context Buddy phrases, suggested words, dictionary terms, examples, SRS cards, grammar examples, speaking bubbles, hints, and call-summary phrases expose compact listen buttons.
+- The learning path includes a listen-and-repeat shadow trainer.
+- SRS review includes a small listening check: hear the word, type what you heard, then mark remember/forgot.
+- Browser speech uses language-aware `speechSynthesis` locales for all supported learning languages.
+
+The Compose shared app has matching pronunciation infrastructure:
+
+- Common `PlatformSpeechPlayer` contract.
+- Android `TextToSpeech` actual with language locale mapping.
+- Desktop no-op actual for safe preview builds.
+- Storage and SRS cards expose compact listen actions for terms and examples.
+
 ## Still Not Done
 
 - Native production voice capture: Android now has a compiled `MediaRecorder` path in shared KMP; iOS still needs a platform recorder actual on a macOS-capable build environment.

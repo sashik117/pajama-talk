@@ -25,6 +25,7 @@ import {
   Stethoscope,
   Trash2,
   User,
+  Volume2,
   WandSparkles,
   X
 } from "lucide-react";
@@ -48,6 +49,7 @@ import { useSpeakingHistory } from "./hooks/useSpeakingHistory";
 import { useVoiceRecorder } from "./hooks/useVoiceRecorder";
 import type { SpeakingTransport, VoiceAudioChunk } from "./realtime/speakingClient";
 import { ChatProvider, useChatDispatch, useChatState, type ChatLine, type MoodKey } from "./state/chatState";
+import { speakText } from "./utils/speech";
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type SelectOption = { code: string; label: string; short: string; flag: string };
@@ -88,6 +90,33 @@ const effortOptions = ["Light", "Steady", "Intense"] as const;
 const vibeOptions = ["Chill", "Normal", "Hardcore"] as const;
 const toneOptions = ["Neutral teacher", "Supportive coach", "Precise examiner"] as const;
 const voiceSpeedRate: Record<VoiceSpeed, number> = { slow: 0.82, natural: 1, fast: 1.16 };
+
+type LearningCoachCopy = {
+  listen: string;
+  practice: string;
+  typeWhatYouHear: string;
+  check: string;
+  correct: string;
+  tryAgain: string;
+};
+
+const learningCoachCopy: Record<UiLocale, LearningCoachCopy> = {
+  en: { listen: "Listen", practice: "Listen and repeat", typeWhatYouHear: "Type what you hear", check: "Check", correct: "Good. Now say it out loud.", tryAgain: "Almost. Listen once more and try again." },
+  uk: { listen: "Слухати", practice: "Послухай і повтори", typeWhatYouHear: "Впиши, що почула", check: "Перевірити", correct: "Добре. Тепер скажи це вголос.", tryAgain: "Майже. Послухай ще раз і повтори." },
+  ru: { listen: "Слушать", practice: "Послушай и повтори", typeWhatYouHear: "Впиши, что услышала", check: "Проверить", correct: "Хорошо. Теперь скажи это вслух.", tryAgain: "Почти. Послушай ещё раз и повтори." },
+  pl: { listen: "Słuchaj", practice: "Posłuchaj i powtórz", typeWhatYouHear: "Wpisz, co słyszysz", check: "Sprawdź", correct: "Dobrze. Teraz powiedz to głośno.", tryAgain: "Prawie. Posłuchaj jeszcze raz." },
+  sk: { listen: "Počúvaj", practice: "Počúvaj a zopakuj", typeWhatYouHear: "Napíš, čo počuješ", check: "Skontrolovať", correct: "Dobre. Teraz to povedz nahlas.", tryAgain: "Skoro. Vypočuj si to ešte raz." },
+  cs: { listen: "Poslech", practice: "Poslechni a zopakuj", typeWhatYouHear: "Napiš, co slyšíš", check: "Zkontrolovat", correct: "Dobře. Teď to řekni nahlas.", tryAgain: "Skoro. Poslechni si to znovu." },
+  fr: { listen: "Écouter", practice: "Écoute et répète", typeWhatYouHear: "Écris ce que tu entends", check: "Vérifier", correct: "Bien. Maintenant dis-le à voix haute.", tryAgain: "Presque. Réécoute encore." },
+  es: { listen: "Escuchar", practice: "Escucha y repite", typeWhatYouHear: "Escribe lo que oyes", check: "Comprobar", correct: "Bien. Ahora dilo en voz alta.", tryAgain: "Casi. Escúchalo otra vez." },
+  it: { listen: "Ascolta", practice: "Ascolta e ripeti", typeWhatYouHear: "Scrivi ciò che senti", check: "Controlla", correct: "Bene. Ora dillo ad alta voce.", tryAgain: "Quasi. Ascolta ancora." },
+  de: { listen: "Hören", practice: "Hören und wiederholen", typeWhatYouHear: "Schreib, was du hörst", check: "Prüfen", correct: "Gut. Sag es jetzt laut.", tryAgain: "Fast. Hör es noch einmal." },
+  pt: { listen: "Ouvir", practice: "Ouve e repete", typeWhatYouHear: "Escreve o que ouves", check: "Verificar", correct: "Bem. Agora diz em voz alta.", tryAgain: "Quase. Ouve outra vez." },
+  tr: { listen: "Dinle", practice: "Dinle ve tekrarla", typeWhatYouHear: "Duyduğunu yaz", check: "Kontrol et", correct: "Güzel. Şimdi sesli söyle.", tryAgain: "Neredeyse. Bir kez daha dinle." },
+  ja: { listen: "聞く", practice: "聞いて繰り返す", typeWhatYouHear: "聞こえた内容を書く", check: "確認", correct: "いい感じ。今度は声に出して。", tryAgain: "もう少し。もう一度聞いて。" },
+  ko: { listen: "듣기", practice: "듣고 따라 하기", typeWhatYouHear: "들은 것을 쓰기", check: "확인", correct: "좋아요. 이제 소리 내어 말해요.", tryAgain: "거의 됐어요. 한 번 더 들어요." },
+  zh: { listen: "听", practice: "听并跟读", typeWhatYouHear: "写下你听到的", check: "检查", correct: "很好。现在大声说出来。", tryAgain: "差一点。再听一次。" }
+};
 
 const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
   en: {
@@ -580,6 +609,46 @@ function readDailyDone(key: string): Record<string, boolean> {
   }
 }
 
+function normalizePracticeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\p{Letter}\p{Number}]+/gu, " ")
+    .trim();
+}
+
+function PronounceButton({
+  text,
+  languageCode,
+  label,
+  className = "",
+  testId
+}: {
+  text: string;
+  languageCode: string;
+  label: string;
+  className?: string;
+  testId?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={`listen-button ${className}`.trim()}
+      aria-label={`${label}: ${text}`}
+      data-testid={testId}
+      disabled={!text.trim()}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        speakText(text, languageCode);
+      }}
+    >
+      <Volume2 size={15} />
+      <span>{label}</span>
+    </button>
+  );
+}
+
 export function App() {
   return (
     <ChatProvider>
@@ -735,6 +804,7 @@ function PajamaTalkApp() {
             loadCallSummary={loadCallSummary}
             addWord={addWord}
             labels={speakingModeCopy[uiLocale]}
+            listenLabel={(learningCoachCopy[uiLocale] ?? learningCoachCopy.en).listen}
           />
         )}
 
@@ -742,6 +812,7 @@ function PajamaTalkApp() {
           <StorageScreen
             copy={copy}
             locale={uiLocale}
+            learningCode={learningCode}
             words={words}
             dueWord={dueWord}
             busy={busy}
@@ -949,11 +1020,20 @@ function HomeScreen({
 
   const firstStep = learningPath?.steps[0];
   const firstPhrase = firstStep?.examples[0]?.phrase;
-  const dailyTasks = [
+  const coachLabels = learningCoachCopy[locale] ?? learningCoachCopy.en;
+  const dailyTasks: Array<{
+    id: string;
+    title: string;
+    body: string;
+    audioText?: string;
+    actionLabel: string;
+    action: () => void;
+  }> = [
     {
       id: "phrase",
       title: firstPhrase ?? copy("speak"),
       body: firstStep?.micro_task ?? copy("dailyFocusSub"),
+      audioText: firstPhrase ?? "",
       actionLabel: copy("speak"),
       action: openSpeak,
     },
@@ -961,6 +1041,7 @@ function HomeScreen({
       id: "context",
       title: contextExamples[0],
       body: `${copy("contextTitle")} → ${copy("addWords")}`,
+      audioText: contextExamples[0],
       actionLabel: copy("analyze"),
       action: () => setContextText(contextExamples[0]),
     },
@@ -968,6 +1049,7 @@ function HomeScreen({
       id: "review",
       title: dueWord ? dueWord.term : copy("reviewEmpty"),
       body: dueWord ? dueWord.translation : copy("reviewEmpty"),
+      audioText: dueWord?.term ?? "",
       actionLabel: copy("review"),
       action: openReview,
     },
@@ -985,6 +1067,9 @@ function HomeScreen({
               <Mic size={16} />
               <span>{learningPath?.steps[0]?.examples[0]?.phrase ?? copy("speak")}</span>
             </button>
+            {firstPhrase && (
+              <PronounceButton text={firstPhrase} languageCode={learningCode} label={coachLabels.listen} className="compact-listen" testId="listen-daily-phrase" />
+            )}
             <button onClick={openReview}>
               <BookOpen size={16} />
               <span>{dueWord ? dueWord.term : copy("reviewEmpty")}</span>
@@ -1018,6 +1103,9 @@ function HomeScreen({
                 <strong>{task.title}</strong>
                 <span>{task.body}</span>
               </button>
+              {task.audioText && (
+                <PronounceButton text={task.audioText} languageCode={learningCode} label={coachLabels.listen} className="task-listen" testId={`listen-task-${task.id}`} />
+              )}
               <button className="task-action" onClick={task.action}>
                 {task.actionLabel}
               </button>
@@ -1026,7 +1114,7 @@ function HomeScreen({
         </div>
       </section>
 
-      {learningPath && <LearningPathPanel copy={copy} path={learningPath} openSpeak={openSpeak} addWord={addWord} />}
+      {learningPath && <LearningPathPanel copy={copy} locale={locale} path={learningPath} openSpeak={openSpeak} addWord={addWord} />}
 
       <section className="card context-card">
         <div className="section-title">
@@ -1036,9 +1124,12 @@ function HomeScreen({
         <textarea value={contextText} onChange={(event) => setContextText(event.target.value)} placeholder={copy("contextPlaceholder")} data-testid="context-input" />
         <div className="chip-row">
           {contextExamples.map((example) => (
-            <button key={example} className="chip" onClick={() => setContextText(example)}>
-              {example}
-            </button>
+            <span key={example} className="context-example-action">
+              <button className="chip" onClick={() => setContextText(example)}>
+                {example}
+              </button>
+              <PronounceButton text={example} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+            </span>
           ))}
         </div>
         <button className="primary-action" disabled={busy || contextText.trim().length < 3} onClick={analyzeContext} data-testid="context-analyze">
@@ -1051,10 +1142,13 @@ function HomeScreen({
             <p>{contextResult.hidden_meaning}</p>
             <div className="chip-row">
               {contextResult.suggested_words.slice(0, 8).map((word) => (
-                <button key={word} className="chip" disabled={busy} onClick={() => void saveContextWord(word)}>
-                  <Plus size={14} />
-                  {word}
-                </button>
+                <span key={word} className="word-suggestion">
+                  <button className="chip" disabled={busy} onClick={() => void saveContextWord(word)}>
+                    <Plus size={14} />
+                    {word}
+                  </button>
+                  <PronounceButton text={word} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+                </span>
               ))}
             </div>
             <div className="action-row">
@@ -1070,32 +1164,64 @@ function HomeScreen({
         )}
       </section>
 
-      <GrammarLab copy={copy} locale={locale} drop={activeDrop} topics={grammarTopics} checkGrammar={checkGrammar} />
+      <GrammarLab copy={copy} locale={locale} learningCode={learningCode} drop={activeDrop} topics={grammarTopics} checkGrammar={checkGrammar} />
     </>
   );
 }
 
 function LearningPathPanel({
   copy,
+  locale,
   path,
   openSpeak,
   addWord
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
+  locale: UiLocale;
   path: LearningPathDto;
   openSpeak: () => void;
   addWord: (word: string, source?: string) => Promise<WordDto | undefined>;
 }) {
   const [activeStep, setActiveStep] = useState(path.steps[0]?.id ?? "");
+  const [activePhrase, setActivePhrase] = useState(path.steps[0]?.examples[0]?.phrase ?? "");
   const [savedPhrase, setSavedPhrase] = useState("");
+  const [shadowAnswer, setShadowAnswer] = useState("");
+  const [shadowResult, setShadowResult] = useState<"correct" | "try" | "">("");
   const step = path.steps.find((item) => item.id === activeStep) ?? path.steps[0];
+  const coachLabels = learningCoachCopy[locale] ?? learningCoachCopy.en;
+  const activeExample = step?.examples.find((example) => example.phrase === activePhrase) ?? step?.examples[0];
 
   useEffect(() => {
-    setActiveStep(path.steps[0]?.id ?? "");
+    const nextStep = path.steps[0];
+    setActiveStep(nextStep?.id ?? "");
+    setActivePhrase(nextStep?.examples[0]?.phrase ?? "");
     setSavedPhrase("");
+    setShadowAnswer("");
+    setShadowResult("");
   }, [path.language_code, path.steps]);
 
   if (!step) return null;
+
+  function selectStep(stepId: string) {
+    const nextStep = path.steps.find((item) => item.id === stepId);
+    setActiveStep(stepId);
+    setActivePhrase(nextStep?.examples[0]?.phrase ?? "");
+    setShadowAnswer("");
+    setShadowResult("");
+  }
+
+  function selectPhrase(phrase: string) {
+    setActivePhrase(phrase);
+    setShadowAnswer("");
+    setShadowResult("");
+  }
+
+  function checkShadowAnswer() {
+    if (!activeExample) return;
+    const expected = normalizePracticeText(activeExample.phrase);
+    const answer = normalizePracticeText(shadowAnswer);
+    setShadowResult(answer.length > 0 && answer === expected ? "correct" : "try");
+  }
 
   async function savePhrase(phrase: string) {
     const created = await addWord(phrase, step.title);
@@ -1120,7 +1246,7 @@ function LearningPathPanel({
       </div>
       <div className="path-steps">
         {path.steps.map((item, index) => (
-          <button key={item.id} className={item.id === step.id ? "selected" : ""} onClick={() => setActiveStep(item.id)}>
+          <button key={item.id} className={item.id === step.id ? "selected" : ""} onClick={() => selectStep(item.id)}>
             {index + 1}
           </button>
         ))}
@@ -1131,8 +1257,13 @@ function LearningPathPanel({
         <p>{step.teacher_note}</p>
         <div className="phrase-stack">
           {step.examples.map((example) => (
-            <div key={example.phrase} className="phrase-card">
-              <strong>{example.phrase}</strong>
+            <div key={example.phrase} className={example.phrase === activeExample?.phrase ? "phrase-card selected" : "phrase-card"}>
+              <div className="phrase-line">
+                <button type="button" onClick={() => selectPhrase(example.phrase)}>
+                  <strong>{example.phrase}</strong>
+                </button>
+                <PronounceButton text={example.phrase} languageCode={path.language_code} label={coachLabels.listen} className="compact-listen" testId="listen-lesson-phrase" />
+              </div>
               <span>{example.pronunciation}</span>
               <p>{example.meaning}</p>
               <button className="phrase-add" onClick={() => void savePhrase(example.phrase)}>
@@ -1142,6 +1273,31 @@ function LearningPathPanel({
             </div>
           ))}
         </div>
+        {activeExample && (
+          <div className="shadow-trainer" data-testid="shadow-trainer">
+            <div className="shadow-head">
+              <span>{coachLabels.practice}</span>
+              <PronounceButton text={activeExample.phrase} languageCode={path.language_code} label={coachLabels.listen} className="compact-listen" testId="listen-shadow-phrase" />
+            </div>
+            <strong>{activeExample.phrase}</strong>
+            <span>{activeExample.pronunciation}</span>
+            <div className="send-row">
+              <input
+                value={shadowAnswer}
+                onChange={(event) => {
+                  setShadowAnswer(event.target.value);
+                  setShadowResult("");
+                }}
+                placeholder={coachLabels.typeWhatYouHear}
+                data-testid="shadow-answer"
+              />
+              <button className="soft-action mint" onClick={checkShadowAnswer} data-testid="shadow-check">
+                {coachLabels.check}
+              </button>
+            </div>
+            {shadowResult && <div className={`inline-note ${shadowResult}`}>{shadowResult === "correct" ? coachLabels.correct : coachLabels.tryAgain}</div>}
+          </div>
+        )}
         {savedPhrase && <div className="inline-note">{savedPhrase}</div>}
         <div className="micro-task">
           <Sparkles size={16} />
@@ -1169,7 +1325,8 @@ function SpeakingScreen({
   isStreaming,
   loadCallSummary,
   addWord,
-  labels
+  labels,
+  listenLabel
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
   rooms: SpeakingRoomDto[];
@@ -1188,6 +1345,7 @@ function SpeakingScreen({
   loadCallSummary: (roomId: string) => Promise<CallSummaryDto>;
   addWord: (word: string, source?: string) => Promise<WordDto | undefined>;
   labels: SpeakingModeCopy;
+  listenLabel: string;
 }) {
   const [draft, setDraft] = useState("");
   const [callDraft, setCallDraft] = useState("");
@@ -1360,7 +1518,7 @@ function SpeakingScreen({
   return (
     <section className="card speaking-card messenger-card">
       <div className="room-head">
-        <button className="ghost-action inline" onClick={back}>
+        <button className="ghost-action inline" onClick={back} data-testid="speaking-back-rooms">
           {copy("rooms")}
         </button>
         <span className="room-icon" style={{ background: activeRoom.accent_color }}>
@@ -1454,10 +1612,13 @@ function SpeakingScreen({
               <p>{callSummary.grammar_feedback}</p>
               <div className="summary-phrases">
                 {callSummary.new_phrases.map((phrase) => (
-                  <button key={phrase} onClick={() => addWord(phrase, activeRoom.title)}>
-                    <Plus size={14} />
-                    {phrase}
-                  </button>
+                  <span key={phrase} className="summary-phrase-action">
+                    <button onClick={() => addWord(phrase, activeRoom.title)}>
+                      <Plus size={14} />
+                      {phrase}
+                    </button>
+                    <PronounceButton text={phrase} languageCode={learningCode} label={listenLabel} className="inline-listen" />
+                  </span>
                 ))}
               </div>
             </div>
@@ -1466,6 +1627,7 @@ function SpeakingScreen({
             {chat.map((line, index) => (
               <div key={`${line.role}-${index}`} className={`bubble ${line.role}`}>
                 <span>{line.text || "..."}</span>
+                {line.text && <PronounceButton text={line.text} languageCode={learningCode} label={listenLabel} className="bubble-listen compact-listen" />}
               </div>
             ))}
           </div>
@@ -1494,10 +1656,13 @@ function SpeakingScreen({
                 ["Grammar", hints.conversational],
                 ["Question", hints.spicy]
               ].map(([label, hint]) => (
-                <button key={label} className="hint" onClick={() => setDraft(hint)}>
-                  <small>{label}</small>
-                  <span>{hint}</span>
-                </button>
+                <article key={label} className="hint">
+                  <button className="hint-main" onClick={() => setDraft(hint)}>
+                    <small>{label}</small>
+                    <span>{hint}</span>
+                  </button>
+                  <PronounceButton text={hint} languageCode={learningCode} label={listenLabel} className="inline-listen" />
+                </article>
               ))}
             </div>
           )}
@@ -1529,6 +1694,7 @@ function SpeakingScreen({
 function StorageScreen({
   copy,
   locale,
+  learningCode,
   words,
   dueWord,
   busy,
@@ -1540,6 +1706,7 @@ function StorageScreen({
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
   locale: UiLocale;
+  learningCode: string;
   words: WordDto[];
   dueWord?: WordDto;
   busy: boolean;
@@ -1554,7 +1721,10 @@ function StorageScreen({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "learning" | "learned">("all");
   const [lastAdded, setLastAdded] = useState<WordDto | null>(null);
+  const [reviewAnswer, setReviewAnswer] = useState("");
+  const [reviewResult, setReviewResult] = useState<"correct" | "try" | "">("");
   const flow = storageFlowCopy[locale] ?? storageFlowCopy.en;
+  const coachLabels = learningCoachCopy[locale] ?? learningCoachCopy.en;
   const filteredWords = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return words.filter((word) => {
@@ -1574,6 +1744,18 @@ function StorageScreen({
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
+
+  useEffect(() => {
+    setReviewAnswer("");
+    setReviewResult("");
+  }, [dueWord?.id]);
+
+  function checkReviewPractice() {
+    if (!dueWord) return;
+    const expected = normalizePracticeText(dueWord.term);
+    const answer = normalizePracticeText(reviewAnswer);
+    setReviewResult(answer.length > 0 && answer === expected ? "correct" : "try");
+  }
 
   return (
     <>
@@ -1625,12 +1807,21 @@ function StorageScreen({
         <section className="card word-result-card" data-testid="word-result">
           <small>{copy("add")} → {copy("myWords")}</small>
           <div>
-            <h2>{lastAdded.term}</h2>
+            <div className="word-title-line">
+              <h2>{lastAdded.term}</h2>
+              <PronounceButton text={lastAdded.term} languageCode={learningCode} label={coachLabels.listen} className="compact-listen" testId="listen-word-last" />
+            </div>
             <strong>{lastAdded.translation}</strong>
             <span>{lastAdded.transcription}</span>
           </div>
-          <p>{lastAdded.example_one}</p>
-          <p>{lastAdded.example_two}</p>
+          <p className="example-line">
+            {lastAdded.example_one}
+            <PronounceButton text={lastAdded.example_one} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+          </p>
+          <p className="example-line">
+            {lastAdded.example_two}
+            <PronounceButton text={lastAdded.example_two} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+          </p>
           <button
             className="soft-action pale"
             aria-label="Delete word"
@@ -1656,8 +1847,36 @@ function StorageScreen({
           {dueWord ? (
             <>
               <small>{dueWord.transcription}</small>
-              <h2>{dueWord.term}</h2>
+              <div className="word-title-line">
+                <h2>{dueWord.term}</h2>
+                <PronounceButton text={dueWord.term} languageCode={learningCode} label={coachLabels.listen} className="compact-listen" testId="listen-review-word" />
+              </div>
               <p>{dueWord.meme}</p>
+              <p className="example-line">
+                {dueWord.example_one}
+                <PronounceButton text={dueWord.example_one} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+              </p>
+              <div className="review-practice" data-testid="review-listen-practice">
+                <div className="shadow-head">
+                  <span>{coachLabels.practice}</span>
+                  <PronounceButton text={dueWord.term} languageCode={learningCode} label={coachLabels.listen} className="compact-listen" />
+                </div>
+                <div className="send-row">
+                  <input
+                    value={reviewAnswer}
+                    onChange={(event) => {
+                      setReviewAnswer(event.target.value);
+                      setReviewResult("");
+                    }}
+                    placeholder={coachLabels.typeWhatYouHear}
+                    data-testid="review-answer"
+                  />
+                  <button className="soft-action mint" onClick={checkReviewPractice} data-testid="review-answer-check">
+                    {coachLabels.check}
+                  </button>
+                </div>
+                {reviewResult && <div className={`inline-note ${reviewResult}`}>{reviewResult === "correct" ? coachLabels.correct : coachLabels.tryAgain}</div>}
+              </div>
               <p className="muted-line">
                 {copy("due")}: {nextDue}
               </p>
@@ -1696,7 +1915,10 @@ function StorageScreen({
                 <details className="word-card card" key={word.id}>
                   <summary>
                     <span>
-                      <strong>{word.term}</strong>
+                      <span className="word-title-line">
+                        <strong>{word.term}</strong>
+                        <PronounceButton text={word.term} languageCode={learningCode} label={coachLabels.listen} className="compact-listen" testId={`listen-word-${word.id}`} />
+                      </span>
                       <span className="translation-line">{word.translation}</span>
                       <small>{word.transcription}</small>
                     </span>
@@ -1708,8 +1930,14 @@ function StorageScreen({
                   </div>
                   {word.source_context && <p className="source-line">{copy("contextTitle")}: {word.source_context}</p>}
                   <p>{word.meme}</p>
-                  <p>{word.example_one}</p>
-                  <p>{word.example_two}</p>
+                  <p className="example-line">
+                    {word.example_one}
+                    <PronounceButton text={word.example_one} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+                  </p>
+                  <p className="example-line">
+                    {word.example_two}
+                    <PronounceButton text={word.example_two} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+                  </p>
                   <div className="action-row word-actions">
                     <button className="soft-action peach" onClick={() => reviewWord("forgot", word)}>
                       {copy("forgot")}
@@ -2071,12 +2299,14 @@ function ChoiceGroup({
 function GrammarLab({
   copy,
   locale,
+  learningCode,
   drop,
   topics,
   checkGrammar
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
   locale: UiLocale;
+  learningCode: string;
   drop?: GrammarDropDto;
   topics: GrammarTopicDto[];
   checkGrammar: (topicId: string, exerciseId: string, answer: string) => Promise<GrammarCheckDto>;
@@ -2090,6 +2320,7 @@ function GrammarLab({
   const topic = topics.find((item) => item.id === activeTopicId) ?? topics[0];
   const exercise = topic?.exercises[exerciseIndex] ?? topic?.exercises[0];
   const micro = grammarMicrocopy[locale] ?? grammarMicrocopy.en;
+  const coachLabels = learningCoachCopy[locale] ?? learningCoachCopy.en;
   const adaptive = drop ?? {
     title: "Past Simple",
     nudge: "Past Simple is tapping the window for 30 seconds.",
@@ -2153,6 +2384,14 @@ function GrammarLab({
         <small>{copy("adaptiveDrop")}</small>
         <strong>{adaptive.title}</strong>
         <p>{topic.recommended ? topic.reason : adaptive.nudge}</p>
+        <div className="adaptive-quests">
+          {adaptive.quests.slice(0, 2).map((quest) => (
+            <span key={quest} className="example-line">
+              {quest}
+              <PronounceButton text={quest} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+            </span>
+          ))}
+        </div>
       </article>
 
       <div className="topic-tabs">
@@ -2182,7 +2421,10 @@ function GrammarLab({
         {topic.examples.map((example) => (
           <article key={`${example.right}-${example.wrong ?? "ok"}`} className="mini-example">
             {example.wrong && <del>{example.wrong}</del>}
-            <strong>{example.right}</strong>
+            <div className="mini-example-head">
+              <strong>{example.right}</strong>
+              <PronounceButton text={example.right} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+            </div>
             <p>{example.note}</p>
           </article>
         ))}
@@ -2234,6 +2476,12 @@ function GrammarLab({
           <div className="grammar-feedback" data-testid="grammar-feedback">
             <strong>{result.correct ? micro.correct : micro.almost}</strong>
             <p>{result.feedback}</p>
+            {result.expected && (
+              <p className="example-line">
+                {result.expected}
+                <PronounceButton text={result.expected} languageCode={learningCode} label={coachLabels.listen} className="inline-listen" />
+              </p>
+            )}
           </div>
         )}
       </article>

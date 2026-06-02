@@ -50,6 +50,7 @@ import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Work
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -118,7 +119,9 @@ import com.pajamatalk.shared.data.SupportedNativeLanguages
 import com.pajamatalk.shared.data.VoiceAudioChunkDto
 import com.pajamatalk.shared.data.WordDto
 import com.pajamatalk.shared.data.nativeLanguageByCode
+import com.pajamatalk.shared.platform.PlatformSpeechPlayer
 import com.pajamatalk.shared.platform.VoiceRecorderStatus
+import com.pajamatalk.shared.platform.rememberPlatformSpeechPlayer
 import com.pajamatalk.shared.platform.rememberPlatformVoiceRecorder
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
@@ -1449,6 +1452,7 @@ private fun AddWordCard(
 private fun StorageScreen() {
     val appState = LocalPajamaState.current
     val scope = rememberCoroutineScope()
+    val speech = rememberPlatformSpeechPlayer(appState.selectedLanguage.code)
     var tab by remember { mutableIntStateOf(0) }
     var lastAdded by remember { mutableStateOf<WordDto?>(null) }
 
@@ -1468,11 +1472,14 @@ private fun StorageScreen() {
             CozyCard(background = Mint.copy(alpha = 0.28f)) {
                 Text("Added to dictionary", color = InkMuted)
                 Spacer(Modifier.height(6.dp))
-                Text(word.term, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(word.term, modifier = Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
+                    ListenAction(word.term, appState.selectedLanguage.code, speech)
+                }
                 Text(word.translation, color = Graphite, fontWeight = FontWeight.Medium)
                 Text(word.transcription, color = InkMuted)
                 Spacer(Modifier.height(8.dp))
-                Text(word.exampleOne, color = InkMuted)
+                ListeningLine(word.exampleOne, appState.selectedLanguage.code, speech)
             }
         }
         SecondaryTabRow(selectedTabIndex = tab, containerColor = Color.Transparent, contentColor = Graphite) {
@@ -1483,12 +1490,16 @@ private fun StorageScreen() {
             WordList(
                 words = appState.words,
                 isLoading = appState.isWordsLoading || appState.isBooting,
+                languageCode = appState.selectedLanguage.code,
+                speech = speech,
             )
         } else {
             SrsSwipeCard(
                 word = appState.dueWords.firstOrNull(),
                 isLoading = appState.isDueWordsLoading,
                 isReviewing = appState.isReviewing,
+                languageCode = appState.selectedLanguage.code,
+                speech = speech,
                 onReview = { word, grade -> scope.launch { appState.reviewWord(word, grade) } },
             )
         }
@@ -1496,9 +1507,44 @@ private fun StorageScreen() {
 }
 
 @Composable
+private fun ListenAction(
+    text: String,
+    languageCode: String,
+    speech: PlatformSpeechPlayer,
+    modifier: Modifier = Modifier,
+) {
+    TextButton(
+        onClick = { speech.speak(text, languageCode) },
+        enabled = speech.isSupported && text.isNotBlank(),
+        modifier = modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .background(Mint.copy(alpha = 0.46f)),
+        colors = ButtonDefaults.textButtonColors(contentColor = Graphite),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+    ) {
+        Icon(Icons.Rounded.VolumeUp, contentDescription = "Listen", modifier = Modifier.size(17.dp))
+    }
+}
+
+@Composable
+private fun ListeningLine(
+    text: String,
+    languageCode: String,
+    speech: PlatformSpeechPlayer,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text, modifier = Modifier.weight(1f), color = InkMuted)
+        ListenAction(text, languageCode, speech)
+    }
+}
+
+@Composable
 private fun WordList(
     words: List<WordDto>,
     isLoading: Boolean,
+    languageCode: String,
+    speech: PlatformSpeechPlayer,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (isLoading) {
@@ -1519,7 +1565,10 @@ private fun WordList(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text(word.term, fontSize = 21.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(word.term, modifier = Modifier.weight(1f), fontSize = 21.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
+                                ListenAction(word.term, languageCode, speech)
+                            }
                             Text("${word.translation} · ${word.transcription}", color = InkMuted)
                         }
                         Text("${word.colorLevel}/5", color = Graphite, fontWeight = FontWeight.Medium)
@@ -1529,9 +1578,9 @@ private fun WordList(
                             Spacer(Modifier.height(12.dp))
                             Text(word.meme.ifBlank { "No meme yet, but the word has entered storage." }, color = Graphite)
                             Spacer(Modifier.height(10.dp))
-                            Text(word.exampleOne, color = InkMuted)
+                            ListeningLine(word.exampleOne, languageCode, speech)
                             Spacer(Modifier.height(6.dp))
-                            Text(word.exampleTwo, color = InkMuted)
+                            ListeningLine(word.exampleTwo, languageCode, speech)
                         }
                     }
                 }
@@ -1546,6 +1595,8 @@ private fun SrsSwipeCard(
     word: WordDto?,
     isLoading: Boolean,
     isReviewing: Boolean,
+    languageCode: String,
+    speech: PlatformSpeechPlayer,
     onReview: (WordDto, ReviewGrade) -> Unit,
 ) {
     if (isLoading) {
@@ -1599,11 +1650,16 @@ private fun SrsSwipeCard(
             background = Color.White.copy(alpha = 0.94f),
         ) {
             Spacer(Modifier.height(24.dp))
-            Text(word.term, fontSize = 38.sp, fontWeight = FontWeight.Bold, color = Graphite)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(word.term, modifier = Modifier.weight(1f), fontSize = 38.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
+                ListenAction(word.term, languageCode, speech)
+            }
             Spacer(Modifier.height(10.dp))
             Text(word.transcription.ifBlank { word.translation }, color = InkMuted)
             Spacer(Modifier.height(24.dp))
             Text(word.meme.ifBlank { "Swipe right if it stayed. Left if it slipped away." }, color = InkMuted)
+            Spacer(Modifier.height(10.dp))
+            ListeningLine(word.exampleOne, languageCode, speech)
             Spacer(Modifier.weight(1f))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SoftAction(
