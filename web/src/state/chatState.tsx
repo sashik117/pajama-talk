@@ -12,7 +12,7 @@ type ChatState = {
   hints: SpeakingHintsDto | null;
 };
 
-type ChatAction =
+export type ChatAction =
   | { type: "enterRoom"; room: SpeakingRoomDto; mood: MoodKey; intro: string }
   | { type: "leaveRoom" }
   | { type: "setHints"; hints: SpeakingHintsDto | null }

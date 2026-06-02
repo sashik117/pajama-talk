@@ -29,7 +29,6 @@ import {
   X
 } from "lucide-react";
 import {
-  api,
   CallSummaryDto,
   ContextAnalyzeDto,
   GrammarCheckDto,
@@ -44,8 +43,10 @@ import {
 } from "./api";
 import { learningLanguages, nativeLanguages, t, UiLocale, uiLocales } from "./i18n";
 import { useLearningDataController } from "./hooks/useLearningDataController";
-import { requestCallSummary, sendSpeakingTurn, type SpeakingTransport } from "./realtime/speakingClient";
+import { useSpeakingController } from "./hooks/useSpeakingController";
+import type { SpeakingTransport } from "./realtime/speakingClient";
 import { ChatProvider, useChatDispatch, useChatState, type ChatLine, type MoodKey } from "./state/chatState";
+import { getSpeechLang } from "./utils/speech";
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type SelectOption = { code: string; label: string; short: string; flag: string };
@@ -578,28 +579,6 @@ function readDailyDone(key: string): Record<string, boolean> {
   }
 }
 
-function getSpeechLang(code: string) {
-  return (
-    {
-      en: "en-US",
-      uk: "uk-UA",
-      ru: "ru-RU",
-      pl: "pl-PL",
-      sk: "sk-SK",
-      cs: "cs-CZ",
-      fr: "fr-FR",
-      es: "es-ES",
-      it: "it-IT",
-      de: "de-DE",
-      pt: "pt-PT",
-      ko: "ko-KR",
-      ja: "ja-JP",
-      zh: "zh-CN",
-      tr: "tr-TR"
-    }[code] ?? "en-US"
-  );
-}
-
 export function App() {
   return (
     <ChatProvider>
@@ -625,6 +604,16 @@ function PajamaTalkApp() {
   });
   const { token, user, stats, words, dueWords, rooms, grammarDrops, grammarTopics, learningPath, learningCode, error, busy } = learningState;
   const { addWord, demo, login, updateLearning, updateNative, updateProfileSettings, updateTone, updateVibe } = learningActions;
+  const { loadCallSummary, loadHints, sendMessage } = useSpeakingController({
+    activeMood,
+    activeRoom,
+    chat,
+    chatDispatch,
+    learningCode,
+    refreshGrammar: learningActions.refreshGrammar,
+    setError: learningActions.setError,
+    token
+  });
 
   const selectedLanguage = learningLanguages.find((language) => language.code === learningCode) ?? learningLanguages[0];
   const activeDrop = grammarDrops[0];
@@ -645,51 +634,6 @@ function PajamaTalkApp() {
 
   async function deleteWord(wordId: number) {
     await learningActions.deleteWord(wordId);
-  }
-
-  async function loadHints() {
-    if (!token || !activeRoom) return;
-    const last = [...chat].reverse().find((line: ChatLine) => line.role === "assistant")?.text ?? activeRoom.prompt;
-    try {
-      chatDispatch({ type: "setHints", hints: await api.speakingHints(token, activeRoom.id, last, learningCode) });
-    } catch (err) {
-      learningActions.setError(err instanceof Error ? err.message : "Hints failed.");
-    }
-  }
-
-  async function sendMessage(message: string, speechRate = 1, transport: SpeakingTransport = "text") {
-    if (!token || !activeRoom || !message.trim()) return;
-    const normalizedMessage = message.trim();
-    chatDispatch({ type: "appendUserTurn", message: normalizedMessage });
-    let finalReply = "";
-    try {
-      const result = await sendSpeakingTurn({
-        wsUrl: api.wsUrl,
-        token,
-        roomId: activeRoom.id,
-        mood: activeMood,
-        message: normalizedMessage,
-        speechRate,
-        transport,
-        onToken: (reply) => chatDispatch({ type: "replaceAssistantDraft", text: reply })
-      });
-      finalReply = result.finalReply;
-    } catch (err) {
-      learningActions.setError(err instanceof Error ? err.message : "Speaking stream failed.");
-    }
-    if (finalReply && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(finalReply);
-      utterance.lang = getSpeechLang(learningCode);
-      utterance.rate = speechRate;
-      window.speechSynthesis.speak(utterance);
-    }
-    await learningActions.refreshGrammar();
-  }
-
-  async function loadCallSummary(roomId: string): Promise<CallSummaryDto> {
-    if (!token) throw new Error("No active session.");
-    return requestCallSummary({ wsUrl: api.wsUrl, token, roomId });
   }
 
   async function checkGrammar(topicId: string, exerciseId: string, answer: string): Promise<GrammarCheckDto> {

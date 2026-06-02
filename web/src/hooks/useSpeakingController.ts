@@ -1,0 +1,75 @@
+import type { Dispatch } from "react";
+import { api, type CallSummaryDto, type SpeakingRoomDto } from "../api";
+import { requestCallSummary, sendSpeakingTurn, type SpeakingTransport } from "../realtime/speakingClient";
+import type { ChatAction, ChatLine, MoodKey } from "../state/chatState";
+import { getSpeechLang } from "../utils/speech";
+
+type SpeakingControllerOptions = {
+  activeMood: MoodKey;
+  activeRoom: SpeakingRoomDto | null;
+  chat: ChatLine[];
+  chatDispatch: Dispatch<ChatAction>;
+  learningCode: string;
+  refreshGrammar: () => Promise<void>;
+  setError: (message: string) => void;
+  token: string;
+};
+
+export function useSpeakingController({
+  activeMood,
+  activeRoom,
+  chat,
+  chatDispatch,
+  learningCode,
+  refreshGrammar,
+  setError,
+  token
+}: SpeakingControllerOptions) {
+  async function loadHints() {
+    if (!token || !activeRoom) return;
+    const last = [...chat].reverse().find((line) => line.role === "assistant")?.text ?? activeRoom.prompt;
+    try {
+      chatDispatch({ type: "setHints", hints: await api.speakingHints(token, activeRoom.id, last, learningCode) });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Hints failed.");
+    }
+  }
+
+  async function sendMessage(message: string, speechRate = 1, transport: SpeakingTransport = "text") {
+    if (!token || !activeRoom || !message.trim()) return;
+    const normalizedMessage = message.trim();
+    chatDispatch({ type: "appendUserTurn", message: normalizedMessage });
+    let finalReply = "";
+    try {
+      const result = await sendSpeakingTurn({
+        wsUrl: api.wsUrl,
+        token,
+        roomId: activeRoom.id,
+        mood: activeMood,
+        message: normalizedMessage,
+        speechRate,
+        transport,
+        onToken: (reply) => chatDispatch({ type: "replaceAssistantDraft", text: reply })
+      });
+      finalReply = result.finalReply;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Speaking stream failed.");
+    }
+
+    if (finalReply && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(finalReply);
+      utterance.lang = getSpeechLang(learningCode);
+      utterance.rate = speechRate;
+      window.speechSynthesis.speak(utterance);
+    }
+    await refreshGrammar();
+  }
+
+  async function loadCallSummary(roomId: string): Promise<CallSummaryDto> {
+    if (!token) throw new Error("No active session.");
+    return requestCallSummary({ wsUrl: api.wsUrl, token, roomId });
+  }
+
+  return { loadCallSummary, loadHints, sendMessage };
+}
