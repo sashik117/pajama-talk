@@ -1,11 +1,11 @@
-import { createContext, useContext, useReducer } from "react";
+import { createContext, useContext, useEffect, useReducer } from "react";
 import type { Dispatch, ReactNode } from "react";
 import type { SpeakingHintsDto, SpeakingRoomDto } from "../api";
 
 export type ChatLine = { role: "user" | "assistant"; text: string };
 export type MoodKey = "tired" | "charged" | "hard" | "steady";
 
-type ChatState = {
+export type ChatState = {
   activeRoom: SpeakingRoomDto | null;
   activeMood: MoodKey;
   chat: ChatLine[];
@@ -21,6 +21,8 @@ export type ChatAction =
   | { type: "replaceAssistantDraft"; text: string }
   | { type: "resetSession" };
 
+const CHAT_STORAGE_KEY = "pajamatalk.speakingSession.v1";
+
 const initialChatState: ChatState = {
   activeRoom: null,
   activeMood: "steady",
@@ -28,7 +30,12 @@ const initialChatState: ChatState = {
   hints: null
 };
 
-function chatReducer(state: ChatState, action: ChatAction): ChatState {
+export function createInitialChatState(): ChatState {
+  const stored = readStoredChatState();
+  return stored ?? initialChatState;
+}
+
+export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
     case "enterRoom":
       return {
@@ -72,7 +79,11 @@ const ChatStateContext = createContext<ChatState | null>(null);
 const ChatDispatchContext = createContext<Dispatch<ChatAction> | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(chatReducer, initialChatState);
+  const [state, dispatch] = useReducer(chatReducer, undefined, createInitialChatState);
+
+  useEffect(() => {
+    persistChatState(state);
+  }, [state]);
 
   return (
     <ChatStateContext.Provider value={state}>
@@ -91,4 +102,46 @@ export function useChatDispatch() {
   const dispatch = useContext(ChatDispatchContext);
   if (!dispatch) throw new Error("useChatDispatch must be used inside ChatProvider.");
   return dispatch;
+}
+
+function storage(): Storage | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredChatState(): ChatState | null {
+  const store = storage();
+  if (!store) return null;
+  try {
+    const parsed = JSON.parse(store.getItem(CHAT_STORAGE_KEY) ?? "null") as Partial<ChatState> | null;
+    if (!parsed?.activeRoom || !isMoodKey(parsed.activeMood) || !Array.isArray(parsed.chat)) return null;
+    const chat = parsed.chat.filter(isChatLine).slice(-80);
+    if (chat.length === 0) return null;
+    return { activeRoom: parsed.activeRoom as SpeakingRoomDto, activeMood: parsed.activeMood, chat, hints: null };
+  } catch {
+    return null;
+  }
+}
+
+function persistChatState(state: ChatState) {
+  const store = storage();
+  if (!store) return;
+  if (!state.activeRoom || state.chat.length === 0) {
+    store.removeItem(CHAT_STORAGE_KEY);
+    return;
+  }
+  store.setItem(CHAT_STORAGE_KEY, JSON.stringify({ ...state, hints: null, chat: state.chat.slice(-80) }));
+}
+
+function isMoodKey(value: unknown): value is MoodKey {
+  return value === "tired" || value === "charged" || value === "hard" || value === "steady";
+}
+
+function isChatLine(value: unknown): value is ChatLine {
+  if (!value || typeof value !== "object") return false;
+  const line = value as Partial<ChatLine>;
+  return (line.role === "user" || line.role === "assistant") && typeof line.text === "string";
 }

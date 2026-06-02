@@ -641,6 +641,7 @@ function PajamaTalkApp() {
   }
 
   function logout() {
+    chatDispatch({ type: "resetSession" });
     learningActions.logout();
   }
 

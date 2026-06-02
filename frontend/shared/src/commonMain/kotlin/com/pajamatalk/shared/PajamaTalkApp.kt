@@ -115,8 +115,11 @@ import com.pajamatalk.shared.data.SpeakingHintsDto
 import com.pajamatalk.shared.data.SpeakingRoomDto
 import com.pajamatalk.shared.data.SupportedLearningLanguages
 import com.pajamatalk.shared.data.SupportedNativeLanguages
+import com.pajamatalk.shared.data.VoiceAudioChunkDto
 import com.pajamatalk.shared.data.WordDto
 import com.pajamatalk.shared.data.nativeLanguageByCode
+import com.pajamatalk.shared.platform.VoiceRecorderStatus
+import com.pajamatalk.shared.platform.rememberPlatformVoiceRecorder
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -968,6 +971,7 @@ private fun SpeakingRoomsScreen() {
                 hints = appState.speakingHints,
                 isLoadingHints = appState.isLoadingHints,
                 isStreaming = appState.isSpeakingStreaming,
+                languageCode = appState.selectedLanguage.code,
                 onHints = {
                     scope.launch {
                         val lastLine = appState.speakingMessages.lastOrNull { it.incoming }?.text
@@ -976,6 +980,7 @@ private fun SpeakingRoomsScreen() {
                 },
                 onSend = { message -> scope.launch { appState.sendSpeakingMessage(room.id, message) } },
                 onVoiceText = { message -> scope.launch { appState.sendVoiceTextMessage(room.id, message) } },
+                onVoiceAudio = { chunks, transcriptHint -> scope.launch { appState.sendVoiceAudioMessage(room.id, chunks, transcriptHint) } },
                 onBack = {
                     appState.clearSpeakingConversation()
                     activeRoom = null
@@ -1057,9 +1062,11 @@ private fun DialoguePreview(
     hints: SpeakingHintsDto?,
     isLoadingHints: Boolean,
     isStreaming: Boolean,
+    languageCode: String,
     onHints: () -> Unit,
     onSend: (String) -> Unit,
     onVoiceText: (String) -> Unit,
+    onVoiceAudio: (List<VoiceAudioChunkDto>, String) -> Unit,
     onBack: () -> Unit,
 ) {
     var draft by remember(room.id) { mutableStateOf("") }
@@ -1099,7 +1106,14 @@ private fun DialoguePreview(
         }
         Spacer(Modifier.height(14.dp))
         AnimatedVisibility(mode == "call") {
-            CallModePreview(room = room, isStreaming = isStreaming, onVoiceText = onVoiceText, onEndCall = { mode = "text" })
+            CallModePreview(
+                room = room,
+                isStreaming = isStreaming,
+                languageCode = languageCode,
+                onVoiceText = onVoiceText,
+                onVoiceAudio = onVoiceAudio,
+                onEndCall = { mode = "text" },
+            )
         }
         AnimatedVisibility(mode == "text") {
             Column {
@@ -1133,11 +1147,11 @@ private fun DialoguePreview(
                         placeholder = { Text("Reply to ${room.character}") },
                     )
                     SoftAction(
-                        text = "Mic",
+                        text = "Call",
                         icon = Icons.Rounded.Mic,
                         color = Mint,
                         enabled = !isStreaming,
-                        onClick = {},
+                        onClick = { mode = "call" },
                     )
                     SoftAction(
                         text = if (isStreaming) "..." else "Send",
@@ -1179,7 +1193,14 @@ private fun SpeakingModeChip(
 }
 
 @Composable
-private fun CallModePreview(room: Room, isStreaming: Boolean, onVoiceText: (String) -> Unit, onEndCall: () -> Unit) {
+private fun CallModePreview(
+    room: Room,
+    isStreaming: Boolean,
+    languageCode: String,
+    onVoiceText: (String) -> Unit,
+    onVoiceAudio: (List<VoiceAudioChunkDto>, String) -> Unit,
+    onEndCall: () -> Unit,
+) {
     val transition = rememberInfiniteTransition(label = "call-aura")
     val pulse by transition.animateFloat(
         0.96f,
@@ -1188,6 +1209,24 @@ private fun CallModePreview(room: Room, isStreaming: Boolean, onVoiceText: (Stri
         label = "call-pulse",
     )
     var callDraft by remember(room.id) { mutableStateOf("") }
+    val recorder = rememberPlatformVoiceRecorder(languageCode)
+    val scope = rememberCoroutineScope()
+    val isRecording = recorder.isRecording
+    val isProcessing = recorder.status == VoiceRecorderStatus.Processing
+
+    fun toggleRecorder() {
+        if (isStreaming || isProcessing) return
+        scope.launch {
+            if (recorder.isRecording) {
+                val recording = recorder.stop()
+                if (recording != null && recording.chunks.isNotEmpty()) {
+                    onVoiceAudio(recording.chunks, "")
+                }
+            } else {
+                recorder.start()
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -1198,7 +1237,7 @@ private fun CallModePreview(room: Room, isStreaming: Boolean, onVoiceText: (Stri
         Box(
             modifier = Modifier
                 .size(220.dp)
-                .scale(if (isStreaming) pulse else 1f)
+                .scale(if (isStreaming || isRecording) pulse else 1f)
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
@@ -1219,7 +1258,26 @@ private fun CallModePreview(room: Room, isStreaming: Boolean, onVoiceText: (Stri
         }
         Spacer(Modifier.height(14.dp))
         Text(room.character, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
-        Text("Hold to talk. Release to listen.", color = InkMuted, fontSize = 13.sp)
+        Text(
+            when {
+                isProcessing -> "Preparing your voice turn..."
+                isRecording -> "Recording. Tap the mic again to send."
+                recorder.isSupported -> "Tap the mic to speak. Tap again to send."
+                else -> "Voice capture is not available in this preview. Use text fallback."
+            },
+            color = InkMuted,
+            fontSize = 13.sp,
+        )
+        recorder.error?.let { error ->
+            Text(
+                when (error) {
+                    "record-audio-permission-needed" -> "Allow microphone access, then tap the mic again."
+                    else -> "Could not record audio. Use the text fallback for this turn."
+                },
+                color = Graphite.copy(alpha = 0.72f),
+                fontSize = 12.sp,
+            )
+        }
         Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Slow", "Natural", "Fast").forEachIndexed { index, label ->
@@ -1236,7 +1294,11 @@ private fun CallModePreview(room: Room, isStreaming: Boolean, onVoiceText: (Stri
             }
         }
         Spacer(Modifier.height(14.dp))
-        WaveMicButton()
+        WaveMicButton(
+            active = isRecording,
+            enabled = recorder.isSupported && !isStreaming && !isProcessing,
+            onClick = ::toggleRecorder,
+        )
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
@@ -1306,7 +1368,7 @@ private fun ChatBubble(text: String, incoming: Boolean) {
 }
 
 @Composable
-private fun WaveMicButton() {
+private fun WaveMicButton(active: Boolean, enabled: Boolean, onClick: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "wave")
     val wave by transition.animateFloat(
         0f,
@@ -1321,8 +1383,10 @@ private fun WaveMicButton() {
         Box(
             modifier = Modifier
                 .size(104.dp)
+                .scale(if (active) 0.96f else 1f)
                 .clip(CircleShape)
-                .background(Brush.radialGradient(listOf(Peach, Lavender))),
+                .background(Brush.radialGradient(if (active) listOf(Mint, Lavender) else listOf(Peach, Lavender)))
+                .clickable(enabled = enabled, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Canvas(Modifier.fillMaxSize()) {
@@ -1335,7 +1399,12 @@ private fun WaveMicButton() {
                     )
                 }
             }
-            Icon(Icons.Rounded.Mic, contentDescription = "Hold to speak", tint = Graphite, modifier = Modifier.size(34.dp))
+            Icon(
+                Icons.Rounded.Mic,
+                contentDescription = if (active) "Stop recording" else "Start recording",
+                tint = Graphite.copy(alpha = if (enabled) 1f else 0.42f),
+                modifier = Modifier.size(34.dp),
+            )
         }
     }
 }
