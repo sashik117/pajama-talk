@@ -9,6 +9,7 @@ ServerEventType = Literal[
     "assistant_token",
     "tts",
     "call_summary",
+    "pong",
     "error",
     "done",
 ]
@@ -52,6 +53,10 @@ def tts_event(text: str, speed: float | int) -> RealtimeEvent:
 
 def call_summary_event(value: dict[str, object]) -> RealtimeEvent:
     return {"type": "call_summary", "value": value}
+
+
+def pong_event() -> RealtimeEvent:
+    return {"type": "pong"}
 
 
 def error_event(value: str) -> RealtimeEvent:

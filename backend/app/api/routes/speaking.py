@@ -10,6 +10,7 @@ from app.domain.realtime_events import (
     call_summary_event,
     done_event,
     error_event,
+    pong_event,
     session_ready_event,
     status_event,
     token_event,
@@ -24,6 +25,8 @@ from app.services.pronunciation_service import echo_feedback
 from app.services.realtime_chat import RealtimeChatService
 
 router = APIRouter(prefix="/speaking", tags=["speaking"])
+
+PING_TEXT_EVENTS = {'{"type":"ping"}', '{"type": "ping"}', "__ping__"}
 
 
 @router.get("/rooms", response_model=list[SpeakingRoom])
@@ -99,6 +102,9 @@ async def speaking_ws(websocket: WebSocket) -> None:
     try:
         while True:
             message = await websocket.receive_text()
+            if message in PING_TEXT_EVENTS:
+                await websocket.send_json(pong_event())
+                continue
             service.record_user_message(message)
             await _send_assistant_stream(websocket, service, message, "token", mood)
             await websocket.send_json(done_event())
@@ -122,6 +128,9 @@ async def speaking_voice_ws(websocket: WebSocket) -> None:
         while True:
             payload = await websocket.receive_json()
             event_type = payload.get("type")
+            if event_type == "ping":
+                await websocket.send_json(pong_event())
+                continue
             if event_type == "audio_chunk":
                 await websocket.send_json(status_event("audio chunk accepted"))
                 continue

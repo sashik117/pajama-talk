@@ -16,10 +16,15 @@ type SpeakingServerEvent =
   | { type: "stt_status"; value?: string }
   | { type: "session_ready"; stt?: string; tts?: string }
   | { type: "call_summary"; value?: CallSummaryDto }
+  | { type: "pong" }
   | { type: "error"; value?: string }
   | { type: "done" };
 
 type SpeakingUrlBuilder = (path: string) => string;
+type RealtimeGuardOptions = {
+  heartbeatMs?: number;
+  timeoutMs?: number;
+};
 
 function parseSpeakingEvent(raw: string): SpeakingServerEvent {
   try {
@@ -53,7 +58,9 @@ export async function sendSpeakingTurn({
   message,
   speechRate,
   transport,
-  onToken
+  onToken,
+  heartbeatMs = 15000,
+  timeoutMs = 45000
 }: {
   wsUrl: SpeakingUrlBuilder;
   token: string;
@@ -63,20 +70,34 @@ export async function sendSpeakingTurn({
   speechRate: number;
   transport: SpeakingTransport;
   onToken: (reply: string, event: SpeakingTokenEvent) => void;
-}): Promise<{ finalReply: string }> {
+} & RealtimeGuardOptions): Promise<{ finalReply: string }> {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(wsUrl(speakingPath({ token, roomId, mood, transport })));
     let streamedReply = "";
     let finalReply = "";
     let settled = false;
+    let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+    const timeoutTimer = setTimeout(() => {
+      socket.close();
+      settle(() => reject(new Error("Speaking stream timed out.")));
+    }, timeoutMs);
+
+    const cleanup = () => {
+      clearTimeout(timeoutTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+    };
 
     const settle = (handler: () => void) => {
       if (settled) return;
       settled = true;
+      cleanup();
       handler();
     };
 
     socket.onopen = () => {
+      heartbeatTimer = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "ping" }));
+      }, heartbeatMs);
       if (transport === "voice") {
         socket.send(JSON.stringify({ type: "user_text", value: message, speed: speechRate }));
       } else {
@@ -103,6 +124,8 @@ export async function sendSpeakingTurn({
         case "tts":
           if (payload.text) finalReply = payload.text;
           break;
+        case "pong":
+          break;
         case "error":
           socket.close();
           settle(() => reject(new Error(payload.value || "Speaking stream failed.")));
@@ -121,24 +144,42 @@ export async function sendSpeakingTurn({
 export async function requestCallSummary({
   wsUrl,
   token,
-  roomId
+  roomId,
+  heartbeatMs = 15000,
+  timeoutMs = 30000
 }: {
   wsUrl: SpeakingUrlBuilder;
   token: string;
   roomId: string;
-}): Promise<CallSummaryDto> {
+} & RealtimeGuardOptions): Promise<CallSummaryDto> {
   return new Promise((resolve, reject) => {
     const params = new URLSearchParams({ token, room_id: roomId });
     const socket = new WebSocket(wsUrl(`/speaking/voice-ws?${params.toString()}`));
     let settled = false;
+    let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+    const timeoutTimer = setTimeout(() => {
+      socket.close();
+      settle(() => reject(new Error("Call summary timed out.")));
+    }, timeoutMs);
+
+    const cleanup = () => {
+      clearTimeout(timeoutTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+    };
 
     const settle = (handler: () => void) => {
       if (settled) return;
       settled = true;
+      cleanup();
       handler();
     };
 
-    socket.onopen = () => socket.send(JSON.stringify({ type: "end_call" }));
+    socket.onopen = () => {
+      heartbeatTimer = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "ping" }));
+      }, heartbeatMs);
+      socket.send(JSON.stringify({ type: "end_call" }));
+    };
     socket.onerror = () => settle(() => reject(new Error("Call summary failed.")));
     socket.onmessage = (event) => {
       const payload = parseSpeakingEvent(String(event.data));

@@ -63,7 +63,10 @@ Useful checks:
 ```powershell
 npm run build
 npm test
+npm run test:e2e
 ```
+
+`npm run test:e2e` expects FastAPI and the Vite dev server to already be running on `127.0.0.1:8001` and `127.0.0.1:3175`.
 
 ### Frontend Android
 
@@ -153,6 +156,15 @@ The Speaking Rooms UI exposes this through the hints button in the dialog previe
 
 The Speaking Rooms UI now sends practice lines through `WS /speaking/ws`. FastAPI streams assistant tokens back in real time and persists both sides of the room chat in `chat_history`.
 
+Realtime hardening currently includes:
+
+- Typed frontend WebSocket client events.
+- Backend `ping` -> `pong` handling for text and voice sockets.
+- Frontend heartbeat pings while a turn is open.
+- Client-side turn timeouts so stuck WebSocket calls fail clearly.
+- Unit tests for reducer snapshots and realtime client behavior.
+- Playwright smoke tests for the web preview.
+
 ## Micro-Grammar Drops
 
 `GET /grammar/drops` returns a soft grammar nudge based on recent chat mistake tags. The Aura screen renders the active drop with a tiny explanation and tap-to-complete quests.
@@ -171,7 +183,7 @@ The Vibe Check tab also lets the user choose the explanation/native language, in
 
 ## Still Not Done
 
-- Production-grade voice loop: real Whisper/TTS providers, audio chunk streaming, reconnects, heartbeat, and retry handling.
+- Production-grade voice loop: real Whisper/TTS providers, binary audio chunk streaming, provider fallback, reconnect queue, and richer retry handling.
 - Full UI decomposition: the React preview now has domain/state/controllers, but large screen components still live in `App.tsx`.
-- Frontend E2E suite: unit tests cover reducers and realtime client, but Playwright user-flow tests are not formalized yet.
+- Frontend E2E coverage depth: Playwright smoke tests exist, but the suite does not yet cover every profile/storage/context edge case.
 - KMP parity pass: the web preview moves fastest; Compose screens still need a final sync after web UX stabilizes.

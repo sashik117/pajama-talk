@@ -242,6 +242,17 @@ def test_speaking_websocket_uses_mood(client: TestClient) -> None:
     assert "легкий режим" in "".join(tokens)
 
 
+def test_speaking_websocket_responds_to_ping(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex") as websocket:
+        websocket.send_text('{"type":"ping"}')
+        event = websocket.receive_json()
+
+    assert event["type"] == "pong"
+
+
 def test_speaking_echo_feedback(client: TestClient) -> None:
     headers = auth_headers(client)
     response = client.post(
@@ -303,6 +314,19 @@ def test_voice_websocket_turn_and_summary(client: TestClient) -> None:
         assert summary["type"] == "call_summary"
         assert summary["value"]["turns"] == 1
         assert summary["value"]["new_phrases"]
+
+
+def test_voice_websocket_responds_to_ping(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/voice-ws?token={token}&room_id=coffee-alex") as websocket:
+        ready = websocket.receive_json()
+        assert ready["type"] == "session_ready"
+        websocket.send_json({"type": "ping"})
+        event = websocket.receive_json()
+
+    assert event["type"] == "pong"
 
 
 def test_grammar_drop_responds_to_speaking_mistake(client: TestClient) -> None:

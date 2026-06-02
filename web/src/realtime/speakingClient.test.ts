@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { requestCallSummary, sendSpeakingTurn } from "./speakingClient";
 
 class FakeWebSocket {
+  static OPEN = 1;
   static instances: FakeWebSocket[] = [];
 
+  readyState = 0;
   onerror: ((event: Event) => void) | null = null;
   onmessage: ((event: MessageEvent) => void) | null = null;
   onopen: (() => void) | null = null;
@@ -19,10 +21,12 @@ class FakeWebSocket {
   }
 
   close() {
+    this.readyState = 3;
     this.closed = true;
   }
 
   open() {
+    this.readyState = FakeWebSocket.OPEN;
     this.onopen?.();
   }
 
@@ -40,6 +44,7 @@ function wsUrl(path: string) {
 }
 
 beforeEach(() => {
+  vi.useRealTimers();
   FakeWebSocket.instances = [];
   vi.stubGlobal("WebSocket", FakeWebSocket);
 });
@@ -97,6 +102,53 @@ describe("sendSpeakingTurn", () => {
     socket.message({ type: "done" });
 
     await expect(turn).resolves.toEqual({ finalReply: "Soft mode." });
+  });
+
+  it("sends heartbeat pings while a turn is open", async () => {
+    vi.useFakeTimers();
+    const turn = sendSpeakingTurn({
+      wsUrl,
+      token: "token-1",
+      roomId: "coffee-alex",
+      mood: "charged",
+      message: "Still there?",
+      speechRate: 1,
+      transport: "text",
+      heartbeatMs: 25,
+      timeoutMs: 500,
+      onToken: vi.fn()
+    });
+    const socket = FakeWebSocket.instances[0];
+
+    socket.open();
+    vi.advanceTimersByTime(25);
+    expect(socket.sent).toContain(JSON.stringify({ type: "ping" }));
+
+    socket.message({ type: "done" });
+    await expect(turn).resolves.toEqual({ finalReply: "" });
+  });
+
+  it("rejects if the speaking turn times out", async () => {
+    vi.useFakeTimers();
+    const turn = sendSpeakingTurn({
+      wsUrl,
+      token: "token-1",
+      roomId: "coffee-alex",
+      mood: "steady",
+      message: "Timeout test",
+      speechRate: 1,
+      transport: "text",
+      heartbeatMs: 25,
+      timeoutMs: 100,
+      onToken: vi.fn()
+    });
+    const socket = FakeWebSocket.instances[0];
+
+    socket.open();
+    vi.advanceTimersByTime(101);
+
+    await expect(turn).rejects.toThrow("Speaking stream timed out.");
+    expect(socket.closed).toBe(true);
   });
 });
 
