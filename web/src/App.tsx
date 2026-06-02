@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   Bot,
@@ -44,9 +44,9 @@ import {
 import { learningLanguages, nativeLanguages, t, UiLocale, uiLocales } from "./i18n";
 import { useLearningDataController } from "./hooks/useLearningDataController";
 import { useSpeakingController } from "./hooks/useSpeakingController";
-import type { SpeakingTransport } from "./realtime/speakingClient";
+import { useVoiceRecorder } from "./hooks/useVoiceRecorder";
+import type { SpeakingTransport, VoiceAudioChunk } from "./realtime/speakingClient";
 import { ChatProvider, useChatDispatch, useChatState, type ChatLine, type MoodKey } from "./state/chatState";
-import { getSpeechLang } from "./utils/speech";
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type SelectOption = { code: string; label: string; short: string; flag: string };
@@ -604,7 +604,7 @@ function PajamaTalkApp() {
   });
   const { token, user, stats, words, dueWords, rooms, grammarDrops, grammarTopics, learningPath, learningCode, error, busy } = learningState;
   const { addWord, demo, login, updateLearning, updateNative, updateProfileSettings, updateTone, updateVibe } = learningActions;
-  const { isStreaming, loadCallSummary, loadHints, sendMessage } = useSpeakingController({
+  const { isStreaming, loadCallSummary, loadHints, queuedTurnsCount, replayQueuedTurns, sendAudioMessage, sendMessage } = useSpeakingController({
     activeMood,
     activeRoom,
     chat,
@@ -723,6 +723,9 @@ function PajamaTalkApp() {
               chatDispatch({ type: "leaveRoom" });
             }}
             loadHints={loadHints}
+            queuedTurnsCount={queuedTurnsCount}
+            replayQueuedTurns={replayQueuedTurns}
+            sendAudioMessage={sendAudioMessage}
             sendMessage={sendMessage}
             isStreaming={isStreaming}
             loadCallSummary={loadCallSummary}
@@ -1155,6 +1158,9 @@ function SpeakingScreen({
   setActiveRoom,
   back,
   loadHints,
+  queuedTurnsCount,
+  replayQueuedTurns,
+  sendAudioMessage,
   sendMessage,
   isStreaming,
   loadCallSummary,
@@ -1170,7 +1176,10 @@ function SpeakingScreen({
   setActiveRoom: (room: SpeakingRoomDto, mood: MoodKey) => void;
   back: () => void;
   loadHints: () => void;
-  sendMessage: (message: string, speechRate?: number, transport?: SpeakingTransport) => void;
+  queuedTurnsCount: number;
+  replayQueuedTurns: () => Promise<void>;
+  sendAudioMessage: (chunks: VoiceAudioChunk[], transcriptHint?: string, speechRate?: number) => Promise<boolean>;
+  sendMessage: (message: string, speechRate?: number, transport?: SpeakingTransport) => Promise<boolean>;
   isStreaming: boolean;
   loadCallSummary: (roomId: string) => Promise<CallSummaryDto>;
   addWord: (word: string, source?: string) => Promise<WordDto | undefined>;
@@ -1180,14 +1189,25 @@ function SpeakingScreen({
   const [callDraft, setCallDraft] = useState("");
   const [pendingRoom, setPendingRoom] = useState<SpeakingRoomDto | null>(null);
   const [transcript, setTranscript] = useState("");
-  const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState("");
   const [mode, setMode] = useState<SpeakingMode>("text");
   const [voiceSpeed, setVoiceSpeed] = useState<VoiceSpeed>("natural");
   const [callSummary, setCallSummary] = useState<CallSummaryDto | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const speechRate = voiceSpeedRate[voiceSpeed];
+  const {
+    error: recorderError,
+    isRecording: isListening,
+    isSupported: isVoiceRecorderSupported,
+    resetRecorder,
+    startRecording,
+    status: recorderStatus,
+    stopRecording,
+    transcript: recordingTranscript
+  } = useVoiceRecorder({
+    languageCode: learningCode,
+    onTranscript: setTranscript
+  });
+  const isVoiceProcessing = recorderStatus === "processing";
   const roomIcon = useMemo(() => {
     if (!activeRoom) return null;
     if (activeRoom.id.includes("airport")) return <Plane size={28} />;
@@ -1202,9 +1222,7 @@ function SpeakingScreen({
 
   useEffect(() => {
     return () => {
-      clearSpeechTimeout();
-      recognitionRef.current?.abort?.();
-      recognitionRef.current = null;
+      resetRecorder();
     };
   }, []);
 
@@ -1215,77 +1233,38 @@ function SpeakingScreen({
     setCallDraft("");
     setSpeechError("");
     setPendingRoom(null);
+    resetRecorder();
   }, [activeRoom?.id]);
 
-  function clearSpeechTimeout() {
-    if (speechTimeoutRef.current) {
-      clearTimeout(speechTimeoutRef.current);
-      speechTimeoutRef.current = null;
-    }
-  }
+  useEffect(() => {
+    if (recorderError) setSpeechError(voiceRecorderErrorCopy(recorderError, copy));
+  }, [recorderError]);
 
-  function startVoice() {
-    if (isStreaming) return;
+  async function startVoice() {
+    if (isStreaming || isVoiceProcessing) return;
     if (isListening) {
-      stopVoice();
+      await stopVoice();
       return;
     }
-    const SpeechCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechCtor) {
+    if (!isVoiceRecorderSupported) {
       setSpeechError(copy("speechUnsupported"));
       return;
     }
-    const recognition = new SpeechCtor();
-    recognition.lang = getSpeechLang(learningCode);
-    recognition.interimResults = true;
-    recognition.continuous = false;
     setSpeechError("");
     setTranscript("");
-    setIsListening(true);
-    recognitionRef.current = recognition;
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const text = Array.from(event.results)
-        .map((result) => result[0]?.transcript ?? "")
-        .join(" ")
-        .trim();
-      setTranscript(text);
-    };
-    recognition.onerror = () => {
-      clearSpeechTimeout();
-      setSpeechError(copy("speechError"));
-      setIsListening(false);
-      recognitionRef.current = null;
-    };
-    recognition.onend = () => {
-      clearSpeechTimeout();
-      setIsListening(false);
-      recognitionRef.current = null;
-      setTranscript((current) => {
-        if (current.trim()) void sendMessage(current, mode === "call" ? speechRate : 1, mode === "call" ? "voice" : "text");
-        return current;
-      });
-    };
-    try {
-      recognition.start();
-      speechTimeoutRef.current = setTimeout(() => {
-        recognitionRef.current?.stop?.();
-      }, 12000);
-    } catch {
-      clearSpeechTimeout();
-      recognitionRef.current = null;
-      setIsListening(false);
-      setSpeechError(copy("speechError"));
-    }
+    await startRecording();
   }
 
-  function stopVoice() {
-    clearSpeechTimeout();
-    recognitionRef.current?.stop?.();
-    setIsListening(false);
+  async function stopVoice() {
+    const recording = await stopRecording();
+    if (!recording?.chunks.length) return;
+    const voiceText = recording.transcript || transcript || recordingTranscript;
+    setTranscript(voiceText);
+    await sendAudioMessage(recording.chunks, voiceText, mode === "call" ? speechRate : 1);
   }
 
   async function finishCall() {
-    stopVoice();
+    resetRecorder();
     window.speechSynthesis?.cancel();
     if (!activeRoom) return;
     try {
@@ -1409,8 +1388,16 @@ function SpeakingScreen({
           </div>
           <div className="call-copy">
             <strong>{activeRoom.character}</strong>
-            <span>{isStreaming ? "..." : isListening ? copy("listening") : transcript || labels.holdToTalk}</span>
+            <span>{isStreaming || isVoiceProcessing ? "..." : isListening ? copy("listening") : transcript || recordingTranscript || labels.holdToTalk}</span>
           </div>
+          {queuedTurnsCount > 0 && (
+            <div className="realtime-queue">
+              <span>{queuedTurnsCount} saved turn{queuedTurnsCount > 1 ? "s" : ""}</span>
+              <button onClick={() => void replayQueuedTurns()} disabled={isStreaming || isVoiceProcessing}>
+                Retry
+              </button>
+            </div>
+          )}
           <div className="speed-row">
             {(["slow", "natural", "fast"] as const).map((speed) => (
               <button key={speed} className={voiceSpeed === speed ? "selected" : ""} onClick={() => setVoiceSpeed(speed)}>
@@ -1421,8 +1408,8 @@ function SpeakingScreen({
           <div className="call-controls">
             <button
               className={`call-mic ${isListening ? "listening" : ""}`}
-              onClick={startVoice}
-              disabled={isStreaming}
+              onClick={() => void startVoice()}
+              disabled={isStreaming || isVoiceProcessing}
               aria-label={copy("tapToSpeak")}
             >
               {isListening ? <MicOff size={30} /> : <Mic size={30} />}
@@ -1484,8 +1471,17 @@ function SpeakingScreen({
               <WandSparkles size={16} />
               {copy("hints")}
             </button>
-            <span>{isListening ? copy("listening") : transcript || copy("voicePrimary")}</span>
+            <span>{isVoiceProcessing ? "..." : isListening ? copy("listening") : transcript || recordingTranscript || copy("voicePrimary")}</span>
           </div>
+
+          {queuedTurnsCount > 0 && (
+            <div className="realtime-queue">
+              <span>{queuedTurnsCount} saved turn{queuedTurnsCount > 1 ? "s" : ""}</span>
+              <button onClick={() => void replayQueuedTurns()} disabled={isStreaming || isVoiceProcessing}>
+                Retry
+              </button>
+            </div>
+          )}
 
           {hints && (
             <div className="hint-stack">
@@ -1513,7 +1509,7 @@ function SpeakingScreen({
               placeholder={`Reply to ${activeRoom.character}`}
               data-testid="speaking-composer"
             />
-            <button className={`voice-action ${isListening ? "listening" : ""}`} onClick={startVoice} disabled={isStreaming} aria-label={copy("tapToSpeak")}>
+            <button className={`voice-action ${isListening ? "listening" : ""}`} onClick={() => void startVoice()} disabled={isStreaming || isVoiceProcessing} aria-label={copy("tapToSpeak")}>
               {isListening ? <MicOff size={22} /> : <Mic size={22} />}
             </button>
             <button className="primary-action icon-only" disabled={!draft.trim() || isStreaming} onClick={sendDraft} aria-label={copy("send")} data-testid="speaking-send">
@@ -1800,6 +1796,11 @@ function buildLocalCallSummary(room: SpeakingRoomDto, chat: ChatLine[]): CallSum
     grammar_feedback: "No repeated grammar pattern yet. Keep answers short, clear, and alive.",
     turns: chat.filter((line) => line.role === "user").length,
   };
+}
+
+function voiceRecorderErrorCopy(error: string, copy: (key: Parameters<typeof t>[1]) => string): string {
+  if (error === "media-recorder-unavailable") return copy("speechUnsupported");
+  return copy("speechError");
 }
 
 function moodIntro(room: SpeakingRoomDto, mood: MoodKey, locale: UiLocale): string {
@@ -2244,26 +2245,3 @@ function Stat({ value, label }: { value: string; label: string }) {
     </div>
   );
 }
-
-declare global {
-  interface Window {
-    SpeechRecognition?: new () => SpeechRecognition;
-    webkitSpeechRecognition?: new () => SpeechRecognition;
-  }
-}
-
-type SpeechRecognition = {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop?: () => void;
-  abort?: () => void;
-};
-
-type SpeechRecognitionEvent = {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>;
-};

@@ -236,6 +236,49 @@ class PajamaApiClient(
         return reply.toString().trim()
     }
 
+    suspend fun streamVoiceAudioReply(
+        token: String,
+        roomId: String,
+        chunks: List<VoiceAudioChunkDto>,
+        transcriptHint: String? = null,
+        speed: Float = 1f,
+        onTranscript: (String) -> Unit = {},
+        onToken: (String) -> Unit,
+    ): String {
+        val reply = StringBuilder()
+        client.webSocket("$webSocketBaseUrl/speaking/voice-ws?token=$token&room_id=$roomId") {
+            var committed = false
+            for (frame in incoming) {
+                if (frame !is Frame.Text) continue
+                val event = json.decodeFromString<SpeakingStreamEvent>(frame.readText())
+                when (event.type) {
+                    "session_ready" -> {
+                        if (!committed) {
+                            chunks.forEach { chunk ->
+                                send(Frame.Text(json.encodeToString(VoiceAudioChunkRequest(chunk.audioBase64, chunk.mimeType, chunk.transcript))))
+                            }
+                            send(Frame.Text(json.encodeToString(VoiceAudioCommitRequest(transcriptHint, speed))))
+                            committed = true
+                        }
+                    }
+                    "transcript" -> onTranscript(event.value.orEmpty())
+                    "assistant_token" -> {
+                        val value = event.value.orEmpty()
+                        reply.append(value)
+                        onToken(value)
+                    }
+                    "tts" -> {
+                        if (reply.isEmpty() && !event.text.isNullOrBlank()) {
+                            reply.append(event.text)
+                        }
+                    }
+                    "done" -> break
+                }
+            }
+        }
+        return reply.toString().trim()
+    }
+
     private val webSocketBaseUrl: String
         get() = when {
             baseUrl.startsWith("https://") -> baseUrl.replaceFirst("https://", "wss://")
@@ -481,6 +524,12 @@ data class LearningPathDto(
     val steps: List<LearningStepDto>,
 )
 
+data class VoiceAudioChunkDto(
+    val audioBase64: String,
+    val mimeType: String = "audio/webm",
+    val transcript: String? = null,
+)
+
 @Serializable
 private data class SpeakingStreamEvent(
     val type: String,
@@ -495,4 +544,19 @@ private data class VoiceTextTurnRequest(
     val type: String = "user_text",
     val value: String,
     val speed: Float = 1f,
+)
+
+@Serializable
+private data class VoiceAudioChunkRequest(
+    @SerialName("audio_base64") val audioBase64: String,
+    @SerialName("mime_type") val mimeType: String,
+    val transcript: String? = null,
+    val type: String = "audio_chunk",
+)
+
+@Serializable
+private data class VoiceAudioCommitRequest(
+    val transcript: String? = null,
+    val speed: Float = 1f,
+    val type: String = "end_audio",
 )

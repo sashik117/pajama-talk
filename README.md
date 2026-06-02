@@ -169,6 +169,7 @@ Realtime hardening currently includes:
 - Backend `ping` -> `pong` handling for text and voice sockets.
 - Frontend heartbeat pings while a turn is open.
 - Client-side turn timeouts so stuck WebSocket calls fail clearly.
+- A local durable retry queue for failed text and audio turns, so interrupted turns can be retried instead of disappearing.
 - Unit tests for reducer snapshots and realtime client behavior.
 - Playwright smoke tests for desktop and mobile web flows.
 
@@ -181,10 +182,11 @@ The voice socket now has a real domain/service layer:
 - `end_audio` / `commit_audio` turns transcript hints into a normal speaking turn.
 - `tts` events include provider, format, speed, and optional base64 audio payload metadata.
 - The backend can use OpenAI transcription and speech generation when `PAJAMA_OPENAI_API_KEY` is configured, then falls back to browser/client speech behavior if the provider fails or no key is present.
+- Web call mode records real microphone audio with `MediaRecorder`, sends base64 chunks with MIME metadata through `WS /speaking/voice-ws`, and uses browser speech recognition as a transcript hint when available.
 - Web call mode can play provider audio payloads directly and falls back to `speechSynthesis` when only text is available.
 - Web speaking turns retry once after a failed socket turn so short local disconnects do not feel like a dead button.
 - Web call mode has a compact text fallback that still goes through `WS /speaking/voice-ws`.
-- Kotlin Compose has the matching voice text fallback client path.
+- Kotlin Compose has the matching voice text fallback client path plus a shared audio-chunk WebSocket client contract for native recorder integration.
 
 ## Micro-Grammar Drops
 
@@ -204,8 +206,8 @@ The Vibe Check tab also lets the user choose the explanation/native language, in
 
 ## Still Not Done
 
-- Production-grade voice capture: the provider adapters and web audio playback are scaffolded and tested, but real microphone binary capture still needs a MediaRecorder pass in web and the equivalent native capture path in KMP.
-- Production realtime resilience: the web client has heartbeat, timeout, and one retry, but not a durable reconnect queue for restoring a whole interrupted call session.
-- Full UI decomposition: the React preview now has domain/state/controllers, but large screen components still live in `App.tsx`.
+- Native production voice capture: web now has `MediaRecorder`, but Android/iOS still need platform recorder UI/permission plumbing wired into the shared KMP audio-chunk client.
+- Production realtime resilience: text and audio turns have heartbeat, timeout, retry, and local queue support; full multi-turn call session resume after a hard app restart is still future work.
+- Full UI decomposition: the React preview now has domain/state/controllers and a dedicated voice recorder hook, but large screen components still live in `App.tsx`.
 - Frontend E2E coverage depth: the suite now covers speaking, call fallback, context, storage, profile, and grammar smoke flows, but not every edge case.
 - KMP parity pass: Compose has voice fallback sync, but the full mobile UX still needs another visual polish pass after web stabilizes.

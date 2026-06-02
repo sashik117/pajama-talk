@@ -17,6 +17,7 @@ export type ChatAction =
   | { type: "leaveRoom" }
   | { type: "setHints"; hints: SpeakingHintsDto | null }
   | { type: "appendUserTurn"; message: string }
+  | { type: "replaceLastUserTurn"; message: string }
   | { type: "replaceAssistantDraft"; text: string }
   | { type: "resetSession" };
 
@@ -47,6 +48,15 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
         hints: null,
         chat: [...state.chat, { role: "user", text: action.message }, { role: "assistant", text: "" }]
       };
+    case "replaceLastUserTurn": {
+      const userIndex = [...state.chat].reverse().findIndex((line) => line.role === "user");
+      if (userIndex < 0) return state;
+      const index = state.chat.length - 1 - userIndex;
+      return {
+        ...state,
+        chat: state.chat.map((line, lineIndex) => (lineIndex === index ? { ...line, text: action.message } : line))
+      };
+    }
     case "replaceAssistantDraft":
       if (state.chat.length === 0) return state;
       return {

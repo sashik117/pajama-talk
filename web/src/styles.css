@@ -1465,6 +1465,31 @@ textarea {
   background: rgba(157, 206, 192, 0.7);
 }
 
+.realtime-queue {
+  width: min(100%, 330px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 999px;
+  padding: 6px 7px 6px 12px;
+  color: #6e6578;
+  background: rgba(255, 255, 255, 0.56);
+  font-size: 12px;
+}
+
+.realtime-queue button {
+  min-height: 28px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 10px;
+  color: #1f3934;
+  background: rgba(157, 206, 192, 0.58);
+  font-size: 12px;
+  font-weight: 560;
+}
+
 .call-controls {
   display: flex;
   align-items: center;

@@ -3,6 +3,11 @@ import type { MoodKey } from "../state/chatState";
 import type { AudioPayload } from "../utils/audio";
 
 export type SpeakingTransport = "text" | "voice";
+export type VoiceAudioChunk = {
+  audioBase64: string;
+  mimeType?: string;
+  transcript?: string;
+};
 
 type SpeakingTokenEvent = {
   type: "token" | "assistant_token";
@@ -278,18 +283,76 @@ export async function sendVoiceAudioTurn({
   onToken,
   onStatus,
   heartbeatMs = 15000,
-  timeoutMs = 45000
+  timeoutMs = 45000,
+  retries = 0
 }: {
   wsUrl: SpeakingUrlBuilder;
   token: string;
   roomId: string;
   mood: MoodKey;
-  chunks: Array<{ audioBase64: string; transcript?: string }>;
+  chunks: VoiceAudioChunk[];
   transcriptHint?: string;
   speechRate: number;
   onToken: (reply: string, event: SpeakingTokenEvent) => void;
   onStatus?: (event: SpeakingServerEvent) => void;
 } & RealtimeGuardOptions): Promise<{ finalReply: string; transcript: string; audio?: AudioPayload }> {
+  try {
+    return await openVoiceAudioTurn({
+      wsUrl,
+      token,
+      roomId,
+      mood,
+      chunks,
+      transcriptHint,
+      speechRate,
+      onToken,
+      onStatus,
+      heartbeatMs,
+      timeoutMs
+    });
+  } catch (err) {
+    if (retries <= 0) throw err;
+    return openVoiceAudioTurn({
+      wsUrl,
+      token,
+      roomId,
+      mood,
+      chunks,
+      transcriptHint,
+      speechRate,
+      onToken,
+      onStatus,
+      heartbeatMs,
+      timeoutMs
+    });
+  }
+}
+
+async function openVoiceAudioTurn({
+  wsUrl,
+  token,
+  roomId,
+  mood,
+  chunks,
+  transcriptHint,
+  speechRate,
+  onToken,
+  onStatus,
+  heartbeatMs,
+  timeoutMs
+}: {
+  wsUrl: SpeakingUrlBuilder;
+  token: string;
+  roomId: string;
+  mood: MoodKey;
+  chunks: VoiceAudioChunk[];
+  transcriptHint?: string;
+  speechRate: number;
+  onToken: (reply: string, event: SpeakingTokenEvent) => void;
+  onStatus?: (event: SpeakingServerEvent) => void;
+  heartbeatMs: number;
+  timeoutMs: number;
+}): Promise<{ finalReply: string; transcript: string; audio?: AudioPayload }> {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(wsUrl(speakingPath({ token, roomId, mood, transport: "voice" })));
     let streamedReply = "";
@@ -331,6 +394,7 @@ export async function sendVoiceAudioTurn({
             socket.send(JSON.stringify({
               type: "audio_chunk",
               audio_base64: chunk.audioBase64,
+              mime_type: chunk.mimeType,
               transcript: chunk.transcript
             }));
           });

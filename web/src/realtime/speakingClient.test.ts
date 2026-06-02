@@ -274,4 +274,36 @@ describe("sendVoiceAudioTurn", () => {
     expect(streamed).toEqual(["Nice choice. "]);
     expect(statuses).toHaveLength(4);
   });
+
+  it("retries one failed audio stream when retries are enabled", async () => {
+    const turn = sendVoiceAudioTurn({
+      wsUrl,
+      token: "token-1",
+      roomId: "coffee-alex",
+      mood: "steady",
+      chunks: [{ audioBase64: "ZmFrZS1hdWRpbw==", mimeType: "audio/webm" }],
+      speechRate: 1,
+      retries: 1,
+      onToken: vi.fn()
+    });
+    const first = FakeWebSocket.instances[0];
+
+    first.open();
+    first.error();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const second = FakeWebSocket.instances[1];
+    second.open();
+    second.message({ type: "session_ready", capabilities: { accepts_audio_chunks: true } });
+    expect(JSON.parse(second.sent[0])).toEqual({
+      type: "audio_chunk",
+      audio_base64: "ZmFrZS1hdWRpbw==",
+      mime_type: "audio/webm"
+    });
+    second.message({ type: "transcript", value: "Retry voice." });
+    second.message({ type: "assistant_token", value: "Recovered voice." });
+    second.message({ type: "done" });
+
+    await expect(turn).resolves.toEqual({ finalReply: "Recovered voice.", transcript: "Retry voice." });
+    expect(FakeWebSocket.instances).toHaveLength(2);
+  });
 });
