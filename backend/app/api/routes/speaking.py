@@ -5,6 +5,17 @@ from app.api.deps import get_current_user
 from app.core.languages import language_name
 from app.core.security import decode_access_token
 from app.db.session import SessionLocal
+from app.domain.realtime_events import (
+    TokenEventType,
+    call_summary_event,
+    done_event,
+    error_event,
+    session_ready_event,
+    status_event,
+    token_event,
+    transcript_event,
+    tts_event,
+)
 from app.models.user import User
 from app.schemas.speaking import EchoRequest, EchoResponse, SpeakingHintsRequest, SpeakingHintsResponse, SpeakingRoom
 from app.services.ai_service import generate_speaking_hints
@@ -68,11 +79,11 @@ async def _open_realtime_session(websocket: WebSocket) -> tuple[Session, User, R
     return db, user, RealtimeChatService(db, user, room_id)
 
 
-async def _send_assistant_stream(websocket: WebSocket, service: RealtimeChatService, message: str, token_type: str, mood: str) -> str:
+async def _send_assistant_stream(websocket: WebSocket, service: RealtimeChatService, message: str, token_type: TokenEventType, mood: str) -> str:
     reply_parts: list[str] = []
     async for token_text in service.stream_assistant_reply(message, mood=mood):
         reply_parts.append(token_text)
-        await websocket.send_json({"type": token_type, "value": token_text})
+        await websocket.send_json(token_event(token_type, token_text))
     return "".join(reply_parts).strip()
 
 
@@ -90,7 +101,7 @@ async def speaking_ws(websocket: WebSocket) -> None:
             message = await websocket.receive_text()
             service.record_user_message(message)
             await _send_assistant_stream(websocket, service, message, "token", mood)
-            await websocket.send_json({"type": "done"})
+            await websocket.send_json(done_event())
     except WebSocketDisconnect:
         return
     finally:
@@ -106,42 +117,29 @@ async def speaking_voice_ws(websocket: WebSocket) -> None:
     db, _user, service = session
     mood = websocket.query_params.get("mood", "steady")
     await websocket.accept()
-    await websocket.send_json(
-        {
-            "type": "session_ready",
-            "stt": "browser-stt-now; whisper-audio-chunks-ready",
-            "tts": "client-speech-synthesis-now; provider-audio-chunks-ready",
-        }
-    )
+    await websocket.send_json(session_ready_event())
     try:
         while True:
             payload = await websocket.receive_json()
             event_type = payload.get("type")
             if event_type == "audio_chunk":
-                await websocket.send_json({"type": "stt_status", "value": "audio chunk accepted"})
+                await websocket.send_json(status_event("audio chunk accepted"))
                 continue
             if event_type == "end_call":
-                await websocket.send_json({"type": "call_summary", "value": service.call_summary()})
-                await websocket.send_json({"type": "done"})
+                await websocket.send_json(call_summary_event(service.call_summary()))
+                await websocket.send_json(done_event())
                 continue
 
             message = str(payload.get("value") or payload.get("text") or "").strip()
             if not message:
-                await websocket.send_json({"type": "error", "value": "Empty voice turn."})
+                await websocket.send_json(error_event("Empty voice turn."))
                 continue
 
             service.record_user_message(message)
-            await websocket.send_json({"type": "transcript", "value": message})
+            await websocket.send_json(transcript_event(message))
             reply = await _send_assistant_stream(websocket, service, message, "assistant_token", mood)
-            await websocket.send_json(
-                {
-                    "type": "tts",
-                    "format": "client_speech_synthesis",
-                    "text": reply,
-                    "speed": payload.get("speed", 1),
-                }
-            )
-            await websocket.send_json({"type": "done"})
+            await websocket.send_json(tts_event(reply, payload.get("speed", 1)))
+            await websocket.send_json(done_event())
     except WebSocketDisconnect:
         return
     finally:

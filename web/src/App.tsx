@@ -43,11 +43,11 @@ import {
   WordDto
 } from "./api";
 import { languageName, learningLanguages, nativeLanguages, t, UiLocale, uiLocales } from "./i18n";
+import { requestCallSummary, sendSpeakingTurn, type SpeakingTransport } from "./realtime/speakingClient";
 import { ChatProvider, useChatDispatch, useChatState, type ChatLine, type MoodKey } from "./state/chatState";
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type SelectOption = { code: string; label: string; short: string; flag: string };
-type SpeakingTransport = "text" | "voice";
 type SpeakingMode = "text" | "call";
 type VoiceSpeed = "slow" | "natural" | "fast";
 type SpeakingModeCopy = {
@@ -829,35 +829,21 @@ function PajamaTalkApp() {
     const normalizedMessage = message.trim();
     chatDispatch({ type: "appendUserTurn", message: normalizedMessage });
     let finalReply = "";
-    await new Promise<void>((resolve, reject) => {
-      const socket = new WebSocket(
-        api.wsUrl(
-          `/speaking/${transport === "voice" ? "voice-ws" : "ws"}?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(activeRoom.id)}&mood=${encodeURIComponent(activeMood)}`
-        )
-      );
-      let reply = "";
-      socket.onopen = () => {
-        if (transport === "voice") {
-          socket.send(JSON.stringify({ type: "user_text", value: normalizedMessage, speed: speechRate }));
-        } else {
-          socket.send(normalizedMessage);
-        }
-      };
-      socket.onerror = () => reject(new Error("WebSocket failed."));
-      socket.onmessage = (event) => {
-        const payload = JSON.parse(event.data) as { type: string; value?: string };
-        if (payload.type === "token" || payload.type === "assistant_token") {
-          reply += payload.value ?? "";
-          finalReply = reply.trim();
-          chatDispatch({ type: "replaceAssistantDraft", text: reply.trimStart() });
-        }
-        if (payload.type === "assistant_text" && payload.value) finalReply = payload.value;
-        if (payload.type === "done") {
-          socket.close();
-          resolve();
-        }
-      };
-    }).catch((err) => setError(err instanceof Error ? err.message : "Speaking stream failed."));
+    try {
+      const result = await sendSpeakingTurn({
+        wsUrl: api.wsUrl,
+        token,
+        roomId: activeRoom.id,
+        mood: activeMood,
+        message: normalizedMessage,
+        speechRate,
+        transport,
+        onToken: (reply) => chatDispatch({ type: "replaceAssistantDraft", text: reply })
+      });
+      finalReply = result.finalReply;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Speaking stream failed.");
+    }
     if (finalReply && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(finalReply);
@@ -877,18 +863,7 @@ function PajamaTalkApp() {
 
   async function loadCallSummary(roomId: string): Promise<CallSummaryDto> {
     if (!token) throw new Error("No active session.");
-    return new Promise<CallSummaryDto>((resolve, reject) => {
-      const socket = new WebSocket(api.wsUrl(`/speaking/voice-ws?token=${encodeURIComponent(token)}&room_id=${encodeURIComponent(roomId)}`));
-      socket.onopen = () => socket.send(JSON.stringify({ type: "end_call" }));
-      socket.onerror = () => reject(new Error("Call summary failed."));
-      socket.onmessage = (event) => {
-        const payload = JSON.parse(event.data) as { type: string; value?: CallSummaryDto };
-        if (payload.type === "call_summary" && payload.value) {
-          socket.close();
-          resolve(payload.value);
-        }
-      };
-    });
+    return requestCallSummary({ wsUrl: api.wsUrl, token, roomId });
   }
 
   async function checkGrammar(topicId: string, exerciseId: string, answer: string): Promise<GrammarCheckDto> {

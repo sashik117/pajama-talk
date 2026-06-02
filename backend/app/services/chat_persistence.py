@@ -65,7 +65,8 @@ class ChatRepository:
         phrases: list[str] = []
         for chunk in assistant_text.replace("?", ".").replace("!", ".").split("."):
             phrase = chunk.strip()
-            if 8 <= len(phrase) <= 48 and phrase not in phrases:
+            has_balanced_quotes = phrase.count("'") % 2 == 0 and phrase.count('"') % 2 == 0
+            if 8 <= len(phrase) <= 48 and has_balanced_quotes and phrase not in phrases:
                 phrases.append(phrase)
             if len(phrases) == 4:
                 break
