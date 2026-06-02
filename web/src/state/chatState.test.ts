@@ -70,4 +70,54 @@ describe("chatState", () => {
     expect(state.hints).toBeNull();
     expect(state.chat[0].text).toBe("Welcome back.");
   });
+
+  it("hydrates server history only for the active room", () => {
+    const base = chatReducer(createInitialChatState(), {
+      type: "enterRoom",
+      room,
+      mood: "steady",
+      intro: "Intro."
+    });
+
+    const updated = chatReducer(base, {
+      type: "hydrateHistory",
+      roomId: "coffee-alex",
+      chat: [
+        { role: "user", text: "Could I get a latte?" },
+        { role: "assistant", text: "Nice choice." }
+      ]
+    });
+    const ignored = chatReducer(updated, {
+      type: "hydrateHistory",
+      roomId: "airport-mia",
+      chat: [{ role: "assistant", text: "Wrong room." }]
+    });
+
+    expect(updated.chat[0].text).toBe("Could I get a latte?");
+    expect(ignored.chat).toEqual(updated.chat);
+  });
+
+  it("keeps a longer local speaking session instead of overwriting it with stale history", () => {
+    const base: ChatState = {
+      activeRoom: room,
+      activeMood: "steady",
+      hints: null,
+      chat: [
+        { role: "assistant", text: "Welcome." },
+        { role: "user", text: "Local turn." },
+        { role: "assistant", text: "Local reply." }
+      ]
+    };
+
+    const state = chatReducer(base, {
+      type: "hydrateHistory",
+      roomId: "coffee-alex",
+      chat: [
+        { role: "user", text: "Older server turn." },
+        { role: "assistant", text: "Older server reply." }
+      ]
+    });
+
+    expect(state.chat).toEqual(base.chat);
+  });
 });

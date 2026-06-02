@@ -321,6 +321,20 @@ class PajamaAppState(
         )
     }
 
+    suspend fun loadSpeakingHistory(roomId: String) {
+        errorMessage = null
+        runCatching {
+            val history = requireClient().speakingHistory(requireToken(), roomId)
+                .filter { it.role == "user" || it.role == "assistant" }
+                .map { SpeakingChatMessage(it.content, incoming = it.role == "assistant") }
+            if (history.isNotEmpty() && (speakingMessages.size <= 1 || history.size > speakingMessages.size)) {
+                speakingMessages = history.takeLast(80)
+            }
+        }.onFailure {
+            errorMessage = it.friendlyMessage()
+        }
+    }
+
     fun clearSpeakingConversation() {
         speakingHints = null
         speakingMessages = emptyList()

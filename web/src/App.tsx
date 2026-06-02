@@ -29,6 +29,7 @@ import {
   X
 } from "lucide-react";
 import {
+  api,
   CallSummaryDto,
   ContextAnalyzeDto,
   GrammarCheckDto,
@@ -622,6 +623,27 @@ function PajamaTalkApp() {
   useEffect(() => {
     localStorage.setItem("pajama-ui", uiLocale);
   }, [uiLocale]);
+
+  useEffect(() => {
+    if (!token || !activeRoom) return;
+    const roomId = activeRoom.id;
+    let cancelled = false;
+
+    api
+      .speakingHistory(token, roomId, 40)
+      .then((history) => {
+        if (cancelled) return;
+        const restored: ChatLine[] = history.map((item) => ({ role: item.role, text: item.content }));
+        if (restored.length > 0) {
+          chatDispatch({ type: "hydrateHistory", roomId, chat: restored });
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, activeRoom?.id, chatDispatch]);
 
   async function analyzeContext() {
     const result = await learningActions.analyzeContext(contextText);

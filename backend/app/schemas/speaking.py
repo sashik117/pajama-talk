@@ -12,6 +12,14 @@ class SpeakingRoom(BaseModel):
     accent_color: str
 
 
+class SpeakingHistoryMessage(BaseModel):
+    id: int
+    room_id: str
+    role: str
+    content: str
+    created_at: str
+
+
 class SpeakingHintsRequest(BaseModel):
     room_id: str = Field(min_length=1, max_length=80)
     last_message: str = Field(default="", max_length=1000)

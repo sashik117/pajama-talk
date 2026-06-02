@@ -16,6 +16,7 @@ export type ChatAction =
   | { type: "enterRoom"; room: SpeakingRoomDto; mood: MoodKey; intro: string }
   | { type: "leaveRoom" }
   | { type: "setHints"; hints: SpeakingHintsDto | null }
+  | { type: "hydrateHistory"; roomId: string; chat: ChatLine[] }
   | { type: "appendUserTurn"; message: string }
   | { type: "replaceLastUserTurn"; message: string }
   | { type: "replaceAssistantDraft"; text: string }
@@ -49,6 +50,10 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return initialChatState;
     case "setHints":
       return { ...state, hints: action.hints };
+    case "hydrateHistory":
+      if (state.activeRoom?.id !== action.roomId || action.chat.length === 0) return state;
+      if (state.chat.length > 1 && action.chat.length <= state.chat.length) return state;
+      return { ...state, hints: null, chat: action.chat.slice(-80) };
     case "appendUserTurn":
       return {
         ...state,

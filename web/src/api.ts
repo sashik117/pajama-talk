@@ -78,6 +78,13 @@ export type SpeakingRoomDto = {
   prompt: string;
   accent_color: string;
 };
+export type SpeakingHistoryMessageDto = {
+  id: number;
+  room_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+};
 export type SpeakingHintsDto = { simple: string; conversational: string; spicy: string };
 export type CallSummaryDto = {
   topic: string;
@@ -215,6 +222,8 @@ export const api = {
     }),
   speakingRooms: (token: string, languageCode: string, targetLanguageCode?: string) =>
     request<SpeakingRoomDto[]>(withQuery("/speaking/rooms", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
+  speakingHistory: (token: string, roomId: string, limit = 40) =>
+    request<SpeakingHistoryMessageDto[]>(withQuery("/speaking/history", { room_id: roomId, limit: String(limit) }), { token }),
   learningPath: (token: string, languageCode: string, targetLanguageCode?: string) =>
     request<LearningPathDto>(withQuery("/learning/path", { language_code: languageCode, target_language_code: targetLanguageCode }), { token }),
   oracle: (token: string, languageCode: string, targetLanguageCode?: string) =>

@@ -39,6 +39,22 @@ test("speaking text mode streams a realtime answer", async ({ page, request }) =
   await expect(page.getByText(/Nice choice|oat milk|teacher mode|Quiero un caf/i)).toBeVisible();
 });
 
+test("speaking room restores backend history after local session is cleared", async ({ page, request }) => {
+  await openFreshLearner(page, request);
+  await enterCoffeeRoom(page);
+
+  await page.getByTestId("speaking-composer").fill("Please remember this server history.");
+  await page.getByTestId("speaking-send").click();
+  await expect(page.getByText("Please remember this server history.")).toBeVisible();
+  await expect(page.getByText(/Nice choice|teacher mode|server history/i)).toBeVisible();
+
+  await page.evaluate(() => localStorage.removeItem("pajamatalk.speakingSession.v1"));
+  await page.reload();
+  await enterCoffeeRoom(page);
+
+  await expect(page.getByText("Please remember this server history.")).toBeVisible();
+});
+
 test("call mode fallback uses the voice websocket and keeps the transcript", async ({ page, request }) => {
   await openFreshLearner(page, request);
   await enterCoffeeRoom(page);

@@ -960,6 +960,7 @@ private fun SpeakingRoomsScreen() {
                     pendingRoom = null
                     activeRoom = room
                     appState.startSpeakingConversation(composeMoodIntro(room, mood))
+                    scope.launch { appState.loadSpeakingHistory(room.id) }
                 },
             )
         }

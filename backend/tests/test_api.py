@@ -367,6 +367,26 @@ def test_voice_websocket_rejects_empty_audio_turn(client: TestClient) -> None:
     assert "No speech" in event["value"]
 
 
+def test_speaking_history_returns_persisted_room_messages(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex") as websocket:
+        websocket.send_text("Could I get a latte?")
+        while websocket.receive_json()["type"] != "done":
+            pass
+
+    history = client.get("/speaking/history?room_id=coffee-alex&limit=10", headers=headers)
+
+    assert history.status_code == 200
+    body = history.json()
+    assert body[0]["role"] == "user"
+    assert body[0]["content"] == "Could I get a latte?"
+    assert body[1]["role"] == "assistant"
+    assert body[1]["room_id"] == "coffee-alex"
+    assert body[1]["created_at"]
+
+
 def test_voice_websocket_responds_to_ping(client: TestClient) -> None:
     headers = auth_headers(client)
     token = headers["Authorization"].replace("Bearer ", "")

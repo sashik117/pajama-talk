@@ -70,7 +70,7 @@ npm run test:e2e
 
 ### Frontend Android
 
-Install Android Studio + Android SDK, then create `frontend/local.properties`:
+Install Android Studio + Android SDK, or use the Android command-line tools. On this Windows workspace the local SDK is installed at `D:/Apps/AndroidSdk`; create `frontend/local.properties` if needed:
 
 ```properties
 sdk.dir=C\:\\Users\\<you>\\AppData\\Local\\Android\\Sdk
@@ -81,6 +81,15 @@ Then:
 ```powershell
 cd frontend
 .\gradlew.bat :androidApp:assembleDebug -PincludeAndroid=true
+```
+
+Fast compile check:
+
+```powershell
+cd frontend
+$env:ANDROID_SDK_ROOT="D:\Apps\AndroidSdk"
+$env:ANDROID_HOME="D:\Apps\AndroidSdk"
+.\gradlew.bat :androidApp:compileDebugKotlin -PincludeAndroid=true
 ```
 
 ## Environment
@@ -165,6 +174,7 @@ The Speaking Rooms UI now sends practice lines through `WS /speaking/ws`. FastAP
 
 Realtime hardening currently includes:
 
+- `GET /speaking/history` for restoring persisted room messages from the backend.
 - Typed frontend WebSocket client events.
 - Backend `ping` -> `pong` handling for text and voice sockets.
 - Frontend heartbeat pings while a turn is open.
@@ -186,8 +196,8 @@ The voice socket now has a real domain/service layer:
 - Web call mode can play provider audio payloads directly and falls back to `speechSynthesis` when only text is available.
 - Web speaking turns retry once after a failed socket turn so short local disconnects do not feel like a dead button.
 - Web call mode has a compact text fallback that still goes through `WS /speaking/voice-ws`.
-- Kotlin Compose has the matching voice text fallback client path, a shared audio-chunk WebSocket client contract, and an Android `MediaRecorder` implementation in `androidMain` for native audio capture.
-- Web speaking room, mood, and chat history are stored locally so a browser refresh restores the current practice session instead of dropping the conversation.
+- Kotlin Compose has the matching voice text fallback client path, a shared audio-chunk WebSocket client contract, backend room-history restore support, and an Android `MediaRecorder` implementation in `androidMain` for native audio capture.
+- Web speaking room, mood, and chat history are stored locally and hydrated from backend history so a browser refresh restores the current practice session instead of dropping the conversation.
 
 ## Micro-Grammar Drops
 
@@ -207,7 +217,7 @@ The Vibe Check tab also lets the user choose the explanation/native language, in
 
 ## Still Not Done
 
-- Native production voice capture: Android now has a `MediaRecorder` path in shared KMP, but iOS still needs its platform recorder actual and Android compile still needs a local SDK environment to be verified here.
+- Native production voice capture: Android now has a compiled `MediaRecorder` path in shared KMP; iOS still needs its platform recorder actual.
 - Production realtime resilience: text and audio turns have heartbeat, timeout, retry, local queue support, and browser session restore; backend-side recovery of an interrupted in-flight WebSocket stream is still future work.
 - Full UI decomposition: the React preview now has domain/state/controllers and a dedicated voice recorder hook, but large screen components still live in `App.tsx`.
 - Frontend E2E coverage depth: the suite now covers speaking, call fallback, context, storage, profile, and grammar smoke flows, but not every edge case.

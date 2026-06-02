@@ -155,6 +155,13 @@ class PajamaApiClient(
             }
         }.body()
 
+    suspend fun speakingHistory(token: String, roomId: String, limit: Int = 40): List<SpeakingHistoryMessageDto> =
+        client.get("$baseUrl/speaking/history") {
+            bearerAuth(token)
+            parameter("room_id", roomId)
+            parameter("limit", limit)
+        }.body()
+
     suspend fun learningPath(token: String, languageCode: String? = null, targetLanguageCode: String? = null): LearningPathDto =
         client.get("$baseUrl/learning/path") {
             bearerAuth(token)
@@ -481,6 +488,15 @@ data class SpeakingRoomDto(
     val vibe: String,
     val prompt: String,
     @SerialName("accent_color") val accentColor: String,
+)
+
+@Serializable
+data class SpeakingHistoryMessageDto(
+    val id: Int,
+    @SerialName("room_id") val roomId: String,
+    val role: String,
+    val content: String,
+    @SerialName("created_at") val createdAt: String,
 )
 
 @Serializable

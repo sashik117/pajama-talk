@@ -58,6 +58,18 @@ class ChatRepository:
             )
         )
 
+    def history(self, user: User, room_id: str, limit: int = 40) -> list[ChatMessage]:
+        safe_limit = max(1, min(limit, 80))
+        return list(
+            reversed(
+                self.db.query(ChatMessage)
+                .filter(ChatMessage.owner_id == user.id, ChatMessage.room_id == room_id)
+                .order_by(ChatMessage.created_at.desc())
+                .limit(safe_limit)
+                .all()
+            )
+        )
+
     def call_summary(self, user: User, room_id: str) -> dict[str, object]:
         history = self.recent_history(user, room_id)
         user_turns = [item for item in history if item.role == "user"]

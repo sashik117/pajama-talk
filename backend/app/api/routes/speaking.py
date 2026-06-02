@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.languages import language_name
 from app.core.security import decode_access_token
-from app.db.session import SessionLocal
+from app.db.session import SessionLocal, get_db
 from app.domain.realtime_events import (
     TokenEventType,
     call_summary_event,
@@ -18,8 +18,9 @@ from app.domain.realtime_events import (
     tts_event,
 )
 from app.models.user import User
-from app.schemas.speaking import EchoRequest, EchoResponse, SpeakingHintsRequest, SpeakingHintsResponse, SpeakingRoom
+from app.schemas.speaking import EchoRequest, EchoResponse, SpeakingHintsRequest, SpeakingHintsResponse, SpeakingHistoryMessage, SpeakingRoom
 from app.services.ai_service import generate_speaking_hints
+from app.services.chat_persistence import ChatRepository
 from app.services.chat_rooms import room_by_id, speaking_rooms_for_user
 from app.services.pronunciation_service import echo_feedback
 from app.services.realtime_chat import RealtimeChatService
@@ -36,6 +37,26 @@ def speaking_rooms(
     user: User = Depends(get_current_user),
 ) -> list[SpeakingRoom]:
     return speaking_rooms_for_user(user, language_code, target_language_code)
+
+
+@router.get("/history", response_model=list[SpeakingHistoryMessage])
+def speaking_history(
+    room_id: str = Query(default="coffee-alex", min_length=1, max_length=80),
+    limit: int = Query(default=40, ge=1, le=80),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[SpeakingHistoryMessage]:
+    history = ChatRepository(db).history(user, room_id, limit)
+    return [
+        SpeakingHistoryMessage(
+            id=item.id,
+            room_id=item.room_id,
+            role=item.role,
+            content=item.content,
+            created_at=item.created_at.isoformat(),
+        )
+        for item in history
+    ]
 
 
 @router.post("/hints", response_model=SpeakingHintsResponse)
