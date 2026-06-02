@@ -58,6 +58,13 @@ npm run dev
 
 Then open http://127.0.0.1:3175. The web preview talks to FastAPI on `http://127.0.0.1:8000` by default and mirrors the MVP flows: auth/demo login, Aura, Context Buddy, Speaking Rooms, SRS review, word storage, and Vibe settings.
 
+Useful checks:
+
+```powershell
+npm run build
+npm test
+```
+
 ### Frontend Android
 
 Install Android Studio + Android SDK, then create `frontend/local.properties`:
@@ -161,3 +168,10 @@ PajamaTalk is not English-only. Words are stored with `language_code`, and the f
 `English`, `Slovak`, `Polish`, `Czech`, `French`, `Spanish`, `Italian`, `Korean`, `Japanese`, `Chinese`, and `Turkish`.
 
 The Vibe Check tab also lets the user choose the explanation/native language, including Ukrainian and Russian, so AI enrichment and hints can target the learner's real comfort language.
+
+## Still Not Done
+
+- Production-grade voice loop: real Whisper/TTS providers, audio chunk streaming, reconnects, heartbeat, and retry handling.
+- Full UI decomposition: the React preview now has domain/state/controllers, but large screen components still live in `App.tsx`.
+- Frontend E2E suite: unit tests cover reducers and realtime client, but Playwright user-flow tests are not formalized yet.
+- KMP parity pass: the web preview moves fastest; Compose screens still need a final sync after web UX stabilizes.
