@@ -11,10 +11,10 @@ type SpeakingTokenEvent = {
 type SpeakingServerEvent =
   | SpeakingTokenEvent
   | { type: "assistant_text"; value?: string }
-  | { type: "tts"; text?: string; speed?: number }
-  | { type: "transcript"; value?: string }
-  | { type: "stt_status"; value?: string }
-  | { type: "session_ready"; stt?: string; tts?: string }
+  | { type: "tts"; text?: string; speed?: number; provider?: string; audio_base64?: string | null; mime_type?: string | null }
+  | { type: "transcript"; value?: string; provider?: string; confidence?: number }
+  | { type: "stt_status"; value?: string; chunks?: number; bytes?: number; provider?: string }
+  | { type: "session_ready"; stt?: string; tts?: string; capabilities?: Record<string, unknown> }
   | { type: "call_summary"; value?: CallSummaryDto }
   | { type: "pong" }
   | { type: "error"; value?: string }
@@ -190,6 +190,109 @@ export async function requestCallSummary({
       if (payload.type === "error") {
         socket.close();
         settle(() => reject(new Error(payload.value || "Call summary failed.")));
+      }
+    };
+  });
+}
+
+export async function sendVoiceAudioTurn({
+  wsUrl,
+  token,
+  roomId,
+  mood,
+  chunks,
+  transcriptHint,
+  speechRate,
+  onToken,
+  onStatus,
+  heartbeatMs = 15000,
+  timeoutMs = 45000
+}: {
+  wsUrl: SpeakingUrlBuilder;
+  token: string;
+  roomId: string;
+  mood: MoodKey;
+  chunks: Array<{ audioBase64: string; transcript?: string }>;
+  transcriptHint?: string;
+  speechRate: number;
+  onToken: (reply: string, event: SpeakingTokenEvent) => void;
+  onStatus?: (event: SpeakingServerEvent) => void;
+} & RealtimeGuardOptions): Promise<{ finalReply: string; transcript: string }> {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(wsUrl(speakingPath({ token, roomId, mood, transport: "voice" })));
+    let streamedReply = "";
+    let finalReply = "";
+    let transcript = "";
+    let settled = false;
+    let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
+    const timeoutTimer = setTimeout(() => {
+      socket.close();
+      settle(() => reject(new Error("Voice audio stream timed out.")));
+    }, timeoutMs);
+
+    const cleanup = () => {
+      clearTimeout(timeoutTimer);
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+    };
+
+    const settle = (handler: () => void) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      handler();
+    };
+
+    socket.onopen = () => {
+      heartbeatTimer = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "ping" }));
+      }, heartbeatMs);
+    };
+
+    socket.onerror = () => settle(() => reject(new Error("Voice audio stream failed.")));
+
+    socket.onmessage = (event) => {
+      const payload = parseSpeakingEvent(String(event.data));
+      switch (payload.type) {
+        case "session_ready":
+          chunks.forEach((chunk) => {
+            socket.send(JSON.stringify({
+              type: "audio_chunk",
+              audio_base64: chunk.audioBase64,
+              transcript: chunk.transcript
+            }));
+          });
+          socket.send(JSON.stringify({ type: "end_audio", transcript: transcriptHint, speed: speechRate }));
+          onStatus?.(payload);
+          break;
+        case "stt_status":
+          onStatus?.(payload);
+          break;
+        case "transcript":
+          transcript = payload.value ?? "";
+          onStatus?.(payload);
+          break;
+        case "assistant_token":
+        case "token":
+          streamedReply += payload.value ?? "";
+          finalReply = streamedReply.trim();
+          onToken(streamedReply.trimStart(), payload);
+          break;
+        case "tts":
+          if (payload.text) finalReply = payload.text;
+          onStatus?.(payload);
+          break;
+        case "pong":
+          break;
+        case "error":
+          socket.close();
+          settle(() => reject(new Error(payload.value || "Voice audio stream failed.")));
+          break;
+        case "done":
+          socket.close();
+          settle(() => resolve({ finalReply: finalReply.trim(), transcript }));
+          break;
+        default:
+          break;
       }
     };
   });

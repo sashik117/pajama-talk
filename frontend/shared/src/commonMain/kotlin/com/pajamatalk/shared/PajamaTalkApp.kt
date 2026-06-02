@@ -975,6 +975,7 @@ private fun SpeakingRoomsScreen() {
                     }
                 },
                 onSend = { message -> scope.launch { appState.sendSpeakingMessage(room.id, message) } },
+                onVoiceText = { message -> scope.launch { appState.sendVoiceTextMessage(room.id, message) } },
                 onBack = {
                     appState.clearSpeakingConversation()
                     activeRoom = null
@@ -1058,6 +1059,7 @@ private fun DialoguePreview(
     isStreaming: Boolean,
     onHints: () -> Unit,
     onSend: (String) -> Unit,
+    onVoiceText: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     var draft by remember(room.id) { mutableStateOf("") }
@@ -1097,7 +1099,7 @@ private fun DialoguePreview(
         }
         Spacer(Modifier.height(14.dp))
         AnimatedVisibility(mode == "call") {
-            CallModePreview(room = room, isStreaming = isStreaming, onEndCall = { mode = "text" })
+            CallModePreview(room = room, isStreaming = isStreaming, onVoiceText = onVoiceText, onEndCall = { mode = "text" })
         }
         AnimatedVisibility(mode == "text") {
             Column {
@@ -1177,7 +1179,7 @@ private fun SpeakingModeChip(
 }
 
 @Composable
-private fun CallModePreview(room: Room, isStreaming: Boolean, onEndCall: () -> Unit) {
+private fun CallModePreview(room: Room, isStreaming: Boolean, onVoiceText: (String) -> Unit, onEndCall: () -> Unit) {
     val transition = rememberInfiniteTransition(label = "call-aura")
     val pulse by transition.animateFloat(
         0.96f,
@@ -1185,6 +1187,7 @@ private fun CallModePreview(room: Room, isStreaming: Boolean, onEndCall: () -> U
         infiniteRepeatable(tween(1150), RepeatMode.Reverse),
         label = "call-pulse",
     )
+    var callDraft by remember(room.id) { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -1234,6 +1237,28 @@ private fun CallModePreview(room: Room, isStreaming: Boolean, onEndCall: () -> U
         }
         Spacer(Modifier.height(14.dp))
         WaveMicButton()
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = callDraft,
+                onValueChange = { callDraft = it },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(22.dp),
+                singleLine = true,
+                placeholder = { Text("Text fallback for voice") },
+            )
+            SoftAction(
+                text = if (isStreaming) "..." else "Send",
+                icon = Icons.Rounded.AutoAwesome,
+                color = Peach,
+                enabled = !isStreaming && callDraft.trim().isNotBlank(),
+                onClick = {
+                    val message = callDraft
+                    callDraft = ""
+                    onVoiceText(message)
+                },
+            )
+        }
         Spacer(Modifier.height(12.dp))
         SoftAction(
             text = "End call",

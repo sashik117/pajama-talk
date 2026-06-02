@@ -1,4 +1,4 @@
-import type { Dispatch } from "react";
+import { useState, type Dispatch } from "react";
 import { api, type CallSummaryDto, type SpeakingRoomDto } from "../api";
 import { requestCallSummary, sendSpeakingTurn, type SpeakingTransport } from "../realtime/speakingClient";
 import type { ChatAction, ChatLine, MoodKey } from "../state/chatState";
@@ -25,6 +25,8 @@ export function useSpeakingController({
   setError,
   token
 }: SpeakingControllerOptions) {
+  const [isStreaming, setIsStreaming] = useState(false);
+
   async function loadHints() {
     if (!token || !activeRoom) return;
     const last = [...chat].reverse().find((line) => line.role === "assistant")?.text ?? activeRoom.prompt;
@@ -36,10 +38,11 @@ export function useSpeakingController({
   }
 
   async function sendMessage(message: string, speechRate = 1, transport: SpeakingTransport = "text") {
-    if (!token || !activeRoom || !message.trim()) return;
+    if (!token || !activeRoom || !message.trim() || isStreaming) return;
     const normalizedMessage = message.trim();
     chatDispatch({ type: "appendUserTurn", message: normalizedMessage });
     let finalReply = "";
+    setIsStreaming(true);
     try {
       const result = await sendSpeakingTurn({
         wsUrl: api.wsUrl,
@@ -54,6 +57,8 @@ export function useSpeakingController({
       finalReply = result.finalReply;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Speaking stream failed.");
+    } finally {
+      setIsStreaming(false);
     }
 
     if (finalReply && "speechSynthesis" in window) {
@@ -71,5 +76,5 @@ export function useSpeakingController({
     return requestCallSummary({ wsUrl: api.wsUrl, token, roomId });
   }
 
-  return { loadCallSummary, loadHints, sendMessage };
+  return { isStreaming, loadCallSummary, loadHints, sendMessage };
 }

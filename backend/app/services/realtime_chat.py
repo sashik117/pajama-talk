@@ -6,6 +6,7 @@ from app.domain.chat import UserPresence, active_presence
 from app.models.user import User
 from app.services.ai_service import stream_roleplay_reply
 from app.services.chat_persistence import ChatRepository
+from app.services.voice_service import VoiceRealtimeService
 
 
 class RealtimeChatService:
@@ -17,6 +18,7 @@ class RealtimeChatService:
         self.room_id = room_id
         self.repository = ChatRepository(db)
         self.presence = active_presence(user.id, room_id)
+        self.voice = VoiceRealtimeService(language_code=user.active_language_code)
 
     def user_presence(self) -> UserPresence:
         return self.presence

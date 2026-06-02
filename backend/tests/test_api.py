@@ -308,12 +308,61 @@ def test_voice_websocket_turn_and_summary(client: TestClient) -> None:
                 break
         assert "".join(tokens).strip().startswith("Nice choice")
         assert tts_event["format"] == "client_speech_synthesis"
+        assert tts_event["provider"] == "client_speech_synthesis"
 
         websocket.send_json({"type": "end_call"})
         summary = websocket.receive_json()
         assert summary["type"] == "call_summary"
         assert summary["value"]["turns"] == 1
         assert summary["value"]["new_phrases"]
+
+
+def test_voice_websocket_accepts_audio_chunk_turn(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/voice-ws?token={token}&room_id=coffee-alex") as websocket:
+        ready = websocket.receive_json()
+        assert ready["type"] == "session_ready"
+        assert ready["capabilities"]["accepts_audio_chunks"] is True
+
+        websocket.send_json({"type": "audio_chunk", "audio_base64": "ZmFrZS1hdWRpbw==", "transcript": "Could I get a latte?"})
+        status = websocket.receive_json()
+        assert status["type"] == "stt_status"
+        assert status["chunks"] == 1
+        assert status["bytes"] == 10
+
+        websocket.send_json({"type": "end_audio", "speed": 0.85})
+        transcript = websocket.receive_json()
+        assert transcript["type"] == "transcript"
+        assert transcript["value"] == "Could I get a latte?"
+        assert transcript["provider"] == "audio_chunk_metadata"
+
+        events: list[dict[str, object]] = []
+        while True:
+            event = websocket.receive_json()
+            events.append(event)
+            if event["type"] == "done":
+                break
+
+        tts = next(event for event in events if event["type"] == "tts")
+        assert tts["speed"] == 0.85
+        assert tts["provider"] == "client_speech_synthesis"
+
+
+def test_voice_websocket_rejects_empty_audio_turn(client: TestClient) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+
+    with client.websocket_connect(f"/speaking/voice-ws?token={token}&room_id=coffee-alex") as websocket:
+        assert websocket.receive_json()["type"] == "session_ready"
+        websocket.send_json({"type": "audio_chunk", "audio_base64": ""})
+        assert websocket.receive_json()["type"] == "stt_status"
+        websocket.send_json({"type": "end_audio"})
+        event = websocket.receive_json()
+
+    assert event["type"] == "error"
+    assert "No speech" in event["value"]
 
 
 def test_voice_websocket_responds_to_ping(client: TestClient) -> None:

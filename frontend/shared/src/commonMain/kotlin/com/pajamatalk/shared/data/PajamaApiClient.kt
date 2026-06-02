@@ -18,6 +18,7 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class PajamaApiClient(
@@ -194,6 +195,39 @@ class PajamaApiClient(
                         val value = event.value.orEmpty()
                         reply.append(value)
                         onToken(value)
+                    }
+                    "done" -> break
+                }
+            }
+        }
+        return reply.toString().trim()
+    }
+
+    suspend fun streamVoiceTextReply(
+        token: String,
+        roomId: String,
+        message: String,
+        speed: Float = 1f,
+        onTranscript: (String) -> Unit = {},
+        onToken: (String) -> Unit,
+    ): String {
+        val reply = StringBuilder()
+        client.webSocket("$webSocketBaseUrl/speaking/voice-ws?token=$token&room_id=$roomId") {
+            send(Frame.Text(json.encodeToString(VoiceTextTurnRequest(value = message, speed = speed))))
+            for (frame in incoming) {
+                if (frame !is Frame.Text) continue
+                val event = json.decodeFromString<SpeakingStreamEvent>(frame.readText())
+                when (event.type) {
+                    "transcript" -> onTranscript(event.value.orEmpty())
+                    "assistant_token" -> {
+                        val value = event.value.orEmpty()
+                        reply.append(value)
+                        onToken(value)
+                    }
+                    "tts" -> {
+                        if (reply.isEmpty() && !event.text.isNullOrBlank()) {
+                            reply.append(event.text)
+                        }
                     }
                     "done" -> break
                 }
@@ -451,4 +485,14 @@ data class LearningPathDto(
 private data class SpeakingStreamEvent(
     val type: String,
     val value: String? = null,
+    val text: String? = null,
+    val provider: String? = null,
+    val speed: Float? = null,
+)
+
+@Serializable
+private data class VoiceTextTurnRequest(
+    val type: String = "user_text",
+    val value: String,
+    val speed: Float = 1f,
 )

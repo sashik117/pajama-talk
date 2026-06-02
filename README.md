@@ -163,7 +163,18 @@ Realtime hardening currently includes:
 - Frontend heartbeat pings while a turn is open.
 - Client-side turn timeouts so stuck WebSocket calls fail clearly.
 - Unit tests for reducer snapshots and realtime client behavior.
-- Playwright smoke tests for the web preview.
+- Playwright smoke tests for desktop and mobile web flows.
+
+## Voice Mode Architecture
+
+The voice socket now has a real domain/service layer:
+
+- `VoiceRealtimeService` keeps per-call audio buffer state.
+- `audio_chunk` events report accepted chunk count, byte count, and provider metadata.
+- `end_audio` / `commit_audio` turns transcript hints into a normal speaking turn.
+- `tts` events include provider, format, speed, and future audio payload metadata.
+- Web call mode has a compact text fallback that still goes through `WS /speaking/voice-ws`.
+- Kotlin Compose has the matching voice text fallback client path.
 
 ## Micro-Grammar Drops
 
@@ -177,13 +188,13 @@ Realtime hardening currently includes:
 
 PajamaTalk is not English-only. Words are stored with `language_code`, and the frontend can switch between:
 
-`English`, `Slovak`, `Polish`, `Czech`, `French`, `Spanish`, `Italian`, `Korean`, `Japanese`, `Chinese`, and `Turkish`.
+`English`, `Ukrainian`, `Russian`, `Slovak`, `Polish`, `Czech`, `French`, `Spanish`, `Italian`, `German`, `Portuguese`, `Korean`, `Japanese`, `Chinese`, and `Turkish`.
 
 The Vibe Check tab also lets the user choose the explanation/native language, including Ukrainian and Russian, so AI enrichment and hints can target the learner's real comfort language.
 
 ## Still Not Done
 
-- Production-grade voice loop: real Whisper/TTS providers, binary audio chunk streaming, provider fallback, reconnect queue, and richer retry handling.
+- Production-grade voice providers: real Whisper/TTS adapters, binary audio playback, provider fallback, reconnect queue, and richer retry handling.
 - Full UI decomposition: the React preview now has domain/state/controllers, but large screen components still live in `App.tsx`.
-- Frontend E2E coverage depth: Playwright smoke tests exist, but the suite does not yet cover every profile/storage/context edge case.
-- KMP parity pass: the web preview moves fastest; Compose screens still need a final sync after web UX stabilizes.
+- Frontend E2E coverage depth: the suite now covers speaking, call fallback, context, storage, profile, and grammar smoke flows, but not every edge case.
+- KMP parity pass: Compose has voice fallback sync, but the full mobile UX still needs another visual polish pass after web stabilizes.

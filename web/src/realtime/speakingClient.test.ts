@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { requestCallSummary, sendSpeakingTurn } from "./speakingClient";
+import { requestCallSummary, sendSpeakingTurn, sendVoiceAudioTurn } from "./speakingClient";
 
 class FakeWebSocket {
   static OPEN = 1;
@@ -170,5 +170,45 @@ describe("requestCallSummary", () => {
 
     await expect(request).resolves.toEqual(summary);
     expect(socket.closed).toBe(true);
+  });
+});
+
+describe("sendVoiceAudioTurn", () => {
+  it("commits audio chunks after session_ready and resolves transcript plus reply", async () => {
+    const statuses: unknown[] = [];
+    const streamed: string[] = [];
+    const turn = sendVoiceAudioTurn({
+      wsUrl,
+      token: "token-1",
+      roomId: "coffee-alex",
+      mood: "steady",
+      chunks: [{ audioBase64: "ZmFrZS1hdWRpbw==", transcript: "Could I get a latte?" }],
+      speechRate: 0.85,
+      onStatus: (event) => statuses.push(event),
+      onToken: (reply) => streamed.push(reply)
+    });
+    const socket = FakeWebSocket.instances[0];
+
+    socket.open();
+    socket.message({ type: "session_ready", capabilities: { accepts_audio_chunks: true } });
+    expect(JSON.parse(socket.sent[0])).toEqual({
+      type: "audio_chunk",
+      audio_base64: "ZmFrZS1hdWRpbw==",
+      transcript: "Could I get a latte?"
+    });
+    expect(JSON.parse(socket.sent[1])).toEqual({ type: "end_audio", speed: 0.85 });
+
+    socket.message({ type: "stt_status", chunks: 1, bytes: 10, provider: "browser_speech_recognition" });
+    socket.message({ type: "transcript", value: "Could I get a latte?", provider: "audio_chunk_metadata" });
+    socket.message({ type: "assistant_token", value: "Nice choice. " });
+    socket.message({ type: "tts", text: "Nice choice.", speed: 0.85, provider: "client_speech_synthesis" });
+    socket.message({ type: "done" });
+
+    await expect(turn).resolves.toEqual({
+      finalReply: "Nice choice.",
+      transcript: "Could I get a latte?"
+    });
+    expect(streamed).toEqual(["Nice choice. "]);
+    expect(statuses).toHaveLength(4);
   });
 });

@@ -90,6 +90,30 @@ async def _send_assistant_stream(websocket: WebSocket, service: RealtimeChatServ
     return "".join(reply_parts).strip()
 
 
+async def _send_voice_turn(
+    websocket: WebSocket,
+    service: RealtimeChatService,
+    message: str,
+    speed: float | int,
+    mood: str,
+) -> None:
+    service.record_user_message(message)
+    await websocket.send_json(transcript_event(message, provider="voice_session", confidence=1.0))
+    reply = await _send_assistant_stream(websocket, service, message, "assistant_token", mood)
+    speech = service.voice.synthesize_reply(reply, float(speed))
+    await websocket.send_json(
+        tts_event(
+            speech.text,
+            speech.speed,
+            provider=speech.provider,
+            audio_base64=speech.audio_base64,
+            mime_type=speech.mime_type,
+            audio_format=speech.format,
+        )
+    )
+    await websocket.send_json(done_event())
+
+
 @router.websocket("/ws")
 async def speaking_ws(websocket: WebSocket) -> None:
     session = await _open_realtime_session(websocket)
@@ -123,7 +147,7 @@ async def speaking_voice_ws(websocket: WebSocket) -> None:
     db, _user, service = session
     mood = websocket.query_params.get("mood", "steady")
     await websocket.accept()
-    await websocket.send_json(session_ready_event())
+    await websocket.send_json(session_ready_event(service.voice.capabilities()))
     try:
         while True:
             payload = await websocket.receive_json()
@@ -132,7 +156,30 @@ async def speaking_voice_ws(websocket: WebSocket) -> None:
                 await websocket.send_json(pong_event())
                 continue
             if event_type == "audio_chunk":
-                await websocket.send_json(status_event("audio chunk accepted"))
+                await websocket.send_json(status_event("audio chunk accepted", service.voice.accept_audio_chunk(payload)))
+                continue
+            if event_type in {"end_audio", "commit_audio"}:
+                transcript = service.voice.transcribe_turn(payload)
+                if not transcript.text:
+                    await websocket.send_json(error_event("No speech was detected. Try one short sentence."))
+                    continue
+                service.record_user_message(transcript.text)
+                await websocket.send_json(
+                    transcript_event(transcript.text, provider=transcript.provider, confidence=transcript.confidence)
+                )
+                reply = await _send_assistant_stream(websocket, service, transcript.text, "assistant_token", mood)
+                speech = service.voice.synthesize_reply(reply, float(payload.get("speed", 1)))
+                await websocket.send_json(
+                    tts_event(
+                        speech.text,
+                        speech.speed,
+                        provider=speech.provider,
+                        audio_base64=speech.audio_base64,
+                        mime_type=speech.mime_type,
+                        audio_format=speech.format,
+                    )
+                )
+                await websocket.send_json(done_event())
                 continue
             if event_type == "end_call":
                 await websocket.send_json(call_summary_event(service.call_summary()))
@@ -144,11 +191,7 @@ async def speaking_voice_ws(websocket: WebSocket) -> None:
                 await websocket.send_json(error_event("Empty voice turn."))
                 continue
 
-            service.record_user_message(message)
-            await websocket.send_json(transcript_event(message))
-            reply = await _send_assistant_stream(websocket, service, message, "assistant_token", mood)
-            await websocket.send_json(tts_event(reply, payload.get("speed", 1)))
-            await websocket.send_json(done_event())
+            await _send_voice_turn(websocket, service, message, payload.get("speed", 1), mood)
     except WebSocketDisconnect:
         return
     finally:

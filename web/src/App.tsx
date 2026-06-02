@@ -604,7 +604,7 @@ function PajamaTalkApp() {
   });
   const { token, user, stats, words, dueWords, rooms, grammarDrops, grammarTopics, learningPath, learningCode, error, busy } = learningState;
   const { addWord, demo, login, updateLearning, updateNative, updateProfileSettings, updateTone, updateVibe } = learningActions;
-  const { loadCallSummary, loadHints, sendMessage } = useSpeakingController({
+  const { isStreaming, loadCallSummary, loadHints, sendMessage } = useSpeakingController({
     activeMood,
     activeRoom,
     chat,
@@ -724,6 +724,7 @@ function PajamaTalkApp() {
             }}
             loadHints={loadHints}
             sendMessage={sendMessage}
+            isStreaming={isStreaming}
             loadCallSummary={loadCallSummary}
             addWord={addWord}
             labels={speakingModeCopy[uiLocale]}
@@ -772,6 +773,7 @@ function PajamaTalkApp() {
           <button
             key={key as string}
             className={activeTab === key ? "active" : ""}
+            data-testid={`nav-${key as string}`}
             onClick={() => {
               if (key === "storage") setStorageMode("words");
               setActiveTab(key as TabKey);
@@ -854,7 +856,7 @@ function AuthScreen({
           </button>
         </div>
 
-        <button className="demo-action" disabled={busy} onClick={onDemo}>
+        <button className="demo-action" disabled={busy} onClick={onDemo} data-testid="demo-login">
           <WandSparkles size={18} />
           {copy("demo")}
         </button>
@@ -1024,7 +1026,7 @@ function HomeScreen({
           <WandSparkles size={20} />
           <h2>{copy("contextTitle")}</h2>
         </div>
-        <textarea value={contextText} onChange={(event) => setContextText(event.target.value)} placeholder={copy("contextPlaceholder")} />
+        <textarea value={contextText} onChange={(event) => setContextText(event.target.value)} placeholder={copy("contextPlaceholder")} data-testid="context-input" />
         <div className="chip-row">
           {contextExamples.map((example) => (
             <button key={example} className="chip" onClick={() => setContextText(example)}>
@@ -1032,7 +1034,7 @@ function HomeScreen({
             </button>
           ))}
         </div>
-        <button className="primary-action" disabled={busy || contextText.trim().length < 3} onClick={analyzeContext}>
+        <button className="primary-action" disabled={busy || contextText.trim().length < 3} onClick={analyzeContext} data-testid="context-analyze">
           <Sparkles size={18} />
           {copy("analyze")}
         </button>
@@ -1049,7 +1051,7 @@ function HomeScreen({
               ))}
             </div>
             <div className="action-row">
-              <button className="soft-action" disabled={busy} onClick={() => void saveContextWords(contextResult.suggested_words.slice(0, 5))}>
+              <button className="soft-action" disabled={busy} onClick={() => void saveContextWords(contextResult.suggested_words.slice(0, 5))} data-testid="context-add-words">
                 {copy("addWords")}
               </button>
               <button className="soft-action pale" onClick={clearContext}>
@@ -1154,6 +1156,7 @@ function SpeakingScreen({
   back,
   loadHints,
   sendMessage,
+  isStreaming,
   loadCallSummary,
   addWord,
   labels
@@ -1168,11 +1171,13 @@ function SpeakingScreen({
   back: () => void;
   loadHints: () => void;
   sendMessage: (message: string, speechRate?: number, transport?: SpeakingTransport) => void;
+  isStreaming: boolean;
   loadCallSummary: (roomId: string) => Promise<CallSummaryDto>;
   addWord: (word: string, source?: string) => Promise<WordDto | undefined>;
   labels: SpeakingModeCopy;
 }) {
   const [draft, setDraft] = useState("");
+  const [callDraft, setCallDraft] = useState("");
   const [pendingRoom, setPendingRoom] = useState<SpeakingRoomDto | null>(null);
   const [transcript, setTranscript] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -1181,6 +1186,7 @@ function SpeakingScreen({
   const [voiceSpeed, setVoiceSpeed] = useState<VoiceSpeed>("natural");
   const [callSummary, setCallSummary] = useState<CallSummaryDto | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const speechRate = voiceSpeedRate[voiceSpeed];
   const roomIcon = useMemo(() => {
     if (!activeRoom) return null;
@@ -1196,6 +1202,7 @@ function SpeakingScreen({
 
   useEffect(() => {
     return () => {
+      clearSpeechTimeout();
       recognitionRef.current?.abort?.();
       recognitionRef.current = null;
     };
@@ -1205,11 +1212,20 @@ function SpeakingScreen({
     setMode("text");
     setCallSummary(null);
     setTranscript("");
+    setCallDraft("");
     setSpeechError("");
     setPendingRoom(null);
   }, [activeRoom?.id]);
 
+  function clearSpeechTimeout() {
+    if (speechTimeoutRef.current) {
+      clearTimeout(speechTimeoutRef.current);
+      speechTimeoutRef.current = null;
+    }
+  }
+
   function startVoice() {
+    if (isStreaming) return;
     if (isListening) {
       stopVoice();
       return;
@@ -1235,11 +1251,13 @@ function SpeakingScreen({
       setTranscript(text);
     };
     recognition.onerror = () => {
+      clearSpeechTimeout();
       setSpeechError(copy("speechError"));
       setIsListening(false);
       recognitionRef.current = null;
     };
     recognition.onend = () => {
+      clearSpeechTimeout();
       setIsListening(false);
       recognitionRef.current = null;
       setTranscript((current) => {
@@ -1249,7 +1267,11 @@ function SpeakingScreen({
     };
     try {
       recognition.start();
+      speechTimeoutRef.current = setTimeout(() => {
+        recognitionRef.current?.stop?.();
+      }, 12000);
     } catch {
+      clearSpeechTimeout();
       recognitionRef.current = null;
       setIsListening(false);
       setSpeechError(copy("speechError"));
@@ -1257,6 +1279,7 @@ function SpeakingScreen({
   }
 
   function stopVoice() {
+    clearSpeechTimeout();
     recognitionRef.current?.stop?.();
     setIsListening(false);
   }
@@ -1275,9 +1298,17 @@ function SpeakingScreen({
 
   function sendDraft() {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || isStreaming) return;
     setDraft("");
     sendMessage(text);
+  }
+
+  function sendCallDraft() {
+    const text = callDraft.trim();
+    if (!text || isStreaming) return;
+    setTranscript(text);
+    setCallDraft("");
+    sendMessage(text, speechRate, "voice");
   }
 
   if (!activeRoom) {
@@ -1298,7 +1329,7 @@ function SpeakingScreen({
               ["charged", "⚡", labels.moodCharged ?? "more energy"],
               ["hard", "🫠", labels.moodHard ?? "no pressure"]
             ].map(([mood, emoji, label]) => (
-              <button key={mood} onClick={() => setActiveRoom(pendingRoom, mood as MoodKey)}>
+              <button key={mood} onClick={() => setActiveRoom(pendingRoom, mood as MoodKey)} data-testid={`mood-${mood}`}>
                 <span>{emoji}</span>
                 <strong>{label}</strong>
               </button>
@@ -1311,7 +1342,7 @@ function SpeakingScreen({
     return (
       <section className="room-grid">
         {rooms.map((room) => (
-          <button className="room-card card" key={room.id} onClick={() => setPendingRoom(room)}>
+          <button className="room-card card" key={room.id} onClick={() => setPendingRoom(room)} data-testid={`room-${room.id}`}>
             <span className="room-icon" style={{ background: room.accent_color }}>
               {room.id.includes("airport") ? (
                 <Plane />
@@ -1359,11 +1390,11 @@ function SpeakingScreen({
       </div>
 
       <div className="mode-toggle">
-        <button className={mode === "text" ? "active" : ""} onClick={() => setMode("text")}>
+        <button className={mode === "text" ? "active" : ""} onClick={() => setMode("text")} data-testid="speaking-mode-text">
           <MessageCircle size={16} />
           {labels.text}
         </button>
-        <button className={mode === "call" ? "active" : ""} onClick={() => setMode("call")}>
+        <button className={mode === "call" ? "active" : ""} onClick={() => setMode("call")} data-testid="speaking-mode-call">
           <Headphones size={16} />
           {labels.call}
         </button>
@@ -1378,7 +1409,7 @@ function SpeakingScreen({
           </div>
           <div className="call-copy">
             <strong>{activeRoom.character}</strong>
-            <span>{isListening ? copy("listening") : transcript || labels.holdToTalk}</span>
+            <span>{isStreaming ? "..." : isListening ? copy("listening") : transcript || labels.holdToTalk}</span>
           </div>
           <div className="speed-row">
             {(["slow", "natural", "fast"] as const).map((speed) => (
@@ -1391,12 +1422,34 @@ function SpeakingScreen({
             <button
               className={`call-mic ${isListening ? "listening" : ""}`}
               onClick={startVoice}
+              disabled={isStreaming}
+              aria-label={copy("tapToSpeak")}
             >
               {isListening ? <MicOff size={30} /> : <Mic size={30} />}
             </button>
             <button className="hangup-action" onClick={() => void finishCall()}>
               <PhoneOff size={17} />
               <span>{labels.hangUp}</span>
+            </button>
+          </div>
+          <div className="call-fallback">
+            <input
+              value={callDraft}
+              onChange={(event) => setCallDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") sendCallDraft();
+              }}
+              placeholder={copy("voicePrimary")}
+              data-testid="call-fallback-input"
+            />
+            <button
+              className="primary-action icon-only"
+              disabled={!callDraft.trim() || isStreaming}
+              onClick={sendCallDraft}
+              aria-label={copy("send")}
+              data-testid="call-fallback-send"
+            >
+              <Send size={17} />
             </button>
           </div>
           {speechError && <div className="notice">{speechError}</div>}
@@ -1427,7 +1480,7 @@ function SpeakingScreen({
           </div>
 
           <div className="speaker-tools">
-            <button className="soft-action" onClick={loadHints}>
+            <button className="soft-action" onClick={loadHints} disabled={isStreaming} data-testid="speaking-hints">
               <WandSparkles size={16} />
               {copy("hints")}
             </button>
@@ -1458,11 +1511,12 @@ function SpeakingScreen({
                 if (event.key === "Enter") sendDraft();
               }}
               placeholder={`Reply to ${activeRoom.character}`}
+              data-testid="speaking-composer"
             />
-            <button className={`voice-action ${isListening ? "listening" : ""}`} onClick={startVoice} aria-label={copy("tapToSpeak")}>
+            <button className={`voice-action ${isListening ? "listening" : ""}`} onClick={startVoice} disabled={isStreaming} aria-label={copy("tapToSpeak")}>
               {isListening ? <MicOff size={22} /> : <Mic size={22} />}
             </button>
-            <button className="primary-action icon-only" disabled={!draft.trim()} onClick={sendDraft} aria-label="Send">
+            <button className="primary-action icon-only" disabled={!draft.trim() || isStreaming} onClick={sendDraft} aria-label={copy("send")} data-testid="speaking-send">
               <Send size={18} />
             </button>
           </div>
@@ -1546,10 +1600,11 @@ function StorageScreen({
           </p>
         </div>
         <div className="send-row">
-          <input value={term} onChange={(event) => setTerm(event.target.value)} placeholder={sample} />
+          <input value={term} onChange={(event) => setTerm(event.target.value)} placeholder={sample} data-testid="word-input" />
           <button
             className="primary-action"
             disabled={busy || !term.trim()}
+            data-testid="word-add"
             onClick={async () => {
               const created = await addWord(term);
               if (created) {
@@ -1567,7 +1622,7 @@ function StorageScreen({
         </div>
       </section>
       {lastAdded && (
-        <section className="card word-result-card">
+        <section className="card word-result-card" data-testid="word-result">
           <small>{copy("add")} → {copy("myWords")}</small>
           <div>
             <h2>{lastAdded.term}</h2>
@@ -1592,7 +1647,7 @@ function StorageScreen({
         <button className={mode === "words" ? "active" : ""} onClick={() => setMode("words")}>
           {copy("myWords")}
         </button>
-        <button className={mode === "review" ? "active" : ""} onClick={() => setMode("review")}>
+        <button className={mode === "review" ? "active" : ""} onClick={() => setMode("review")} data-testid="storage-review-tab">
           {copy("review")}
         </button>
       </div>
@@ -1607,10 +1662,10 @@ function StorageScreen({
                 {copy("due")}: {nextDue}
               </p>
               <div className="action-row">
-                <button className="soft-action peach" onClick={() => reviewWord("forgot")}>
+                <button className="soft-action peach" onClick={() => reviewWord("forgot")} data-testid="review-forgot">
                   {copy("forgot")}
                 </button>
-                <button className="soft-action mint" onClick={() => reviewWord("remember")}>
+                <button className="soft-action mint" onClick={() => reviewWord("remember")} data-testid="review-remember">
                   {copy("remember")}
                 </button>
               </div>
@@ -1816,16 +1871,16 @@ function ProfileScreen({
         <Stat value={`${stats?.language_words ?? 0}`} label={copy("myWords")} />
       </section>
       <section className="profile-controls">
-        <DropdownSelect title={copy("learningLanguage")} value={learningCode} options={learningLanguages} onChange={setLearningCode} />
-        <DropdownSelect title={copy("nativeLanguage")} value={user.native_language_code} options={nativeLanguages} onChange={setNativeCode} />
+        <DropdownSelect title={copy("learningLanguage")} value={learningCode} options={learningLanguages} onChange={setLearningCode} testId="profile-learning-language" />
+        <DropdownSelect title={copy("nativeLanguage")} value={user.native_language_code} options={nativeLanguages} onChange={setNativeCode} testId="profile-native-language" />
       </section>
 
       <section className="card settings-card">
         <h2>{labels.setup}</h2>
         <div className="preference-grid">
-          <ChoiceGroup title={labels.currentLevel} value={user.current_level} options={currentLevelOptions} labels={labels.levels} onSelect={(value) => setProfile({ current_level: value })} />
-          <ChoiceGroup title={labels.targetLevel} value={user.target_level} options={targetLevelOptions} labels={labels.targets} onSelect={(value) => setProfile({ target_level: value })} />
-          <ChoiceGroup title={labels.effortLevel} value={user.effort_level} options={effortOptions} labels={labels.efforts} onSelect={(value) => setProfile({ effort_level: value })} />
+          <ChoiceGroup title={labels.currentLevel} value={user.current_level} options={currentLevelOptions} labels={labels.levels} onSelect={(value) => setProfile({ current_level: value })} testId="profile-current-level" />
+          <ChoiceGroup title={labels.targetLevel} value={user.target_level} options={targetLevelOptions} labels={labels.targets} onSelect={(value) => setProfile({ target_level: value })} testId="profile-target-level" />
+          <ChoiceGroup title={labels.effortLevel} value={user.effort_level} options={effortOptions} labels={labels.efforts} onSelect={(value) => setProfile({ effort_level: value })} testId="profile-effort" />
         </div>
       </section>
 
@@ -1936,18 +1991,20 @@ function DropdownSelect({
   title,
   value,
   options,
-  onChange
+  onChange,
+  testId
 }: {
   title: string;
   value: string;
   options: readonly SelectOption[];
   onChange: (value: string) => void;
+  testId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.code === value) ?? options[0];
   return (
-    <section className={`select-card card ${open ? "open" : ""}`}>
-      <button className="select-trigger" onClick={() => setOpen((current) => !current)}>
+    <section className={`select-card card ${open ? "open" : ""}`} data-testid={testId}>
+      <button className="select-trigger" onClick={() => setOpen((current) => !current)} data-testid={testId ? `${testId}-trigger` : undefined}>
         <span>
           <small>{title}</small>
           <strong>
@@ -1962,6 +2019,7 @@ function DropdownSelect({
             <button
               key={option.code}
               className={option.code === value ? "selected" : ""}
+              data-testid={testId ? `${testId}-option-${option.code}` : undefined}
               onClick={() => {
                 onChange(option.code);
                 setOpen(false);
@@ -1981,20 +2039,22 @@ function ChoiceGroup({
   value,
   options,
   labels,
-  onSelect
+  onSelect,
+  testId
 }: {
   title: string;
   value: string;
   options: readonly string[];
   labels: Record<string, string>;
   onSelect: (value: string) => void;
+  testId?: string;
 }) {
   return (
-    <div className="choice-group">
+    <div className="choice-group" data-testid={testId}>
       <small>{title}</small>
       <div className="choice-pills">
         {options.map((option) => (
-          <button key={option} className={value === option ? "selected" : ""} onClick={() => onSelect(option)}>
+          <button key={option} className={value === option ? "selected" : ""} onClick={() => onSelect(option)} data-testid={testId ? `${testId}-${option}` : undefined}>
             {labels[option] ?? option}
           </button>
         ))}
@@ -2092,7 +2152,7 @@ function GrammarLab({
 
       <div className="topic-tabs">
         {topics.map((item) => (
-          <button key={item.id} className={item.id === topic.id ? "selected" : ""} onClick={() => selectTopic(item.id)}>
+          <button key={item.id} className={item.id === topic.id ? "selected" : ""} onClick={() => selectTopic(item.id)} data-testid={`grammar-topic-${item.id}`}>
             {item.recommended && <Sparkles size={14} />}
             {item.title}
           </button>
@@ -2136,6 +2196,7 @@ function GrammarLab({
               <button
                 key={option}
                 className={answer === option ? "selected" : ""}
+                data-testid="grammar-option"
                 onClick={() => {
                   setAnswer(option);
                   setResult(null);
@@ -2156,16 +2217,16 @@ function GrammarLab({
           />
         )}
         <div className="exercise-actions">
-          <button className="primary-action" disabled={checking || !answer.trim()} onClick={submitAnswer}>
+          <button className="primary-action" disabled={checking || !answer.trim()} onClick={submitAnswer} data-testid="grammar-check">
             <Check size={17} />
             {checking ? "..." : micro.check}
           </button>
-          <button className="soft-action" onClick={nextExercise}>
+          <button className="soft-action" onClick={nextExercise} data-testid="grammar-next">
             {micro.next}
           </button>
         </div>
         {result && (
-          <div className="grammar-feedback">
+          <div className="grammar-feedback" data-testid="grammar-feedback">
             <strong>{result.correct ? micro.correct : micro.almost}</strong>
             <p>{result.feedback}</p>
           </div>

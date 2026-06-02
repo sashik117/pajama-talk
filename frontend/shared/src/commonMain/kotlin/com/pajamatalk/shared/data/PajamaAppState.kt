@@ -357,6 +357,38 @@ class PajamaAppState(
         isSpeakingStreaming = false
     }
 
+    suspend fun sendVoiceTextMessage(roomId: String, message: String, speed: Float = 1f) {
+        val cleanMessage = message.trim()
+        if (cleanMessage.isBlank() || isSpeakingStreaming) return
+
+        speakingHints = null
+        speakingMessages = speakingMessages +
+            SpeakingChatMessage(cleanMessage, incoming = false) +
+            SpeakingChatMessage("", incoming = true)
+        isSpeakingStreaming = true
+        errorMessage = null
+
+        var assistantReply = ""
+        runCatching {
+            requireClient().streamVoiceTextReply(
+                token = requireToken(),
+                roomId = roomId,
+                message = cleanMessage,
+                speed = speed,
+                onTranscript = {},
+            ) { tokenText ->
+                assistantReply += tokenText
+                replaceStreamingReply(assistantReply.trimStart())
+            }
+        }.onFailure {
+            replaceStreamingReply("Voice connection slipped. Try one short line.")
+            errorMessage = it.friendlyMessage()
+        }
+
+        loadGrammarDrops()
+        isSpeakingStreaming = false
+    }
+
     private fun replaceStreamingReply(text: String) {
         speakingMessages = speakingMessages.dropLast(1) + SpeakingChatMessage(text, incoming = true)
     }
