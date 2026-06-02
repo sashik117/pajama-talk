@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
   Bot,
@@ -42,10 +42,10 @@ import {
   UserDto,
   WordDto
 } from "./api";
-import { languageName, learningLanguages, nativeLanguages, t, UiLocale, uiLocales } from "./i18n";
+import { learningLanguages, nativeLanguages, t, UiLocale, uiLocales } from "./i18n";
+import { useLearningDataController } from "./hooks/useLearningDataController";
 import { requestCallSummary, sendSpeakingTurn, type SpeakingTransport } from "./realtime/speakingClient";
 import { ChatProvider, useChatDispatch, useChatState, type ChatLine, type MoodKey } from "./state/chatState";
-import { createInitialLearningDataState, learningDataReducer } from "./state/learningDataState";
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type SelectOption = { code: string; label: string; short: string; flag: string };
@@ -80,8 +80,6 @@ type ProfileChoiceCopy = {
   tones: Record<string, string>;
 };
 
-const demoEmail = "dreamer@pajamatalk.dev";
-const demoPassword = "pajama-dev-secret";
 const currentLevelOptions = ["Starter", "A1", "A2", "B1", "B2", "C1"] as const;
 const targetLevelOptions = ["A1", "A2", "B1", "B2", "C1", "Fluent"] as const;
 const effortOptions = ["Light", "Steady", "Intense"] as const;
@@ -572,10 +570,6 @@ const storageFlowCopy: Record<UiLocale, { translation: string; examples: string;
   zh: { translation: "翻译", examples: "例句", empty: "在上方添加单词后，PajamaTalk 会显示翻译、例句和 SRS。" },
 };
 
-function uiLocaleFromCode(code: string): UiLocale {
-  return uiLocales.some((locale) => locale.code === code) ? (code as UiLocale) : "en";
-}
-
 function readDailyDone(key: string): Record<string, boolean> {
   try {
     return JSON.parse(localStorage.getItem(key) ?? "{}") as Record<string, boolean>;
@@ -619,19 +613,19 @@ function PajamaTalkApp() {
   const copy = (key: Parameters<typeof t>[1]) => t(uiLocale, key);
   const { activeRoom, activeMood, chat, hints } = useChatState();
   const chatDispatch = useChatDispatch();
-  const [learningState, learningDispatch] = useReducer(
-    learningDataReducer,
-    undefined,
-    () => createInitialLearningDataState(localStorage.getItem("pajama-token") || "")
-  );
-  const { token, user, stats, words, dueWords, rooms, grammarDrops, grammarTopics, learningPath, learningCode, error, busy } = learningState;
   const [activeTab, setActiveTab] = useState<TabKey>("aura");
   const [contextText, setContextText] = useState("");
   const [contextResult, setContextResult] = useState<ContextAnalyzeDto | null>(null);
   const [storageMode, setStorageMode] = useState<"words" | "review">("words");
+  const { state: learningState, actions: learningActions } = useLearningDataController({
+    clearContext: () => setContextResult(null),
+    clearHints: () => chatDispatch({ type: "setHints", hints: null }),
+    resetChat: () => chatDispatch({ type: "resetSession" }),
+    setUiLocale
+  });
+  const { token, user, stats, words, dueWords, rooms, grammarDrops, grammarTopics, learningPath, learningCode, error, busy } = learningState;
+  const { addWord, demo, login, updateLearning, updateNative, updateProfileSettings, updateTone, updateVibe } = learningActions;
 
-  const explanationCode = user?.native_language_code ?? "uk";
-  const targetLanguage = languageName(explanationCode);
   const selectedLanguage = learningLanguages.find((language) => language.code === learningCode) ?? learningLanguages[0];
   const activeDrop = grammarDrops[0];
   const dueWord = dueWords[0];
@@ -640,173 +634,17 @@ function PajamaTalkApp() {
     localStorage.setItem("pajama-ui", uiLocale);
   }, [uiLocale]);
 
-  useEffect(() => {
-    api.health().catch(() => learningDispatch({ type: "setError", error: "FastAPI offline. Запусти backend на :8000." }));
-    if (token) {
-      void openSession(token);
-    }
-  }, []);
-
-  async function openSession(nextToken: string) {
-    learningDispatch({ type: "setBusy", busy: true });
-    learningDispatch({ type: "setError", error: "" });
-    try {
-      const profile = await api.me(nextToken);
-      localStorage.setItem("pajama-token", nextToken);
-      learningDispatch({ type: "hydrateSession", token: nextToken, user: profile });
-      setUiLocale(uiLocaleFromCode(profile.native_language_code));
-      await loadData(nextToken, profile.active_language_code, profile.native_language_code);
-    } catch (err) {
-      localStorage.removeItem("pajama-token");
-      learningDispatch({ type: "clearSession" });
-      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Session failed." });
-    } finally {
-      learningDispatch({ type: "setBusy", busy: false });
-    }
-  }
-
-  async function loadData(nextToken = token, languageCode = learningCode, targetCode = explanationCode) {
-    if (!nextToken) return;
-    const [nextStats, nextWords, nextDue, nextRooms, nextDrops, nextTopics, nextPath] = await Promise.all([
-      api.stats(nextToken),
-      api.words(nextToken, languageCode),
-      api.dueWords(nextToken, languageCode),
-      api.speakingRooms(nextToken, languageCode, targetCode),
-      api.grammarDrops(nextToken, languageCode, targetCode),
-      api.grammarTopics(nextToken, languageCode, targetCode),
-      api.learningPath(nextToken, languageCode, targetCode)
-    ]);
-    learningDispatch({
-      type: "setData",
-      data: {
-        stats: nextStats,
-        words: nextWords,
-        dueWords: nextDue,
-        rooms: nextRooms,
-        grammarDrops: nextDrops,
-        grammarTopics: nextTopics,
-        learningPath: nextPath
-      }
-    });
-  }
-
-  async function login(email: string, password: string, displayName?: string) {
-    learningDispatch({ type: "setBusy", busy: true });
-    learningDispatch({ type: "setError", error: "" });
-    try {
-      const session = displayName ? await api.register(email, password, displayName) : await api.login(email, password);
-      await openSession(session.access_token);
-    } catch (err) {
-      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Auth failed." });
-    } finally {
-      learningDispatch({ type: "setBusy", busy: false });
-    }
-  }
-
-  async function demo() {
-    learningDispatch({ type: "setBusy", busy: true });
-    learningDispatch({ type: "setError", error: "" });
-    try {
-      let session;
-      try {
-        session = await api.register(demoEmail, demoPassword, "Dreamer");
-      } catch {
-        session = await api.login(demoEmail, demoPassword);
-      }
-      await openSession(session.access_token);
-    } catch (err) {
-      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Demo login failed." });
-    } finally {
-      learningDispatch({ type: "setBusy", busy: false });
-    }
-  }
-
-  async function updateLearning(code: string) {
-    if (!token) return;
-    learningDispatch({ type: "setLearningCode", code });
-    chatDispatch({ type: "resetSession" });
-    setContextResult(null);
-    const profile = await api.updateProfile(token, { active_language_code: code });
-    learningDispatch({ type: "setUser", user: profile });
-    await loadData(token, code);
-  }
-
-  async function updateNative(code: string) {
-    if (!token) return;
-    chatDispatch({ type: "setHints", hints: null });
-    setContextResult(null);
-    setUiLocale(uiLocaleFromCode(code));
-    const profile = await api.updateProfile(token, { native_language_code: code });
-    learningDispatch({ type: "setUser", user: profile });
-    setUiLocale(uiLocaleFromCode(profile.native_language_code));
-    await loadData(token, learningCode, profile.native_language_code);
-  }
-
-  async function updateVibe(vibe: string) {
-    if (!token) return;
-    const minutes = vibe === "Hardcore" ? 30 : vibe === "Normal" ? 15 : 5;
-    const profile = await api.updateProfile(token, { learning_vibe: vibe, daily_vibe_minutes: minutes });
-    learningDispatch({ type: "setUser", user: profile });
-    learningDispatch({ type: "setStats", stats: await api.stats(token) });
-  }
-
-  async function updateTone(tone: string) {
-    if (!token) return;
-    learningDispatch({ type: "setUser", user: await api.updateProfile(token, { ai_tone: tone }) });
-  }
-
-  async function updateProfileSettings(payload: Partial<Record<string, string | number>>) {
-    if (!token) return;
-    const profile = await api.updateProfile(token, payload);
-    learningDispatch({ type: "setUser", user: profile });
-    learningDispatch({ type: "setLearningCode", code: profile.active_language_code });
-    await loadData(token, profile.active_language_code, profile.native_language_code);
-  }
-
-  async function addWord(term: string, source = "") {
-    if (!token || !term.trim()) return undefined;
-    learningDispatch({ type: "setBusy", busy: true });
-    try {
-      const word = await api.enrichWord(token, term.trim(), learningCode, targetLanguage, source);
-      learningDispatch({ type: "upsertWord", word });
-      learningDispatch({ type: "setStats", stats: await api.stats(token) });
-      return word;
-    } catch (err) {
-      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Could not add word." });
-      return undefined;
-    } finally {
-      learningDispatch({ type: "setBusy", busy: false });
-    }
-  }
-
   async function analyzeContext() {
-    if (!token || contextText.trim().length < 3) return;
-    learningDispatch({ type: "setBusy", busy: true });
-    learningDispatch({ type: "setError", error: "" });
-    try {
-      setContextResult(await api.analyzeContext(token, contextText, learningCode, targetLanguage));
-    } catch (err) {
-      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Context analysis failed." });
-    } finally {
-      learningDispatch({ type: "setBusy", busy: false });
-    }
+    const result = await learningActions.analyzeContext(contextText);
+    if (result) setContextResult(result);
   }
 
   async function reviewWord(grade: "remember" | "forgot", wordId = dueWord?.id) {
-    if (!token || !wordId) return;
-    await api.reviewWord(token, wordId, grade);
-    await loadData(token, learningCode);
+    await learningActions.reviewWord(grade, wordId);
   }
 
   async function deleteWord(wordId: number) {
-    if (!token) return;
-    try {
-      await api.deleteWord(token, wordId);
-      learningDispatch({ type: "removeWord", wordId });
-      learningDispatch({ type: "setStats", stats: await api.stats(token) });
-    } catch (err) {
-      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Could not delete word." });
-    }
+    await learningActions.deleteWord(wordId);
   }
 
   async function loadHints() {
@@ -815,7 +653,7 @@ function PajamaTalkApp() {
     try {
       chatDispatch({ type: "setHints", hints: await api.speakingHints(token, activeRoom.id, last, learningCode) });
     } catch (err) {
-      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Hints failed." });
+      learningActions.setError(err instanceof Error ? err.message : "Hints failed.");
     }
   }
 
@@ -837,7 +675,7 @@ function PajamaTalkApp() {
       });
       finalReply = result.finalReply;
     } catch (err) {
-      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Speaking stream failed." });
+      learningActions.setError(err instanceof Error ? err.message : "Speaking stream failed.");
     }
     if (finalReply && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -846,13 +684,7 @@ function PajamaTalkApp() {
       utterance.rate = speechRate;
       window.speechSynthesis.speak(utterance);
     }
-    if (token) {
-      const [nextDrops, nextTopics] = await Promise.all([
-        api.grammarDrops(token, learningCode, explanationCode),
-        api.grammarTopics(token, learningCode, explanationCode)
-      ]);
-      learningDispatch({ type: "setGrammar", drops: nextDrops, topics: nextTopics });
-    }
+    await learningActions.refreshGrammar();
   }
 
   async function loadCallSummary(roomId: string): Promise<CallSummaryDto> {
@@ -861,15 +693,11 @@ function PajamaTalkApp() {
   }
 
   async function checkGrammar(topicId: string, exerciseId: string, answer: string): Promise<GrammarCheckDto> {
-    if (!token) throw new Error("No active session.");
-    return api.checkGrammar(token, topicId, exerciseId, answer, explanationCode);
+    return learningActions.checkGrammar(topicId, exerciseId, answer);
   }
 
   function logout() {
-    localStorage.removeItem("pajama-token");
-    learningDispatch({ type: "clearSession" });
-    setContextResult(null);
-    chatDispatch({ type: "resetSession" });
+    learningActions.logout();
   }
 
   if (!user) {
