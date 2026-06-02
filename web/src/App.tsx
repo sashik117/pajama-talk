@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   BookOpen,
   Bot,
@@ -45,6 +45,7 @@ import {
 import { languageName, learningLanguages, nativeLanguages, t, UiLocale, uiLocales } from "./i18n";
 import { requestCallSummary, sendSpeakingTurn, type SpeakingTransport } from "./realtime/speakingClient";
 import { ChatProvider, useChatDispatch, useChatState, type ChatLine, type MoodKey } from "./state/chatState";
+import { createInitialLearningDataState, learningDataReducer } from "./state/learningDataState";
 
 type TabKey = "aura" | "speak" | "storage" | "vibe";
 type SelectOption = { code: string; label: string; short: string; flag: string };
@@ -618,22 +619,16 @@ function PajamaTalkApp() {
   const copy = (key: Parameters<typeof t>[1]) => t(uiLocale, key);
   const { activeRoom, activeMood, chat, hints } = useChatState();
   const chatDispatch = useChatDispatch();
-  const [token, setToken] = useState(() => localStorage.getItem("pajama-token") || "");
-  const [user, setUser] = useState<UserDto | null>(null);
-  const [stats, setStats] = useState<StatsDto | null>(null);
-  const [words, setWords] = useState<WordDto[]>([]);
-  const [dueWords, setDueWords] = useState<WordDto[]>([]);
-  const [rooms, setRooms] = useState<SpeakingRoomDto[]>([]);
-  const [grammarDrops, setGrammarDrops] = useState<GrammarDropDto[]>([]);
-  const [grammarTopics, setGrammarTopics] = useState<GrammarTopicDto[]>([]);
-  const [learningPath, setLearningPath] = useState<LearningPathDto | null>(null);
+  const [learningState, learningDispatch] = useReducer(
+    learningDataReducer,
+    undefined,
+    () => createInitialLearningDataState(localStorage.getItem("pajama-token") || "")
+  );
+  const { token, user, stats, words, dueWords, rooms, grammarDrops, grammarTopics, learningPath, learningCode, error, busy } = learningState;
   const [activeTab, setActiveTab] = useState<TabKey>("aura");
-  const [learningCode, setLearningCode] = useState("en");
   const [contextText, setContextText] = useState("");
   const [contextResult, setContextResult] = useState<ContextAnalyzeDto | null>(null);
   const [storageMode, setStorageMode] = useState<"words" | "review">("words");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
 
   const explanationCode = user?.native_language_code ?? "uk";
   const targetLanguage = languageName(explanationCode);
@@ -646,30 +641,27 @@ function PajamaTalkApp() {
   }, [uiLocale]);
 
   useEffect(() => {
-    api.health().catch(() => setError("FastAPI offline. Запусти backend на :8000."));
+    api.health().catch(() => learningDispatch({ type: "setError", error: "FastAPI offline. Запусти backend на :8000." }));
     if (token) {
       void openSession(token);
     }
   }, []);
 
   async function openSession(nextToken: string) {
-    setBusy(true);
-    setError("");
+    learningDispatch({ type: "setBusy", busy: true });
+    learningDispatch({ type: "setError", error: "" });
     try {
       const profile = await api.me(nextToken);
-      setToken(nextToken);
       localStorage.setItem("pajama-token", nextToken);
-      setUser(profile);
-      setLearningCode(profile.active_language_code);
+      learningDispatch({ type: "hydrateSession", token: nextToken, user: profile });
       setUiLocale(uiLocaleFromCode(profile.native_language_code));
       await loadData(nextToken, profile.active_language_code, profile.native_language_code);
     } catch (err) {
       localStorage.removeItem("pajama-token");
-      setToken("");
-      setUser(null);
-      setError(err instanceof Error ? err.message : "Session failed.");
+      learningDispatch({ type: "clearSession" });
+      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Session failed." });
     } finally {
-      setBusy(false);
+      learningDispatch({ type: "setBusy", busy: false });
     }
   }
 
@@ -684,31 +676,36 @@ function PajamaTalkApp() {
       api.grammarTopics(nextToken, languageCode, targetCode),
       api.learningPath(nextToken, languageCode, targetCode)
     ]);
-    setStats(nextStats);
-    setWords(nextWords);
-    setDueWords(nextDue);
-    setRooms(nextRooms);
-    setGrammarDrops(nextDrops);
-    setGrammarTopics(nextTopics);
-    setLearningPath(nextPath);
+    learningDispatch({
+      type: "setData",
+      data: {
+        stats: nextStats,
+        words: nextWords,
+        dueWords: nextDue,
+        rooms: nextRooms,
+        grammarDrops: nextDrops,
+        grammarTopics: nextTopics,
+        learningPath: nextPath
+      }
+    });
   }
 
   async function login(email: string, password: string, displayName?: string) {
-    setBusy(true);
-    setError("");
+    learningDispatch({ type: "setBusy", busy: true });
+    learningDispatch({ type: "setError", error: "" });
     try {
       const session = displayName ? await api.register(email, password, displayName) : await api.login(email, password);
       await openSession(session.access_token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Auth failed.");
+      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Auth failed." });
     } finally {
-      setBusy(false);
+      learningDispatch({ type: "setBusy", busy: false });
     }
   }
 
   async function demo() {
-    setBusy(true);
-    setError("");
+    learningDispatch({ type: "setBusy", busy: true });
+    learningDispatch({ type: "setError", error: "" });
     try {
       let session;
       try {
@@ -718,19 +715,19 @@ function PajamaTalkApp() {
       }
       await openSession(session.access_token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Demo login failed.");
+      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Demo login failed." });
     } finally {
-      setBusy(false);
+      learningDispatch({ type: "setBusy", busy: false });
     }
   }
 
   async function updateLearning(code: string) {
     if (!token) return;
-    setLearningCode(code);
+    learningDispatch({ type: "setLearningCode", code });
     chatDispatch({ type: "resetSession" });
     setContextResult(null);
     const profile = await api.updateProfile(token, { active_language_code: code });
-    setUser(profile);
+    learningDispatch({ type: "setUser", user: profile });
     await loadData(token, code);
   }
 
@@ -740,7 +737,7 @@ function PajamaTalkApp() {
     setContextResult(null);
     setUiLocale(uiLocaleFromCode(code));
     const profile = await api.updateProfile(token, { native_language_code: code });
-    setUser(profile);
+    learningDispatch({ type: "setUser", user: profile });
     setUiLocale(uiLocaleFromCode(profile.native_language_code));
     await loadData(token, learningCode, profile.native_language_code);
   }
@@ -749,50 +746,49 @@ function PajamaTalkApp() {
     if (!token) return;
     const minutes = vibe === "Hardcore" ? 30 : vibe === "Normal" ? 15 : 5;
     const profile = await api.updateProfile(token, { learning_vibe: vibe, daily_vibe_minutes: minutes });
-    setUser(profile);
-    setStats(await api.stats(token));
+    learningDispatch({ type: "setUser", user: profile });
+    learningDispatch({ type: "setStats", stats: await api.stats(token) });
   }
 
   async function updateTone(tone: string) {
     if (!token) return;
-    setUser(await api.updateProfile(token, { ai_tone: tone }));
+    learningDispatch({ type: "setUser", user: await api.updateProfile(token, { ai_tone: tone }) });
   }
 
   async function updateProfileSettings(payload: Partial<Record<string, string | number>>) {
     if (!token) return;
     const profile = await api.updateProfile(token, payload);
-    setUser(profile);
-    setLearningCode(profile.active_language_code);
+    learningDispatch({ type: "setUser", user: profile });
+    learningDispatch({ type: "setLearningCode", code: profile.active_language_code });
     await loadData(token, profile.active_language_code, profile.native_language_code);
   }
 
   async function addWord(term: string, source = "") {
     if (!token || !term.trim()) return undefined;
-    setBusy(true);
+    learningDispatch({ type: "setBusy", busy: true });
     try {
       const word = await api.enrichWord(token, term.trim(), learningCode, targetLanguage, source);
-      setWords((current) => [word, ...current.filter((item) => item.id !== word.id)]);
-      setDueWords((current) => [word, ...current.filter((item) => item.id !== word.id)]);
-      setStats(await api.stats(token));
+      learningDispatch({ type: "upsertWord", word });
+      learningDispatch({ type: "setStats", stats: await api.stats(token) });
       return word;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add word.");
+      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Could not add word." });
       return undefined;
     } finally {
-      setBusy(false);
+      learningDispatch({ type: "setBusy", busy: false });
     }
   }
 
   async function analyzeContext() {
     if (!token || contextText.trim().length < 3) return;
-    setBusy(true);
-    setError("");
+    learningDispatch({ type: "setBusy", busy: true });
+    learningDispatch({ type: "setError", error: "" });
     try {
       setContextResult(await api.analyzeContext(token, contextText, learningCode, targetLanguage));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Context analysis failed.");
+      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Context analysis failed." });
     } finally {
-      setBusy(false);
+      learningDispatch({ type: "setBusy", busy: false });
     }
   }
 
@@ -806,11 +802,10 @@ function PajamaTalkApp() {
     if (!token) return;
     try {
       await api.deleteWord(token, wordId);
-      setWords((current) => current.filter((word) => word.id !== wordId));
-      setDueWords((current) => current.filter((word) => word.id !== wordId));
-      setStats(await api.stats(token));
+      learningDispatch({ type: "removeWord", wordId });
+      learningDispatch({ type: "setStats", stats: await api.stats(token) });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not delete word.");
+      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Could not delete word." });
     }
   }
 
@@ -820,7 +815,7 @@ function PajamaTalkApp() {
     try {
       chatDispatch({ type: "setHints", hints: await api.speakingHints(token, activeRoom.id, last, learningCode) });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Hints failed.");
+      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Hints failed." });
     }
   }
 
@@ -842,7 +837,7 @@ function PajamaTalkApp() {
       });
       finalReply = result.finalReply;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Speaking stream failed.");
+      learningDispatch({ type: "setError", error: err instanceof Error ? err.message : "Speaking stream failed." });
     }
     if (finalReply && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -856,8 +851,7 @@ function PajamaTalkApp() {
         api.grammarDrops(token, learningCode, explanationCode),
         api.grammarTopics(token, learningCode, explanationCode)
       ]);
-      setGrammarDrops(nextDrops);
-      setGrammarTopics(nextTopics);
+      learningDispatch({ type: "setGrammar", drops: nextDrops, topics: nextTopics });
     }
   }
 
@@ -873,16 +867,9 @@ function PajamaTalkApp() {
 
   function logout() {
     localStorage.removeItem("pajama-token");
-    setToken("");
-    setUser(null);
-    setWords([]);
-    setDueWords([]);
-    setStats(null);
+    learningDispatch({ type: "clearSession" });
     setContextResult(null);
     chatDispatch({ type: "resetSession" });
-    setGrammarDrops([]);
-    setGrammarTopics([]);
-    setLearningPath(null);
   }
 
   if (!user) {
