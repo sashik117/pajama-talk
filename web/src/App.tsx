@@ -857,6 +857,7 @@ function PajamaTalkApp() {
             locale={uiLocale}
             learningCode={learningCode}
             words={words}
+            dueWords={dueWords}
             dueWord={dueWord}
             busy={busy}
             sample={selectedLanguage.sample}
@@ -1295,6 +1296,26 @@ function LearningPathPanel({
     }
   }
 
+  async function saveVocabulary(term: string) {
+    const created = await addWord(term, step.title);
+    if (created) {
+      setSavedPhrase(`${copy("add")}: ${created.term}`);
+      window.setTimeout(() => setSavedPhrase(""), 1800);
+    }
+  }
+
+  async function saveStepVocabulary() {
+    let saved = 0;
+    for (const item of step.vocabulary ?? []) {
+      const created = await addWord(item.term, step.title);
+      if (created) saved += 1;
+    }
+    if (saved) {
+      setSavedPhrase(`${copy("addWords")}: ${saved}`);
+      window.setTimeout(() => setSavedPhrase(""), 1800);
+    }
+  }
+
   return (
     <section className="card learning-path-card">
       <div className="section-title learning-head">
@@ -1340,6 +1361,29 @@ function LearningPathPanel({
         <strong>{step.title}</strong>
         <p>{step.goal}</p>
         <p>{step.teacher_note}</p>
+        {!!step.vocabulary?.length && (
+          <div className="lesson-vocabulary" data-testid="lesson-vocabulary">
+            <div className="lesson-vocab-head">
+              <span>{copy("myWords")}</span>
+              <button className="soft-action mint" onClick={() => void saveStepVocabulary()} data-testid="lesson-add-vocabulary">
+                <Plus size={14} />
+                {copy("addWords")}
+              </button>
+            </div>
+            <div className="lesson-word-grid">
+              {step.vocabulary.map((item) => (
+                <span key={`${step.id}-${item.term}`} className="lesson-word-chip">
+                  <button type="button" onClick={() => void saveVocabulary(item.term)}>
+                    <strong>{item.term}</strong>
+                    <small>{item.meaning}</small>
+                  </button>
+                  <PronunciationGuide value={item.pronunciation} locale={locale} />
+                  <PronounceButton text={item.term} languageCode={path.language_code} label={coachLabels.listen} className="compact-listen" />
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="phrase-stack">
           {step.examples.map((example) => (
             <div key={example.phrase} className={example.phrase === activeExample?.phrase ? "phrase-card selected" : "phrase-card"}>
@@ -1787,6 +1831,7 @@ function StorageScreen({
   locale,
   learningCode,
   words,
+  dueWords,
   dueWord,
   busy,
   sample,
@@ -1799,6 +1844,7 @@ function StorageScreen({
   locale: UiLocale;
   learningCode: string;
   words: WordDto[];
+  dueWords: WordDto[];
   dueWord?: WordDto;
   busy: boolean;
   sample: string;
@@ -1810,7 +1856,7 @@ function StorageScreen({
   const [term, setTerm] = useState("");
   const [mode, setMode] = useState<"words" | "review">("words");
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<"all" | "learning" | "learned">("all");
+  const [filter, setFilter] = useState<"all" | "new" | "learning" | "due" | "learned">("all");
   const [lastAdded, setLastAdded] = useState<WordDto | null>(null);
   const [reviewAnswer, setReviewAnswer] = useState("");
   const [reviewResult, setReviewResult] = useState<"correct" | "try" | "">("");
@@ -1818,18 +1864,29 @@ function StorageScreen({
   const coachLabels = learningCoachCopy[locale] ?? learningCoachCopy.en;
   const filteredWords = useMemo(() => {
     const needle = query.trim().toLowerCase();
+    const dueIds = new Set(dueWords.map((word) => word.id));
+    const now = Date.now();
     return words.filter((word) => {
       const matchesQuery =
         !needle ||
         word.term.toLowerCase().includes(needle) ||
         word.translation.toLowerCase().includes(needle) ||
         word.source_context.toLowerCase().includes(needle);
-      const matchesFilter = filter === "all" || word.status === filter;
+      const isDue = dueIds.has(word.id) || (word.due_at ? new Date(word.due_at).getTime() <= now : false);
+      const isNew = word.status === "learning" && word.color_level === 0;
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "new" && isNew) ||
+        (filter === "due" && isDue) ||
+        (filter === "learning" && word.status === "learning") ||
+        (filter === "learned" && word.status === "learned");
       return matchesQuery && matchesFilter;
     });
-  }, [filter, query, words]);
+  }, [dueWords, filter, query, words]);
   const learningCount = words.filter((word) => word.status === "learning").length;
   const learnedCount = words.filter((word) => word.status === "learned").length;
+  const newCount = words.filter((word) => word.status === "learning" && word.color_level === 0).length;
+  const dueCount = dueWords.length;
   const nextDue = dueWord?.due_at ? compactDate(dueWord.due_at) : copy("reviewEmpty");
 
   useEffect(() => {
@@ -1857,7 +1914,11 @@ function StorageScreen({
         </div>
         <div className="storage-metric card">
           <strong>{learningCount}</strong>
-          <span>SRS</span>
+          <span>learning</span>
+        </div>
+        <div className="storage-metric card">
+          <strong>{dueCount}</strong>
+          <span>{copy("due")}</span>
         </div>
         <div className="storage-metric card">
           <strong>{learnedCount}</strong>
@@ -1990,9 +2051,11 @@ function StorageScreen({
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`${copy("myWords")} / ${copy("contextTitle")}`} />
             <div className="filter-pills">
               {[
-                ["all", copy("myWords")],
-                ["learning", "SRS"],
-                ["learned", copy("learned")]
+                ["all", `${copy("myWords")} ${words.length}`],
+                ["new", `${copy("newWord")} ${newCount}`],
+                ["learning", `learning ${learningCount}`],
+                ["due", `${copy("due")} ${dueCount}`],
+                ["learned", `${copy("learned")} ${learnedCount}`]
               ].map(([key, label]) => (
                 <button key={key} className={filter === key ? "selected" : ""} onClick={() => setFilter(key as typeof filter)}>
                   {label}

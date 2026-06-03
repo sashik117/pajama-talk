@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.domain.chat import Message
 from app.models.chat import ChatMessage
 from app.models.user import User
-from app.models.word import Word
+from app.models.word import SrsData, Word
 from app.services.grammar import detect_mistake_tag
 
 
@@ -36,12 +36,13 @@ class ChatRepository:
             row[0]
             for row in (
                 self.db.query(Word.term)
+                .join(SrsData, isouter=True)
                 .filter(
                     Word.owner_id == user.id,
                     Word.language_code == user.active_language_code,
                     Word.status == "learning",
                 )
-                .order_by(Word.created_at.desc())
+                .order_by(SrsData.due_at.asc(), Word.color_level.asc(), Word.created_at.desc())
                 .limit(limit)
                 .all()
             )

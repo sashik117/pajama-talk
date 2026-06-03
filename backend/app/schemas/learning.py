@@ -7,6 +7,12 @@ class LearningPhrase(BaseModel):
     meaning: str
 
 
+class LearningVocabularyItem(BaseModel):
+    term: str
+    pronunciation: str = ""
+    meaning: str
+
+
 class LearningStep(BaseModel):
     id: str
     title: str
@@ -14,6 +20,7 @@ class LearningStep(BaseModel):
     teacher_note: str
     micro_task: str
     examples: list[LearningPhrase]
+    vocabulary: list[LearningVocabularyItem] = []
 
 
 class LearningDailyTask(BaseModel):

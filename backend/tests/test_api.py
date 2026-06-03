@@ -511,6 +511,8 @@ def test_learning_path_and_grammar_follow_selected_language(client: TestClient) 
     assert path_body["daily_plan"][0]["action"] == "shadow"
     assert path_body["objectives"]
     assert "Cześć, jestem Sasha." in str(path_body["daily_plan"])
+    assert path_body["steps"][0]["vocabulary"][0]["term"] == "Cześć"
+    assert path_body["steps"][1]["vocabulary"][0]["term"] == "kawa"
 
     client.patch(
         "/auth/me",

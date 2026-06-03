@@ -126,6 +126,9 @@ test("learning path exposes listen-and-repeat practice", async ({ page, request 
   await openFreshLearner(page, request);
 
   await expect(page.getByTestId("listen-daily-phrase")).toBeVisible();
+  await expect(page.getByTestId("lesson-vocabulary")).toBeVisible();
+  await page.getByTestId("lesson-add-vocabulary").click();
+  await expect(page.locator(".learning-step .inline-note")).toBeVisible();
   await expect(page.getByTestId("shadow-trainer")).toBeVisible();
   await page.getByTestId("shadow-answer").fill("not the phrase");
   await page.getByTestId("shadow-check").click();

@@ -1,5 +1,5 @@
 from app.core.languages import language_name, normalize_language_code
-from app.schemas.learning import LearningDailyTask, LearningPathResponse, LearningPhrase, LearningStep
+from app.schemas.learning import LearningDailyTask, LearningPathResponse, LearningPhrase, LearningStep, LearningVocabularyItem
 
 
 STARTER_PACKS: dict[str, dict[str, object]] = {
@@ -107,6 +107,136 @@ def starter_phrase(language_code: str, key: str) -> str:
 
 def starter_meaning(language_code: str, key: str) -> str:
     return starter_pack(language_code)[key][2]
+
+
+VOCAB_BANK: dict[str, dict[str, tuple[str, str]]] = {
+    "en": {
+        "hello": ("Hi", "hai"),
+        "coffee": ("coffee", "ko-fee"),
+        "help": ("help", "help"),
+        "thanks": ("Thanks", "thenks"),
+    },
+    "uk": {
+        "hello": ("Привіт", "pry-vit"),
+        "coffee": ("кава", "ka-va"),
+        "help": ("допомогти", "do-po-moh-ty"),
+        "thanks": ("Дякую", "dya-ku-yu"),
+    },
+    "ru": {
+        "hello": ("Привет", "pri-vet"),
+        "coffee": ("кофе", "ko-fe"),
+        "help": ("помочь", "po-moch"),
+        "thanks": ("Спасибо", "spa-si-bo"),
+    },
+    "sk": {
+        "hello": ("Ahoj", "a-hoy"),
+        "coffee": ("káva", "kaa-va"),
+        "help": ("pomôcť", "po-moots"),
+        "thanks": ("Ďakujem", "dya-ku-yem"),
+    },
+    "pl": {
+        "hello": ("Cześć", "cheshch"),
+        "coffee": ("kawa", "ka-va"),
+        "help": ("pomóc", "po-muts"),
+        "thanks": ("Dzięki", "jen-ki"),
+    },
+    "cs": {
+        "hello": ("Ahoj", "a-hoy"),
+        "coffee": ("káva", "kaa-va"),
+        "help": ("pomoct", "po-motst"),
+        "thanks": ("Díky", "dee-ki"),
+    },
+    "fr": {
+        "hello": ("Salut", "sa-lu"),
+        "coffee": ("café", "ka-fe"),
+        "help": ("aider", "e-de"),
+        "thanks": ("Merci", "mer-si"),
+    },
+    "es": {
+        "hello": ("Hola", "o-la"),
+        "coffee": ("café", "ka-fe"),
+        "help": ("ayudar", "a-yu-dar"),
+        "thanks": ("Gracias", "gra-syas"),
+    },
+    "it": {
+        "hello": ("Ciao", "chao"),
+        "coffee": ("caffè", "kaf-fe"),
+        "help": ("aiutare", "ai-u-ta-re"),
+        "thanks": ("Grazie", "gra-tsye"),
+    },
+    "de": {
+        "hello": ("Hallo", "ha-lo"),
+        "coffee": ("Kaffee", "ka-fe"),
+        "help": ("helfen", "hel-fen"),
+        "thanks": ("Danke", "dan-ke"),
+    },
+    "pt": {
+        "hello": ("Olá", "o-la"),
+        "coffee": ("café", "ka-fe"),
+        "help": ("ajudar", "a-ju-dar"),
+        "thanks": ("Obrigada", "o-bri-ga-da"),
+    },
+    "ko": {
+        "hello": ("안녕하세요", "annyeonghaseyo"),
+        "coffee": ("커피", "keopi"),
+        "help": ("도와주세요", "dowajuseyo"),
+        "thanks": ("고마워요", "gomawoyo"),
+    },
+    "ja": {
+        "hello": ("こんにちは", "konnichiwa"),
+        "coffee": ("コーヒー", "koohii"),
+        "help": ("手伝って", "tetsudatte"),
+        "thanks": ("ありがとう", "arigatou"),
+    },
+    "zh": {
+        "hello": ("你好", "ni hao"),
+        "coffee": ("咖啡", "ka fei"),
+        "help": ("帮忙", "bang mang"),
+        "thanks": ("谢谢", "xie xie"),
+    },
+    "tr": {
+        "hello": ("Merhaba", "mer-ha-ba"),
+        "coffee": ("kahve", "kah-ve"),
+        "help": ("yardım", "yar-dym"),
+        "thanks": ("Teşekkürler", "te-shek-kur-ler"),
+    },
+}
+
+
+VOCAB_MEANINGS: dict[str, dict[str, str]] = {
+    "uk": {
+        "hello": "привітання",
+        "coffee": "кава",
+        "help": "допомога",
+        "thanks": "дякую",
+    },
+    "ru": {
+        "hello": "приветствие",
+        "coffee": "кофе",
+        "help": "помощь",
+        "thanks": "спасибо",
+    },
+    "en": {
+        "hello": "greeting",
+        "coffee": "coffee",
+        "help": "help",
+        "thanks": "thanks",
+    },
+}
+
+
+STEP_VOCAB_CONCEPTS = {
+    "hello": ["hello"],
+    "want": ["coffee"],
+    "question": ["help"],
+    "thanks": ["thanks"],
+}
+
+
+def _vocabulary_item(language_code: str, concept: str, explanation_code: str) -> LearningVocabularyItem:
+    term, pronunciation = VOCAB_BANK.get(language_code, VOCAB_BANK["en"]).get(concept, VOCAB_BANK["en"][concept])
+    meaning = VOCAB_MEANINGS.get(explanation_code, VOCAB_MEANINGS["en"]).get(concept, concept)
+    return LearningVocabularyItem(term=term, pronunciation=pronunciation, meaning=meaning)
 
 
 MEANING_TRANSLATIONS: dict[str, dict[str, str]] = {
@@ -499,6 +629,10 @@ def build_learning_path(
                 teacher_note=notes[key],
                 micro_task=f"{tasks[key].format(phrase=pack[key][0])} · {_effort_hint(effort_level)}",
                 examples=examples[key],
+                vocabulary=[
+                    _vocabulary_item(code, concept, explanation_code)
+                    for concept in STEP_VOCAB_CONCEPTS.get(key, [])
+                ],
             )
             for key in step_keys
         ],

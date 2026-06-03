@@ -84,7 +84,17 @@ const payload: LearningDataPayload = {
     speaking_drill: "say coffee",
     objectives: ["ask for coffee"],
     daily_plan: [],
-    steps: []
+    steps: [
+      {
+        id: "pl-hello",
+        title: "Hello",
+        goal: "greet",
+        teacher_note: "note",
+        micro_task: "repeat",
+        examples: [],
+        vocabulary: [{ term: "Cześć", pronunciation: "cheshch", meaning: "greeting" }]
+      }
+    ]
   }
 };
 

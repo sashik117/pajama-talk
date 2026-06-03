@@ -521,6 +521,13 @@ data class LearningPhraseDto(
 )
 
 @Serializable
+data class LearningVocabularyItemDto(
+    val term: String,
+    val pronunciation: String = "",
+    val meaning: String,
+)
+
+@Serializable
 data class LearningStepDto(
     val id: String,
     val title: String,
@@ -528,6 +535,7 @@ data class LearningStepDto(
     @SerialName("teacher_note") val teacherNote: String,
     @SerialName("micro_task") val microTask: String,
     val examples: List<LearningPhraseDto>,
+    val vocabulary: List<LearningVocabularyItemDto> = emptyList(),
 )
 
 @Serializable

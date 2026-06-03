@@ -144,6 +144,7 @@ export type LearningPathDto = {
     teacher_note: string;
     micro_task: string;
     examples: Array<{ phrase: string; pronunciation: string; meaning: string }>;
+    vocabulary: Array<{ term: string; pronunciation: string; meaning: string }>;
   }>;
 };
 

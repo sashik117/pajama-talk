@@ -498,6 +498,13 @@ private fun AuraScreen() {
                     Text(step.title, color = Graphite, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(4.dp))
                     Text(step.microTask, color = InkMuted)
+                    if (step.vocabulary.isNotEmpty()) {
+                        Spacer(Modifier.height(10.dp))
+                        step.vocabulary.take(4).forEach { item ->
+                            Text("${item.term} · ${item.meaning}", color = Graphite, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                            PronunciationText(item.pronunciation)
+                        }
+                    }
                     step.examples.firstOrNull()?.let { phrase ->
                         Spacer(Modifier.height(10.dp))
                         Text(phrase.phrase, color = Graphite, fontWeight = FontWeight.Medium)
