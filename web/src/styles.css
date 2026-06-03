@@ -1268,6 +1268,57 @@ textarea {
   padding: 4px 7px;
 }
 
+.lesson-practice {
+  display: grid;
+  gap: 8px;
+}
+
+.lesson-check {
+  display: grid;
+  gap: 8px;
+  border-radius: 18px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.lesson-check > strong {
+  color: #292632;
+  font-size: 13px;
+  font-weight: 590;
+}
+
+.lesson-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.lesson-options button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 9px;
+  color: #292632;
+  background: rgba(247, 241, 255, 0.82);
+  font-size: 12px;
+  font-weight: 540;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson-options button.correct {
+  background: rgba(157, 206, 192, 0.66);
+}
+
+.lesson-check.try {
+  outline: 1px solid rgba(243, 182, 168, 0.45);
+}
+
+.lesson-check.correct {
+  outline: 1px solid rgba(157, 206, 192, 0.56);
+}
+
 .phrase-card,
 .micro-task {
   border-radius: 16px;
@@ -2487,6 +2538,10 @@ textarea {
 
   .filter-pills {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lesson-options {
+    grid-template-columns: 1fr;
   }
 }
 

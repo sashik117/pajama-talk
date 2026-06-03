@@ -513,6 +513,8 @@ def test_learning_path_and_grammar_follow_selected_language(client: TestClient) 
     assert "Cześć, jestem Sasha." in str(path_body["daily_plan"])
     assert path_body["steps"][0]["vocabulary"][0]["term"] == "Cześć"
     assert path_body["steps"][1]["vocabulary"][0]["term"] == "kawa"
+    assert path_body["steps"][0]["practice"][0]["correct_answer"] == "привітання"
+    assert "Cześć, jestem Sasha." in [item["correct_answer"] for item in path_body["steps"][0]["practice"]]
 
     client.patch(
         "/auth/me",

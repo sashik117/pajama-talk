@@ -13,6 +13,14 @@ class LearningVocabularyItem(BaseModel):
     meaning: str
 
 
+class LearningPracticeItem(BaseModel):
+    id: str
+    prompt: str
+    options: list[str]
+    correct_answer: str
+    feedback: str
+
+
 class LearningStep(BaseModel):
     id: str
     title: str
@@ -21,6 +29,7 @@ class LearningStep(BaseModel):
     micro_task: str
     examples: list[LearningPhrase]
     vocabulary: list[LearningVocabularyItem] = []
+    practice: list[LearningPracticeItem] = []
 
 
 class LearningDailyTask(BaseModel):

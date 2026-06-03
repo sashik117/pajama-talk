@@ -92,7 +92,16 @@ const payload: LearningDataPayload = {
         teacher_note: "note",
         micro_task: "repeat",
         examples: [],
-        vocabulary: [{ term: "Cześć", pronunciation: "cheshch", meaning: "greeting" }]
+        vocabulary: [{ term: "Cześć", pronunciation: "cheshch", meaning: "greeting" }],
+        practice: [
+          {
+            id: "pl-hello-meaning",
+            prompt: "What does it mean?",
+            options: ["greeting", "coffee", "help"],
+            correct_answer: "greeting",
+            feedback: "Good."
+          }
+        ]
       }
     ]
   }

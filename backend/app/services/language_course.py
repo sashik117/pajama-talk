@@ -1,5 +1,12 @@
 from app.core.languages import language_name, normalize_language_code
-from app.schemas.learning import LearningDailyTask, LearningPathResponse, LearningPhrase, LearningStep, LearningVocabularyItem
+from app.schemas.learning import (
+    LearningDailyTask,
+    LearningPathResponse,
+    LearningPhrase,
+    LearningPracticeItem,
+    LearningStep,
+    LearningVocabularyItem,
+)
 
 
 STARTER_PACKS: dict[str, dict[str, object]] = {
@@ -222,6 +229,78 @@ VOCAB_MEANINGS: dict[str, dict[str, str]] = {
         "help": "help",
         "thanks": "thanks",
     },
+    "pl": {
+        "hello": "powitanie",
+        "coffee": "kawa",
+        "help": "pomoc",
+        "thanks": "dziękuję",
+    },
+    "sk": {
+        "hello": "pozdrav",
+        "coffee": "káva",
+        "help": "pomoc",
+        "thanks": "ďakujem",
+    },
+    "cs": {
+        "hello": "pozdrav",
+        "coffee": "káva",
+        "help": "pomoc",
+        "thanks": "děkuji",
+    },
+    "fr": {
+        "hello": "salutation",
+        "coffee": "café",
+        "help": "aide",
+        "thanks": "merci",
+    },
+    "es": {
+        "hello": "saludo",
+        "coffee": "café",
+        "help": "ayuda",
+        "thanks": "gracias",
+    },
+    "it": {
+        "hello": "saluto",
+        "coffee": "caffè",
+        "help": "aiuto",
+        "thanks": "grazie",
+    },
+    "de": {
+        "hello": "Begrüßung",
+        "coffee": "Kaffee",
+        "help": "Hilfe",
+        "thanks": "Danke",
+    },
+    "pt": {
+        "hello": "saudação",
+        "coffee": "café",
+        "help": "ajuda",
+        "thanks": "obrigada",
+    },
+    "tr": {
+        "hello": "selamlaşma",
+        "coffee": "kahve",
+        "help": "yardım",
+        "thanks": "teşekkür",
+    },
+    "ja": {
+        "hello": "あいさつ",
+        "coffee": "コーヒー",
+        "help": "助け",
+        "thanks": "ありがとう",
+    },
+    "ko": {
+        "hello": "인사",
+        "coffee": "커피",
+        "help": "도움",
+        "thanks": "고마워요",
+    },
+    "zh": {
+        "hello": "问候",
+        "coffee": "咖啡",
+        "help": "帮助",
+        "thanks": "谢谢",
+    },
 }
 
 
@@ -237,6 +316,145 @@ def _vocabulary_item(language_code: str, concept: str, explanation_code: str) ->
     term, pronunciation = VOCAB_BANK.get(language_code, VOCAB_BANK["en"]).get(concept, VOCAB_BANK["en"][concept])
     meaning = VOCAB_MEANINGS.get(explanation_code, VOCAB_MEANINGS["en"]).get(concept, concept)
     return LearningVocabularyItem(term=term, pronunciation=pronunciation, meaning=meaning)
+
+
+PRACTICE_COPY: dict[str, dict[str, str]] = {
+    "uk": {
+        "vocab_prompt": "Що означає “{term}”?",
+        "phrase_prompt": "Яка фраза підходить для: {goal}",
+        "vocab_feedback": "Так. Спершу прив'язуємо звук до значення, потім переносимо слово у фразу.",
+        "phrase_feedback": "Так. Це готова репліка для спікінгу, не сухе правило.",
+    },
+    "ru": {
+        "vocab_prompt": "Что означает “{term}”?",
+        "phrase_prompt": "Какая фраза подходит для: {goal}",
+        "vocab_feedback": "Да. Сначала связываем звук со значением, потом переносим слово во фразу.",
+        "phrase_feedback": "Да. Это готовая реплика для спикинга, не сухое правило.",
+    },
+    "en": {
+        "vocab_prompt": "What does “{term}” mean?",
+        "phrase_prompt": "Which phrase fits: {goal}",
+        "vocab_feedback": "Yes. First connect the sound to the meaning, then use it in a phrase.",
+        "phrase_feedback": "Yes. This is a ready speaking turn, not a dry rule.",
+    },
+    "pl": {
+        "vocab_prompt": "Co znaczy “{term}”?",
+        "phrase_prompt": "Która fraza pasuje do: {goal}",
+        "vocab_feedback": "Tak. Najpierw łączymy dźwięk ze znaczeniem, potem używamy go w zdaniu.",
+        "phrase_feedback": "Tak. To gotowa wypowiedź do mówienia, nie sucha reguła.",
+    },
+    "sk": {
+        "vocab_prompt": "Čo znamená “{term}”?",
+        "phrase_prompt": "Ktorá fráza sa hodí na: {goal}",
+        "vocab_feedback": "Áno. Najprv spojíme zvuk s významom, potom slovo použijeme vo fráze.",
+        "phrase_feedback": "Áno. Toto je hotová replika na hovorenie, nie suché pravidlo.",
+    },
+    "cs": {
+        "vocab_prompt": "Co znamená “{term}”?",
+        "phrase_prompt": "Která fráze se hodí pro: {goal}",
+        "vocab_feedback": "Ano. Nejdřív spojíme zvuk s významem, potom slovo použijeme ve frázi.",
+        "phrase_feedback": "Ano. Je to hotová replika pro mluvení, ne suché pravidlo.",
+    },
+    "fr": {
+        "vocab_prompt": "Que signifie “{term}” ?",
+        "phrase_prompt": "Quelle phrase convient pour : {goal}",
+        "vocab_feedback": "Oui. On relie d'abord le son au sens, puis on l'utilise dans une phrase.",
+        "phrase_feedback": "Oui. C'est une réplique prête pour l'oral, pas une règle sèche.",
+    },
+    "es": {
+        "vocab_prompt": "¿Qué significa “{term}”?",
+        "phrase_prompt": "Qué frase encaja con: {goal}",
+        "vocab_feedback": "Sí. Primero conectamos el sonido con el significado y luego lo usamos en una frase.",
+        "phrase_feedback": "Sí. Es una respuesta lista para hablar, no una regla seca.",
+    },
+    "it": {
+        "vocab_prompt": "Cosa significa “{term}”?",
+        "phrase_prompt": "Quale frase va bene per: {goal}",
+        "vocab_feedback": "Sì. Prima colleghiamo il suono al significato, poi lo usiamo in una frase.",
+        "phrase_feedback": "Sì. È una risposta pronta per parlare, non una regola asciutta.",
+    },
+    "de": {
+        "vocab_prompt": "Was bedeutet “{term}”?",
+        "phrase_prompt": "Welche Phrase passt zu: {goal}",
+        "vocab_feedback": "Ja. Erst verbinden wir Klang und Bedeutung, dann nutzen wir das Wort in einer Phrase.",
+        "phrase_feedback": "Ja. Das ist ein fertiger Sprechzug, keine trockene Regel.",
+    },
+    "pt": {
+        "vocab_prompt": "O que significa “{term}”?",
+        "phrase_prompt": "Qual frase combina com: {goal}",
+        "vocab_feedback": "Sim. Primeiro ligamos o som ao significado, depois usamos numa frase.",
+        "phrase_feedback": "Sim. É uma fala pronta para praticar, não uma regra seca.",
+    },
+    "tr": {
+        "vocab_prompt": "“{term}” ne demek?",
+        "phrase_prompt": "Hangi ifade şuna uyar: {goal}",
+        "vocab_feedback": "Evet. Önce sesi anlamla bağlıyoruz, sonra kelimeyi cümlede kullanıyoruz.",
+        "phrase_feedback": "Evet. Bu konuşma için hazır bir cevap, kuru bir kural değil.",
+    },
+    "ja": {
+        "vocab_prompt": "“{term}” はどういう意味？",
+        "phrase_prompt": "どのフレーズが合う？ {goal}",
+        "vocab_feedback": "OK。まず音と意味をつなげて、それからフレーズで使います。",
+        "phrase_feedback": "OK。これは会話でそのまま使える返事です。",
+    },
+    "ko": {
+        "vocab_prompt": "“{term}”은 무슨 뜻이에요?",
+        "phrase_prompt": "어떤 문장이 맞아요: {goal}",
+        "vocab_feedback": "좋아요. 먼저 소리와 뜻을 연결하고, 그다음 문장에서 써요.",
+        "phrase_feedback": "좋아요. 이건 말하기에 바로 쓰는 대답이에요.",
+    },
+    "zh": {
+        "vocab_prompt": "“{term}”是什么意思？",
+        "phrase_prompt": "哪个句子适合：{goal}",
+        "vocab_feedback": "对。先把声音和意思连起来，再放进句子里用。",
+        "phrase_feedback": "对。这是可以直接开口说的回答，不是干规则。",
+    },
+}
+
+
+def _practice_copy(explanation_code: str) -> dict[str, str]:
+    return PRACTICE_COPY.get(explanation_code, PRACTICE_COPY["en"])
+
+
+def _ordered_options(correct: str, candidates: list[str], limit: int = 3) -> list[str]:
+    options = [correct]
+    for candidate in candidates:
+        if candidate != correct and candidate not in options:
+            options.append(candidate)
+        if len(options) == limit:
+            break
+    return options
+
+
+def _practice_items(
+    language_code: str,
+    key: str,
+    pack: dict[str, tuple[str, str, str]],
+    explanation_code: str,
+    goal: str,
+) -> list[LearningPracticeItem]:
+    copy = _practice_copy(explanation_code)
+    concept = STEP_VOCAB_CONCEPTS.get(key, ["hello"])[0]
+    vocab = _vocabulary_item(language_code, concept, explanation_code)
+    meanings = VOCAB_MEANINGS.get(explanation_code, VOCAB_MEANINGS["en"])
+    meaning_options = _ordered_options(vocab.meaning, [meanings[item] for item in ("hello", "coffee", "help", "thanks")])
+    phrase_options = _ordered_options(pack[key][0], [pack[item][0] for item in ("hello", "want", "question", "thanks")])
+    return [
+        LearningPracticeItem(
+            id=f"{language_code}-{key}-meaning",
+            prompt=copy["vocab_prompt"].format(term=vocab.term),
+            options=meaning_options,
+            correct_answer=vocab.meaning,
+            feedback=copy["vocab_feedback"],
+        ),
+        LearningPracticeItem(
+            id=f"{language_code}-{key}-phrase",
+            prompt=copy["phrase_prompt"].format(goal=goal),
+            options=phrase_options,
+            correct_answer=pack[key][0],
+            feedback=copy["phrase_feedback"],
+        ),
+    ]
 
 
 MEANING_TRANSLATIONS: dict[str, dict[str, str]] = {
@@ -633,6 +851,7 @@ def build_learning_path(
                     _vocabulary_item(code, concept, explanation_code)
                     for concept in STEP_VOCAB_CONCEPTS.get(key, [])
                 ],
+                practice=_practice_items(code, key, pack, explanation_code, goals[key]),
             )
             for key in step_keys
         ],

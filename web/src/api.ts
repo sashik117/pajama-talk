@@ -145,6 +145,7 @@ export type LearningPathDto = {
     micro_task: string;
     examples: Array<{ phrase: string; pronunciation: string; meaning: string }>;
     vocabulary: Array<{ term: string; pronunciation: string; meaning: string }>;
+    practice: Array<{ id: string; prompt: string; options: string[]; correct_answer: string; feedback: string }>;
   }>;
 };
 

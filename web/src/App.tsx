@@ -1252,6 +1252,7 @@ function LearningPathPanel({
   const [savedPhrase, setSavedPhrase] = useState("");
   const [shadowAnswer, setShadowAnswer] = useState("");
   const [shadowResult, setShadowResult] = useState<"correct" | "try" | "">("");
+  const [practiceResults, setPracticeResults] = useState<Record<string, "correct" | "try">>({});
   const step = path.steps.find((item) => item.id === activeStep) ?? path.steps[0];
   const coachLabels = learningCoachCopy[locale] ?? learningCoachCopy.en;
   const activeExample = step?.examples.find((example) => example.phrase === activePhrase) ?? step?.examples[0];
@@ -1263,6 +1264,7 @@ function LearningPathPanel({
     setSavedPhrase("");
     setShadowAnswer("");
     setShadowResult("");
+    setPracticeResults({});
   }, [path.language_code, path.steps]);
 
   if (!step) return null;
@@ -1273,6 +1275,7 @@ function LearningPathPanel({
     setActivePhrase(nextStep?.examples[0]?.phrase ?? "");
     setShadowAnswer("");
     setShadowResult("");
+    setPracticeResults({});
   }
 
   function selectPhrase(phrase: string) {
@@ -1314,6 +1317,15 @@ function LearningPathPanel({
       setSavedPhrase(`${copy("addWords")}: ${saved}`);
       window.setTimeout(() => setSavedPhrase(""), 1800);
     }
+  }
+
+  function answerPractice(practiceId: string, option: string) {
+    const practice = step.practice?.find((item) => item.id === practiceId);
+    if (!practice) return;
+    setPracticeResults((current) => ({
+      ...current,
+      [practiceId]: option === practice.correct_answer ? "correct" : "try"
+    }));
   }
 
   return (
@@ -1382,6 +1394,35 @@ function LearningPathPanel({
                 </span>
               ))}
             </div>
+          </div>
+        )}
+        {!!step.practice?.length && (
+          <div className="lesson-practice" data-testid="lesson-practice">
+            {step.practice.map((practice) => {
+              const result = practiceResults[practice.id];
+              return (
+                <article key={practice.id} className={`lesson-check ${result ?? ""}`.trim()} data-testid="lesson-check">
+                  <strong>{practice.prompt}</strong>
+                  <div className="lesson-options">
+                    {practice.options.map((option) => (
+                      <button
+                        key={`${practice.id}-${option}`}
+                        className={result && option === practice.correct_answer ? "correct" : ""}
+                        onClick={() => answerPractice(practice.id, option)}
+                        data-testid="lesson-practice-option"
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                  {result && (
+                    <div className={`inline-note ${result}`}>
+                      {result === "correct" ? practice.feedback : coachLabels.tryAgain}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
         <div className="phrase-stack">

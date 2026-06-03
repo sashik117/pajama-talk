@@ -505,6 +505,14 @@ private fun AuraScreen() {
                             PronunciationText(item.pronunciation)
                         }
                     }
+                    if (step.practice.isNotEmpty()) {
+                        Spacer(Modifier.height(10.dp))
+                        step.practice.take(2).forEach { item ->
+                            Text(item.prompt, color = Graphite, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                            Text(item.options.joinToString(" · "), color = InkMuted, fontSize = 12.sp)
+                            Spacer(Modifier.height(6.dp))
+                        }
+                    }
                     step.examples.firstOrNull()?.let { phrase ->
                         Spacer(Modifier.height(10.dp))
                         Text(phrase.phrase, color = Graphite, fontWeight = FontWeight.Medium)
