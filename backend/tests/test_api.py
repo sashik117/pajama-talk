@@ -3,7 +3,9 @@ import time
 
 import pytest
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
+from app.core.config import settings
 from app.db.session import Base, engine
 from app.domain.voice import VoiceSessionBuffer
 from app.main import app
@@ -52,6 +54,7 @@ def test_word_enrichment_and_review(client: TestClient) -> None:
     reviewed = client.post(f"/words/{word['id']}/review", headers=headers, json={"grade": "remember"})
     assert reviewed.status_code == 200
     assert reviewed.json()["repetitions"] == 1
+    assert reviewed.json()["interval_minutes"] == 24 * 60
 
     deleted = client.delete(f"/words/{word['id']}", headers=headers)
     assert deleted.status_code == 204
@@ -247,6 +250,27 @@ def test_speaking_websocket_streams_reply(client: TestClient) -> None:
             tokens.append(event["value"])
 
     assert "".join(tokens).strip().startswith("Nice choice")
+
+
+def test_speaking_websocket_requires_jwt_token(client: TestClient) -> None:
+    with pytest.raises(WebSocketDisconnect) as exc_info:
+        with client.websocket_connect("/speaking/ws?room_id=coffee-alex"):
+            pass
+
+    assert exc_info.value.code == 4401
+
+
+def test_speaking_websocket_limits_connections_per_ip(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    headers = auth_headers(client)
+    token = headers["Authorization"].replace("Bearer ", "")
+    monkeypatch.setattr(settings, "websocket_max_connections_per_ip", 1)
+
+    with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex"):
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect(f"/speaking/ws?token={token}&room_id=coffee-alex"):
+                pass
+
+    assert exc_info.value.code == 4408
 
 
 def test_speaking_websocket_uses_mood(client: TestClient) -> None:

@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     openai_tts_voice: str = "coral"
     openai_tts_format: str = "mp3"
     voice_provider_timeout_seconds: int = 20
+    websocket_max_connections_per_ip: int = 12
 
     model_config = SettingsConfigDict(
         env_file=".env",

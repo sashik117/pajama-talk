@@ -24,6 +24,7 @@ from app.services.chat_persistence import ChatRepository
 from app.services.chat_rooms import room_by_id, speaking_rooms_for_user
 from app.services.pronunciation_service import echo_feedback
 from app.services.realtime_chat import RealtimeChatService
+from app.services.websocket_guard import WS_POLICY_LIMIT_CODE, websocket_connection_limiter
 
 router = APIRouter(prefix="/speaking", tags=["speaking"])
 
@@ -92,7 +93,7 @@ def _user_from_ws_token(websocket: WebSocket, db: Session) -> User | None:
     return db.query(User).filter(User.email == subject).first()
 
 
-async def _open_realtime_session(websocket: WebSocket) -> tuple[Session, User, RealtimeChatService] | None:
+async def _open_realtime_session(websocket: WebSocket) -> tuple[Session, User, RealtimeChatService, str] | None:
     room_id = websocket.query_params.get("room_id", "coffee-alex")
     db: Session = SessionLocal()
     user = _user_from_ws_token(websocket, db)
@@ -100,7 +101,12 @@ async def _open_realtime_session(websocket: WebSocket) -> tuple[Session, User, R
         db.close()
         await websocket.close(code=4401)
         return None
-    return db, user, RealtimeChatService(db, user, room_id)
+    client_ip = await websocket_connection_limiter.acquire(websocket)
+    if client_ip is None:
+        db.close()
+        await websocket.close(code=WS_POLICY_LIMIT_CODE)
+        return None
+    return db, user, RealtimeChatService(db, user, room_id), client_ip
 
 
 async def _send_assistant_stream(websocket: WebSocket, service: RealtimeChatService, message: str, token_type: TokenEventType, mood: str) -> str:
@@ -141,7 +147,7 @@ async def speaking_ws(websocket: WebSocket) -> None:
     if session is None:
         return
 
-    db, _user, service = session
+    db, _user, service, client_ip = session
     mood = websocket.query_params.get("mood", "steady")
     await websocket.accept()
     try:
@@ -157,6 +163,7 @@ async def speaking_ws(websocket: WebSocket) -> None:
         return
     finally:
         db.close()
+        await websocket_connection_limiter.release(client_ip)
 
 
 @router.websocket("/voice-ws")
@@ -165,7 +172,7 @@ async def speaking_voice_ws(websocket: WebSocket) -> None:
     if session is None:
         return
 
-    db, _user, service = session
+    db, _user, service, client_ip = session
     mood = websocket.query_params.get("mood", "steady")
     await websocket.accept()
     await websocket.send_json(session_ready_event(service.voice.capabilities()))
@@ -217,3 +224,4 @@ async def speaking_voice_ws(websocket: WebSocket) -> None:
         return
     finally:
         db.close()
+        await websocket_connection_limiter.release(client_ip)

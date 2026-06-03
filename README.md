@@ -190,6 +190,8 @@ The Speaking Rooms UI now sends practice lines through `WS /speaking/ws`. FastAP
 
 Realtime hardening currently includes:
 
+- JWT is required in the WebSocket query before `accept()`; invalid or missing tokens close with `4401`.
+- Application-level per-IP WebSocket connection limiting through `PAJAMA_WEBSOCKET_MAX_CONNECTIONS_PER_IP`; excess sockets close with `4408`.
 - `GET /speaking/history` for restoring persisted room messages from the backend.
 - Typed frontend WebSocket client events.
 - Backend `ping` -> `pong` handling for text and voice sockets.
@@ -198,6 +200,27 @@ Realtime hardening currently includes:
 - A local durable retry queue for failed text and audio turns, so interrupted turns can be retried instead of disappearing.
 - Backend stream finalization persists partial assistant replies if a WebSocket disconnects mid-answer.
 - Unit tests for reducer snapshots and realtime client behavior.
+
+Production edge protection should still enforce socket limits before traffic reaches FastAPI. Recommended deployment layer:
+
+```nginx
+limit_conn_zone $binary_remote_addr zone=pajama_ws:10m;
+
+location /speaking/ {
+  limit_conn pajama_ws 12;
+  proxy_set_header Host $host;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection "upgrade";
+  proxy_pass http://127.0.0.1:8000;
+}
+```
+
+Cloudflare can mirror this with WAF/rate-limit rules for `/speaking/ws` and `/speaking/voice-ws`.
+
+## Public SRS Note
+
+The public repository keeps only a simple demo SRS scheduler that moves the next review by one day. A production adaptive scheduling policy can live in a private service/module without exposing the interval formula in the public codebase.
 - Playwright smoke tests for desktop and mobile web flows.
 
 ## Voice Mode Architecture
