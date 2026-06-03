@@ -649,6 +649,43 @@ function PronounceButton({
   );
 }
 
+const pronunciationLabels: Record<UiLocale, string> = {
+  en: "How to say",
+  uk: "Як читати",
+  ru: "Как читать",
+  pl: "Jak czytać",
+  sk: "Ako čítať",
+  cs: "Jak číst",
+  fr: "Prononciation",
+  es: "Cómo suena",
+  it: "Come si dice",
+  de: "Aussprache",
+  pt: "Como dizer",
+  tr: "Okunuş",
+  ja: "読み方",
+  ko: "발음",
+  zh: "发音"
+};
+
+function PronunciationGuide({
+  value,
+  locale,
+  className = ""
+}: {
+  value: string;
+  locale: UiLocale;
+  className?: string;
+}) {
+  const cleanValue = value.trim();
+  if (!cleanValue) return null;
+  return (
+    <span className={`pronunciation-guide ${className}`.trim()}>
+      <span>{pronunciationLabels[locale] ?? pronunciationLabels.en}</span>
+      <strong>{cleanValue}</strong>
+    </span>
+  );
+}
+
 export function App() {
   return (
     <ChatProvider>
@@ -1264,7 +1301,7 @@ function LearningPathPanel({
                 </button>
                 <PronounceButton text={example.phrase} languageCode={path.language_code} label={coachLabels.listen} className="compact-listen" testId="listen-lesson-phrase" />
               </div>
-              <span>{example.pronunciation}</span>
+              <PronunciationGuide value={example.pronunciation} locale={locale} />
               <p>{example.meaning}</p>
               <button className="phrase-add" onClick={() => void savePhrase(example.phrase)}>
                 <Plus size={14} />
@@ -1280,7 +1317,7 @@ function LearningPathPanel({
               <PronounceButton text={activeExample.phrase} languageCode={path.language_code} label={coachLabels.listen} className="compact-listen" testId="listen-shadow-phrase" />
             </div>
             <strong>{activeExample.phrase}</strong>
-            <span>{activeExample.pronunciation}</span>
+            <PronunciationGuide value={activeExample.pronunciation} locale={locale} />
             <div className="send-row">
               <input
                 value={shadowAnswer}
@@ -1812,7 +1849,7 @@ function StorageScreen({
               <PronounceButton text={lastAdded.term} languageCode={learningCode} label={coachLabels.listen} className="compact-listen" testId="listen-word-last" />
             </div>
             <strong>{lastAdded.translation}</strong>
-            <span>{lastAdded.transcription}</span>
+            <PronunciationGuide value={lastAdded.transcription} locale={locale} />
           </div>
           <p className="example-line">
             {lastAdded.example_one}
@@ -1846,7 +1883,7 @@ function StorageScreen({
         <section className="srs-card card">
           {dueWord ? (
             <>
-              <small>{dueWord.transcription}</small>
+              <PronunciationGuide value={dueWord.transcription} locale={locale} className="review-pronunciation" />
               <div className="word-title-line">
                 <h2>{dueWord.term}</h2>
                 <PronounceButton text={dueWord.term} languageCode={learningCode} label={coachLabels.listen} className="compact-listen" testId="listen-review-word" />
@@ -1920,7 +1957,7 @@ function StorageScreen({
                         <PronounceButton text={word.term} languageCode={learningCode} label={coachLabels.listen} className="compact-listen" testId={`listen-word-${word.id}`} />
                       </span>
                       <span className="translation-line">{word.translation}</span>
-                      <small>{word.transcription}</small>
+                      <PronunciationGuide value={word.transcription} locale={locale} />
                     </span>
                     <span className={`status-pill ${word.status}`}>{word.status === "learned" ? copy("learned") : "SRS"}</span>
                   </summary>

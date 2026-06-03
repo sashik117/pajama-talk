@@ -9,6 +9,7 @@ from app.schemas.word import WordCreate
 from app.services.ai_prompts import context_analysis_prompt, speaking_hints_prompt, word_enrichment_prompt
 from app.services.ai_provider import get_ai_provider
 from app.services.language_course import starter_pack
+from app.services.pronunciation_service import pronunciation_hint, usable_pronunciation
 
 
 COACH_COPY: dict[str, dict[str, str]] = {
@@ -70,7 +71,7 @@ def enrich_word(
             term=clean_term,
             language_code=normalized_code,
             translation=str(ai_payload.get("translation", "")),
-            transcription=str(ai_payload.get("transcription", "")),
+            transcription=usable_pronunciation(clean_term, normalized_code, str(ai_payload.get("transcription", ""))),
             meme=str(ai_payload.get("meme", "")),
             example_one=str(ai_payload.get("example_one", "")),
             example_two=str(ai_payload.get("example_two", "")),
@@ -85,7 +86,7 @@ def enrich_word(
         term=clean_term,
         language_code=normalized_code,
         translation=translation,
-        transcription=f"/{clean_term.lower()}/",
+        transcription=pronunciation_hint(clean_term, normalized_code),
         meme=copy["meme"].format(term=clean_term, source_language=source_language),
         example_one=copy["example_one"].format(phrase=pack["hello"][0], term=clean_term),
         example_two=copy["example_two"].format(phrase=pack["want"][0], term=clean_term),
@@ -306,6 +307,57 @@ def _mock_translate(term: str, target_language: str, source_language_code: str =
             return starter_pack(target_code).get(key, starter_pack("en")[key])[0]
 
     dictionary = {
+        "hola": {
+            "en": "hello",
+            "uk": "привіт",
+            "ru": "привет",
+            "pl": "cześć",
+            "sk": "ahoj",
+            "cs": "ahoj",
+            "fr": "salut",
+            "es": "hola",
+            "it": "ciao",
+            "de": "hallo",
+            "pt": "olá",
+            "tr": "merhaba",
+            "ja": "こんにちは",
+            "ko": "안녕",
+            "zh": "你好",
+        },
+        "gracias": {
+            "en": "thank you",
+            "uk": "дякую",
+            "ru": "спасибо",
+            "pl": "dziękuję",
+            "sk": "ďakujem",
+            "cs": "děkuji",
+            "fr": "merci",
+            "es": "gracias",
+            "it": "grazie",
+            "de": "danke",
+            "pt": "obrigado / obrigada",
+            "tr": "teşekkürler",
+            "ja": "ありがとう",
+            "ko": "고마워요",
+            "zh": "谢谢",
+        },
+        "vale": {
+            "en": "okay / got it",
+            "uk": "добре / окей",
+            "ru": "хорошо / окей",
+            "pl": "okej / dobra",
+            "sk": "dobre",
+            "cs": "dobře",
+            "fr": "d'accord",
+            "es": "vale",
+            "it": "va bene",
+            "de": "okay",
+            "pt": "está bem",
+            "tr": "tamam",
+            "ja": "いいよ",
+            "ko": "좋아요",
+            "zh": "好的",
+        },
         "cozy": {
             "en": "cozy / comfortable",
             "uk": "затишний",

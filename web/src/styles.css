@@ -1195,6 +1195,34 @@ textarea {
   font-size: 12px;
 }
 
+.pronunciation-guide {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #292632;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.pronunciation-guide span {
+  color: #7a7082;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.pronunciation-guide strong {
+  color: #292632;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
 .phrase-add {
   width: fit-content;
   min-height: 30px;
@@ -1896,6 +1924,28 @@ textarea {
   color: #31534d;
   font-size: 13px;
   font-weight: 600;
+}
+
+.word-result-card .pronunciation-guide,
+.srs-card .pronunciation-guide,
+.word-card .pronunciation-guide {
+  display: inline-flex;
+  margin-top: 3px;
+}
+
+.word-result-card .pronunciation-guide span,
+.srs-card .pronunciation-guide span,
+.word-card .pronunciation-guide span {
+  display: inline;
+  color: #7a7082;
+  font-size: 10px;
+}
+
+.word-result-card .pronunciation-guide strong,
+.srs-card .pronunciation-guide strong,
+.word-card .pronunciation-guide strong {
+  color: #292632;
+  font-size: 12px;
 }
 
 .new-word-card p,

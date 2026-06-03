@@ -240,6 +240,7 @@ The web preview now treats every visible learning unit as something the learner 
 - The learning path includes a listen-and-repeat shadow trainer.
 - SRS review includes a small listening check: hear the word, type what you heard, then mark remember/forgot.
 - Browser speech uses language-aware `speechSynthesis` locales for all supported learning languages.
+- Backend fallback enrichment now generates practical "how to say" pronunciation hints instead of placeholder `/word/` strings, and existing stale placeholder transcriptions are corrected in API responses.
 
 The Compose shared app has matching pronunciation infrastructure:
 

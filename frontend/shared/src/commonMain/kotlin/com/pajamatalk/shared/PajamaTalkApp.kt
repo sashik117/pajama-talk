@@ -1477,7 +1477,7 @@ private fun StorageScreen() {
                     ListenAction(word.term, appState.selectedLanguage.code, speech)
                 }
                 Text(word.translation, color = Graphite, fontWeight = FontWeight.Medium)
-                Text(word.transcription, color = InkMuted)
+                PronunciationText(word.transcription)
                 Spacer(Modifier.height(8.dp))
                 ListeningLine(word.exampleOne, appState.selectedLanguage.code, speech)
             }
@@ -1540,6 +1540,22 @@ private fun ListeningLine(
 }
 
 @Composable
+private fun PronunciationText(value: String) {
+    if (value.isBlank()) return
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(Color.White.copy(alpha = 0.56f))
+            .padding(horizontal = 9.dp, vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("How to say", color = InkMuted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+        Text(value, color = Graphite, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
 private fun WordList(
     words: List<WordDto>,
     isLoading: Boolean,
@@ -1569,7 +1585,8 @@ private fun WordList(
                                 Text(word.term, modifier = Modifier.weight(1f), fontSize = 21.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
                                 ListenAction(word.term, languageCode, speech)
                             }
-                            Text("${word.translation} · ${word.transcription}", color = InkMuted)
+                            Text(word.translation, color = InkMuted)
+                            PronunciationText(word.transcription)
                         }
                         Text("${word.colorLevel}/5", color = Graphite, fontWeight = FontWeight.Medium)
                     }
@@ -1655,7 +1672,7 @@ private fun SrsSwipeCard(
                 ListenAction(word.term, languageCode, speech)
             }
             Spacer(Modifier.height(10.dp))
-            Text(word.transcription.ifBlank { word.translation }, color = InkMuted)
+            PronunciationText(word.transcription.ifBlank { word.translation })
             Spacer(Modifier.height(24.dp))
             Text(word.meme.ifBlank { "Swipe right if it stayed. Left if it slipped away." }, color = InkMuted)
             Spacer(Modifier.height(10.dp))

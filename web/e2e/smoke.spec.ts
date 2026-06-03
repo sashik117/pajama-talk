@@ -93,6 +93,7 @@ test("storage can enrich a new word and expose it for review", async ({ page, re
   await page.getByTestId("word-input").fill("exam");
   await page.getByTestId("word-add").click();
   await expect(page.getByTestId("word-result")).toContainText("exam");
+  await expect(page.getByTestId("word-result").getByText("ig-ZAM")).toBeVisible();
   await expect(page.getByTestId("listen-word-last")).toBeVisible();
   await page.getByTestId("storage-review-tab").click();
   await expect(page.getByTestId("review-remember")).toBeVisible();

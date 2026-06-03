@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.word import ReviewGrade, SrsData, Word
 from app.schemas.word import ReviewRequest, ReviewResponse, WordCreate, WordEnrichRequest, WordResponse
 from app.services.ai_service import enrich_word, fallback_translate
+from app.services.pronunciation_service import usable_pronunciation
 from app.services.srs import schedule_review
 
 router = APIRouter(prefix="/words", tags=["words"])
@@ -29,7 +30,7 @@ def to_word_response(word: Word, user: User) -> WordResponse:
         language_code=word.language_code,
         term=word.term,
         translation=_display_translation(word, user),
-        transcription=word.transcription,
+        transcription=usable_pronunciation(word.term, word.language_code, word.transcription),
         meme=word.meme,
         example_one=word.example_one,
         example_two=word.example_two,

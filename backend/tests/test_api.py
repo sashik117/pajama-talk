@@ -143,6 +143,27 @@ def test_words_can_be_filtered_by_learning_language(client: TestClient) -> None:
     assert body[0]["language_code"] == "pl"
 
 
+def test_word_pronunciation_hints_replace_placeholder_transcription(client: TestClient) -> None:
+    headers = auth_headers(client)
+
+    enriched = client.post(
+        "/words/enrich",
+        headers=headers,
+        json={"term": "hola", "language_code": "es"},
+    )
+    assert enriched.status_code == 201
+    assert enriched.json()["transcription"] == "o-la"
+    assert enriched.json()["translation"] == "привіт"
+
+    stale = client.post(
+        "/words",
+        headers=headers,
+        json={"term": "hola", "language_code": "es", "transcription": "/hola/"},
+    )
+    assert stale.status_code == 201
+    assert stale.json()["transcription"] == "o-la"
+
+
 def test_profile_update_persists_language_and_vibe(client: TestClient) -> None:
     headers = auth_headers(client)
     response = client.patch(
