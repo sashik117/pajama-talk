@@ -1684,8 +1684,8 @@ textarea {
 
 .messenger-card {
   min-height: min(560px, calc(100dvh - 196px));
-  display: grid;
-  grid-template-rows: auto auto minmax(150px, 1fr) auto auto auto;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -1694,6 +1694,7 @@ textarea {
 }
 
 .messenger-card .chat-log {
+  flex: 1 1 150px;
   align-content: end;
   min-height: 150px;
   max-height: 34dvh;
@@ -1739,7 +1740,135 @@ textarea {
   background: rgba(232, 222, 248, 0.88);
 }
 
+.speaking-targets {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.speaking-target-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.speaking-target-head div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.speaking-target-head small {
+  color: #292632;
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.speaking-target-head span {
+  color: #7a7082;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.speaking-target-head strong {
+  flex: 0 0 auto;
+  min-width: 28px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #1f3934;
+  background: rgba(157, 206, 192, 0.56);
+  font-size: 12px;
+  font-weight: 640;
+}
+
+.target-word-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.target-word {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.target-word-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 42px;
+  max-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 0;
+  border-radius: 15px;
+  padding: 7px 9px;
+  color: #292632;
+  background: rgba(247, 241, 255, 0.78);
+  text-align: left;
+}
+
+.target-word-main span {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.target-word-main strong,
+.target-word-main small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.target-word-main strong {
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.target-word-main small {
+  color: #7a7082;
+  font-size: 10px;
+}
+
+.target-word-main em {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 4px 6px;
+  color: #31534d;
+  background: rgba(157, 206, 192, 0.38);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 610;
+}
+
+.target-listen {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 42px;
+  min-height: 42px;
+  align-self: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.target-listen span {
+  display: none;
+}
+
 .call-mode {
+  flex: 1 1 auto;
   min-height: 0;
   display: grid;
   place-items: center;
@@ -2521,6 +2650,10 @@ textarea {
     gap: 9px;
   }
 
+  .target-word-list {
+    grid-template-columns: 1fr;
+  }
+
   .call-mic {
     width: 68px;
     height: 68px;
@@ -2574,6 +2707,14 @@ textarea {
 
   .messenger-card {
     min-height: calc(100dvh - 176px);
+  }
+
+  .speaking-targets {
+    padding: 9px;
+  }
+
+  .speaking-target-head span {
+    white-space: normal;
   }
 
   .call-mode {

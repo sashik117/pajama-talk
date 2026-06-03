@@ -1002,10 +1002,16 @@ private fun SpeakingRoomsScreen() {
         }
         AnimatedVisibility(activeRoom != null) {
             val room = activeRoom ?: rooms.first()
+            val dueWordIds = appState.dueWords.map { it.id }.toSet()
+            val targetWords = (appState.dueWords + appState.words.filter { it.status == "learning" })
+                .distinctBy { it.id }
+                .take(6)
             DialoguePreview(
                 room = room,
                 messages = appState.speakingMessages,
                 hints = appState.speakingHints,
+                targetWords = targetWords,
+                dueWordIds = dueWordIds,
                 isLoadingHints = appState.isLoadingHints,
                 isStreaming = appState.isSpeakingStreaming,
                 languageCode = appState.selectedLanguage.code,
@@ -1097,6 +1103,8 @@ private fun DialoguePreview(
     room: Room,
     messages: List<SpeakingChatMessage>,
     hints: SpeakingHintsDto?,
+    targetWords: List<WordDto>,
+    dueWordIds: Set<Int>,
     isLoadingHints: Boolean,
     isStreaming: Boolean,
     languageCode: String,
@@ -1154,6 +1162,12 @@ private fun DialoguePreview(
         }
         AnimatedVisibility(mode == "text") {
             Column {
+                SpeakingTargetStrip(
+                    words = targetWords,
+                    dueWordIds = dueWordIds,
+                    languageCode = languageCode,
+                    onUse = { term -> draft = "Try using \"$term\" in one short reply." },
+                )
                 messages.ifEmpty {
                     listOf(SpeakingChatMessage("Hey, want to practice a tiny real-life scene?", incoming = true))
                 }.forEach { message ->
@@ -1204,6 +1218,86 @@ private fun DialoguePreview(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SpeakingTargetStrip(
+    words: List<WordDto>,
+    dueWordIds: Set<Int>,
+    languageCode: String,
+    onUse: (String) -> Unit,
+) {
+    if (words.isEmpty()) return
+
+    val speech = rememberPlatformSpeechPlayer(languageCode)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White.copy(alpha = 0.46f))
+            .border(1.dp, Color.White.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Training now", color = Graphite, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "AI will weave these words into this room.",
+                    color = InkMuted,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                "${words.size}",
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Mint.copy(alpha = 0.58f))
+                    .padding(horizontal = 11.dp, vertical = 7.dp),
+                color = Graphite,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(words, key = { it.id }) { word ->
+                Row(
+                    modifier = Modifier
+                        .widthIn(min = 210.dp, max = 260.dp)
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(17.dp))
+                        .background(Lavender.copy(alpha = 0.58f))
+                        .padding(start = 10.dp, end = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onUse(word.term) },
+                    ) {
+                        Text(word.term, color = Graphite, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(word.translation, color = InkMuted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text(
+                        if (dueWordIds.contains(word.id)) "repeat" else "learning",
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Mint.copy(alpha = 0.42f))
+                            .padding(horizontal = 7.dp, vertical = 4.dp),
+                        color = Graphite.copy(alpha = 0.72f),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    ListenAction(word.term, languageCode, speech)
+                }
+            }
+        }
+        Spacer(Modifier.height(2.dp))
     }
 }
 

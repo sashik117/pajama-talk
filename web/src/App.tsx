@@ -72,6 +72,13 @@ type SpeakingModeCopy = {
   moodCharged?: string;
   moodHard?: string;
 };
+type SpeakingTargetCopy = {
+  title: string;
+  sub: string;
+  due: string;
+  learning: string;
+  prompt: string;
+};
 type ProfileChoiceCopy = {
   setup: string;
   currentLevel: string;
@@ -337,6 +344,114 @@ const speakingModeCopy: Record<UiLocale, SpeakingModeCopy> = {
     echo: "回声",
     echoCheck: "检查回声",
     echoPlaceholder: "写下你说的话"
+  }
+};
+
+const speakingTargetCopy: Record<UiLocale, SpeakingTargetCopy> = {
+  en: {
+    title: "Training now",
+    sub: "AI will weave these words into this room.",
+    due: "due",
+    learning: "learning",
+    prompt: 'Try using "{term}" in one short reply.'
+  },
+  uk: {
+    title: "Тренуємо зараз",
+    sub: "AI підсуне ці слова в діалог.",
+    due: "повторити",
+    learning: "вчу",
+    prompt: 'Спробуй використати "{term}" в одній короткій відповіді.'
+  },
+  ru: {
+    title: "Тренируем сейчас",
+    sub: "AI мягко встроит эти слова в диалог.",
+    due: "повторить",
+    learning: "учу",
+    prompt: 'Попробуй использовать "{term}" в одном коротком ответе.'
+  },
+  pl: {
+    title: "Trenujemy teraz",
+    sub: "AI wplecie te słowa w rozmowę.",
+    due: "powtórka",
+    learning: "uczę się",
+    prompt: 'Spróbuj użyć "{term}" w jednej krótkiej odpowiedzi.'
+  },
+  sk: {
+    title: "Trénujeme teraz",
+    sub: "AI zapojí tieto slová do dialógu.",
+    due: "opakovať",
+    learning: "učím sa",
+    prompt: 'Skús použiť "{term}" v jednej krátkej odpovedi.'
+  },
+  cs: {
+    title: "Trénujeme teď",
+    sub: "AI zapojí tato slova do rozhovoru.",
+    due: "opakovat",
+    learning: "učím se",
+    prompt: 'Zkus použít "{term}" v jedné krátké odpovědi.'
+  },
+  fr: {
+    title: "À pratiquer",
+    sub: "L'AI glissera ces mots dans la conversation.",
+    due: "révision",
+    learning: "en cours",
+    prompt: 'Essaie d’utiliser "{term}" dans une réponse courte.'
+  },
+  es: {
+    title: "Practicando ahora",
+    sub: "La AI meterá estas palabras en la charla.",
+    due: "repaso",
+    learning: "aprendo",
+    prompt: 'Intenta usar "{term}" en una respuesta corta.'
+  },
+  it: {
+    title: "In allenamento",
+    sub: "L'AI userà queste parole nella conversazione.",
+    due: "ripasso",
+    learning: "studio",
+    prompt: 'Prova a usare "{term}" in una risposta breve.'
+  },
+  de: {
+    title: "Jetzt üben",
+    sub: "Die AI baut diese Wörter ins Gespräch ein.",
+    due: "fällig",
+    learning: "lerne",
+    prompt: 'Nutze "{term}" in einer kurzen Antwort.'
+  },
+  pt: {
+    title: "A treinar agora",
+    sub: "A AI vai inserir estas palavras na conversa.",
+    due: "revisão",
+    learning: "a aprender",
+    prompt: 'Tenta usar "{term}" numa resposta curta.'
+  },
+  tr: {
+    title: "Şimdi pratik",
+    sub: "AI bu kelimeleri sohbete katacak.",
+    due: "tekrar",
+    learning: "öğreniyorum",
+    prompt: 'Kısa bir cevapta "{term}" kullanmayı dene.'
+  },
+  ja: {
+    title: "今の練習語",
+    sub: "AIが会話の中で自然に使います。",
+    due: "復習",
+    learning: "学習中",
+    prompt: '"{term}" を短い返事で使ってみて。'
+  },
+  ko: {
+    title: "지금 연습",
+    sub: "AI가 이 단어들을 대화에 넣어 줄게요.",
+    due: "복습",
+    learning: "학습 중",
+    prompt: '짧은 답변에 "{term}"를 써 보세요.'
+  },
+  zh: {
+    title: "现在练习",
+    sub: "AI 会把这些词放进对话里。",
+    due: "复习",
+    learning: "学习中",
+    prompt: '试着在一句简短回答里使用 "{term}"。'
   }
 };
 
@@ -827,11 +942,14 @@ function PajamaTalkApp() {
         {activeTab === "speak" && (
           <SpeakingScreen
             copy={copy}
+            locale={uiLocale}
             rooms={rooms}
             activeRoom={activeRoom}
             chat={chat}
             hints={hints}
             learningCode={learningCode}
+            words={words}
+            dueWords={dueWords}
             setActiveRoom={(room, mood) => {
               chatDispatch({ type: "enterRoom", room, mood, intro: moodIntro(room, mood, uiLocale) });
             }}
@@ -1486,11 +1604,14 @@ function LearningPathPanel({
 
 function SpeakingScreen({
   copy,
+  locale,
   rooms,
   activeRoom,
   chat,
   hints,
   learningCode,
+  words,
+  dueWords,
   setActiveRoom,
   back,
   loadHints,
@@ -1505,11 +1626,14 @@ function SpeakingScreen({
   listenLabel
 }: {
   copy: (key: Parameters<typeof t>[1]) => string;
+  locale: UiLocale;
   rooms: SpeakingRoomDto[];
   activeRoom: SpeakingRoomDto | null;
   chat: ChatLine[];
   hints: SpeakingHintsDto | null;
   learningCode: string;
+  words: WordDto[];
+  dueWords: WordDto[];
   setActiveRoom: (room: SpeakingRoomDto, mood: MoodKey) => void;
   back: () => void;
   loadHints: () => void;
@@ -1557,6 +1681,18 @@ function SpeakingScreen({
     if (activeRoom.id.includes("campus")) return <GraduationCap size={28} />;
     return <Coffee size={28} />;
   }, [activeRoom]);
+  const targetCopy = speakingTargetCopy[locale] ?? speakingTargetCopy.en;
+  const dueWordIds = useMemo(() => new Set(dueWords.map((word) => word.id)), [dueWords]);
+  const targetWords = useMemo(() => {
+    const seen = new Set<number>();
+    return [...dueWords, ...words.filter((word) => word.status === "learning")]
+      .filter((word) => {
+        if (seen.has(word.id)) return false;
+        seen.add(word.id);
+        return true;
+      })
+      .slice(0, 6);
+  }, [dueWords, words]);
 
   useEffect(() => {
     return () => {
@@ -1796,6 +1932,45 @@ function SpeakingScreen({
                     <PronounceButton text={phrase} languageCode={learningCode} label={listenLabel} className="inline-listen" />
                   </span>
                 ))}
+              </div>
+            </div>
+          )}
+          {targetWords.length > 0 && (
+            <div className="speaking-targets" data-testid="speaking-targets">
+              <div className="speaking-target-head">
+                <div>
+                  <small>{targetCopy.title}</small>
+                  <span>{targetCopy.sub}</span>
+                </div>
+                <strong>{targetWords.length}</strong>
+              </div>
+              <div className="target-word-list">
+                {targetWords.map((word) => {
+                  const isDue = dueWordIds.has(word.id);
+                  return (
+                    <div className="target-word" key={word.id}>
+                      <button
+                        type="button"
+                        className="target-word-main"
+                        data-testid="speaking-target-word"
+                        onClick={() => setDraft(targetCopy.prompt.replace("{term}", word.term))}
+                      >
+                        <span>
+                          <strong>{word.term}</strong>
+                          {word.translation && <small>{word.translation}</small>}
+                        </span>
+                        <em>{isDue ? targetCopy.due : targetCopy.learning}</em>
+                      </button>
+                      <PronounceButton
+                        text={word.term}
+                        languageCode={learningCode}
+                        label={listenLabel}
+                        className="compact-listen target-listen"
+                        testId={`listen-speaking-target-${word.id}`}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -22,6 +22,7 @@ async function openFreshLearner(page: Page, request: APIRequestContext) {
 }
 
 async function enterCoffeeRoom(page: Page) {
+  await expect(page.getByTestId("nav-speak")).toBeVisible();
   await page.getByTestId("nav-speak").click();
   const backToRooms = page.getByTestId("speaking-back-rooms");
   if (await backToRooms.isVisible().catch(() => false)) {
@@ -42,6 +43,20 @@ test("speaking text mode streams a realtime answer", async ({ page, request }) =
 
   await expect(page.getByText("Could I get an oat latte?")).toBeVisible();
   await expect(page.getByText(/Nice choice|oat milk|teacher mode|Quiero un caf/i)).toBeVisible();
+});
+
+test("speaking room exposes learning words as conversation targets", async ({ page, request }) => {
+  await openFreshLearner(page, request);
+  await page.getByTestId("nav-storage").click();
+  await page.getByTestId("word-input").fill("deadline");
+  await page.getByTestId("word-add").click();
+  await expect(page.getByTestId("word-result")).toContainText("deadline");
+  await enterCoffeeRoom(page);
+
+  await expect(page.getByTestId("speaking-targets")).toContainText("deadline");
+  await expect(page.locator(".target-listen").first()).toBeVisible();
+  await page.getByTestId("speaking-target-word").first().click();
+  await expect(page.getByTestId("speaking-composer")).toHaveValue(/deadline/i);
 });
 
 test("speaking room restores backend history after local session is cleared", async ({ page, request }) => {
