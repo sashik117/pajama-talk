@@ -531,12 +531,28 @@ data class LearningStepDto(
 )
 
 @Serializable
+data class LearningDailyTaskDto(
+    val id: String,
+    val title: String,
+    val detail: String,
+    val action: String,
+    val phrase: String = "",
+    val minutes: Int = 3,
+)
+
+@Serializable
 data class LearningPathDto(
     @SerialName("language_code") val languageCode: String,
     @SerialName("language_name") val languageName: String,
     val level: String,
     @SerialName("assistant_role") val assistantRole: String,
     @SerialName("next_room_prompt") val nextRoomPrompt: String,
+    @SerialName("profile_summary") val profileSummary: String = "",
+    @SerialName("coach_tip") val coachTip: String = "",
+    @SerialName("review_prompt") val reviewPrompt: String = "",
+    @SerialName("speaking_drill") val speakingDrill: String = "",
+    val objectives: List<String> = emptyList(),
+    @SerialName("daily_plan") val dailyPlan: List<LearningDailyTaskDto> = emptyList(),
     val steps: List<LearningStepDto>,
 )
 

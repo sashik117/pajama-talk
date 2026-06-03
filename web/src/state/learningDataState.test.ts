@@ -78,6 +78,12 @@ const payload: LearningDataPayload = {
     level: "A1",
     assistant_role: "teacher",
     next_room_prompt: "coffee",
+    profile_summary: "A1 plan",
+    coach_tip: "repeat first",
+    review_prompt: "review words",
+    speaking_drill: "say coffee",
+    objectives: ["ask for coffee"],
+    daily_plan: [],
     steps: []
   }
 };

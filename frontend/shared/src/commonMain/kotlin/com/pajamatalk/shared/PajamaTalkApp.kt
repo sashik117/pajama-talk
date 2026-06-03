@@ -474,7 +474,25 @@ private fun AuraScreen() {
             CozyCard(background = Mint.copy(alpha = 0.36f)) {
                 Text("${path.languageName}: starter path", fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = Graphite)
                 Spacer(Modifier.height(6.dp))
-                Text(path.assistantRole, color = InkMuted, fontSize = 13.sp)
+                Text(path.profileSummary.ifBlank { path.assistantRole }, color = InkMuted, fontSize = 13.sp)
+                if (path.objectives.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    path.objectives.take(3).forEach { objective ->
+                        Text("• $objective", color = Graphite, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
+                if (path.coachTip.isNotBlank()) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(path.coachTip, color = InkMuted, fontSize = 12.sp)
+                }
+                if (path.dailyPlan.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    path.dailyPlan.take(3).forEach { task ->
+                        Text("${task.minutes} min · ${task.title}", color = Graphite, fontWeight = FontWeight.Medium, fontSize = 13.sp)
+                        Text(task.detail, color = InkMuted, fontSize = 12.sp)
+                        Spacer(Modifier.height(6.dp))
+                    }
+                }
                 path.steps.firstOrNull()?.let { step ->
                     Spacer(Modifier.height(12.dp))
                     Text(step.title, color = Graphite, fontWeight = FontWeight.SemiBold)

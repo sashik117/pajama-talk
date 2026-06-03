@@ -1,5 +1,5 @@
 from app.core.languages import language_name, normalize_language_code
-from app.schemas.learning import LearningPathResponse, LearningPhrase, LearningStep
+from app.schemas.learning import LearningDailyTask, LearningPathResponse, LearningPhrase, LearningStep
 
 
 STARTER_PACKS: dict[str, dict[str, object]] = {
@@ -267,8 +267,8 @@ def _profile_step_keys(current_level: str) -> list[str]:
     if level in {"starter", "a0", "a1"}:
         return ["hello", "want", "question"]
     if level == "a2":
-        return ["want", "question", "hello"]
-    return ["question", "want", "hello"]
+        return ["want", "question", "thanks"]
+    return ["question", "thanks", "want"]
 
 
 def _effort_hint(effort_level: str) -> str:
@@ -279,6 +279,139 @@ def _effort_hint(effort_level: str) -> str:
         "Intense": "3-turn mini dialogue",
     }
     return hints.get(effort, hints["Steady"])
+
+
+def _effort_minutes(effort_level: str) -> tuple[int, int, int]:
+    effort = (effort_level or "Steady").strip()
+    if effort == "Light":
+        return (2, 2, 1)
+    if effort == "Intense":
+        return (5, 4, 4)
+    return (3, 3, 2)
+
+
+def _level_band(current_level: str) -> str:
+    level = (current_level or "Starter").strip().lower()
+    if level in {"starter", "a0", "a1"}:
+        return "starter"
+    if level == "a2":
+        return "builder"
+    return "speaker"
+
+
+LEARNING_COPY: dict[str, dict[str, str]] = {
+    "uk": {
+        "profile": "{current} -> {target} · {effort}. План підлаштований під твій рівень, мову та темп.",
+        "coach_starter": "Починаємо з готових фраз. Тобі не треба знати всю граматику: спершу слухаєш, повторюєш і міняєш одне слово.",
+        "coach_builder": "Тут головне не застрягати. Беремо коротку фразу, додаємо питання і одразу переносимо це у спікінг.",
+        "coach_speaker": "Ти вже тренуєш не окремі слова, а живі репліки: питання, уточнення, реакцію і маленьку історію.",
+        "review": "Слова зі статусом learning мають повертатися у спікінгу та повторенні, поки не стануть автоматичними.",
+        "drill": "У спікінгу AI має витягнути з тебе цю фразу: {phrase}",
+        "listen_title": "Почути фразу",
+        "listen_detail": "Послухай вимову і прочитай підказку “як читати”.",
+        "shadow_title": "Повторити вголос",
+        "shadow_detail": "Введи або скажи фразу після прослуховування. Не ідеально - нормально.",
+        "speak_title": "Сказати в діалозі",
+        "speak_detail": "Зайди у кімнату і використай фразу в реальній репліці.",
+        "review_title": "Закріпити слово",
+        "review_detail": "Додай ключову фразу в словник або повтори те, що вже чекає.",
+        "objective_hello": "привітатися і представитися",
+        "objective_want": "попросити базову річ без паніки",
+        "objective_question": "поставити коротке питання",
+        "objective_thanks": "відреагувати і завершити репліку",
+    },
+    "ru": {
+        "profile": "{current} -> {target} · {effort}. План подстроен под твой уровень, язык и темп.",
+        "coach_starter": "Начинаем с готовых фраз. Не нужно знать всю грамматику: сначала слушаешь, повторяешь и меняешь одно слово.",
+        "coach_builder": "Главное не зависать. Берем короткую фразу, добавляем вопрос и сразу переносим это в спикинг.",
+        "coach_speaker": "Ты тренируешь уже не отдельные слова, а живые реплики: вопрос, уточнение, реакцию и маленькую историю.",
+        "review": "Слова со статусом learning должны возвращаться в спикинге и повторении, пока не станут автоматическими.",
+        "drill": "В спикинге AI должен вытянуть из тебя эту фразу: {phrase}",
+        "listen_title": "Услышать фразу",
+        "listen_detail": "Послушай произношение и прочитай подсказку “как читать”.",
+        "shadow_title": "Повторить вслух",
+        "shadow_detail": "Введи или скажи фразу после прослушивания. Не идеально - нормально.",
+        "speak_title": "Сказать в диалоге",
+        "speak_detail": "Зайди в комнату и используй фразу в настоящей реплике.",
+        "review_title": "Закрепить слово",
+        "review_detail": "Добавь ключевую фразу в словарь или повтори то, что уже ждет.",
+        "objective_hello": "поздороваться и представиться",
+        "objective_want": "попросить базовую вещь без паники",
+        "objective_question": "задать короткий вопрос",
+        "objective_thanks": "отреагировать и завершить реплику",
+    },
+    "en": {
+        "profile": "{current} -> {target} · {effort}. The plan follows your level, language and daily effort.",
+        "coach_starter": "Start with ready phrases. You do not need the whole grammar table first: listen, repeat, then swap one word.",
+        "coach_builder": "The goal is not to freeze. Take a short phrase, add a question, then move it into Speaking.",
+        "coach_speaker": "You are training live turns now: question, clarification, reaction and a tiny story.",
+        "review": "Words marked learning should return in Speaking and SRS until they feel automatic.",
+        "drill": "In Speaking, AI should pull this phrase from you: {phrase}",
+        "listen_title": "Hear the phrase",
+        "listen_detail": "Listen to pronunciation and read the how-to-say hint.",
+        "shadow_title": "Repeat out loud",
+        "shadow_detail": "Type or say the phrase after listening. Imperfect is fine.",
+        "speak_title": "Use it in dialogue",
+        "speak_detail": "Enter a room and use the phrase in a real reply.",
+        "review_title": "Lock one word in",
+        "review_detail": "Add the key phrase to Dictionary or review the next due item.",
+        "objective_hello": "greet and introduce yourself",
+        "objective_want": "ask for a basic thing calmly",
+        "objective_question": "ask a short question",
+        "objective_thanks": "react and close the turn",
+    },
+}
+
+
+def _learning_copy(explanation_code: str) -> dict[str, str]:
+    return LEARNING_COPY.get(explanation_code, LEARNING_COPY["en"])
+
+
+def _coach_tip(explanation_code: str, current_level: str) -> str:
+    copy = _learning_copy(explanation_code)
+    band = _level_band(current_level)
+    return copy[f"coach_{band}"]
+
+
+def _daily_plan(
+    explanation_code: str,
+    effort_level: str,
+    first_phrase: str,
+    review_phrase: str,
+) -> list[LearningDailyTask]:
+    copy = _learning_copy(explanation_code)
+    listen_minutes, speak_minutes, review_minutes = _effort_minutes(effort_level)
+    return [
+        LearningDailyTask(
+            id="listen",
+            title=copy["listen_title"],
+            detail=copy["listen_detail"],
+            action="shadow",
+            phrase=first_phrase,
+            minutes=listen_minutes,
+        ),
+        LearningDailyTask(
+            id="speak",
+            title=copy["speak_title"],
+            detail=copy["speak_detail"],
+            action="speak",
+            phrase=first_phrase,
+            minutes=speak_minutes,
+        ),
+        LearningDailyTask(
+            id="review",
+            title=copy["review_title"],
+            detail=copy["review_detail"],
+            action="review",
+            phrase=review_phrase,
+            minutes=review_minutes,
+        ),
+    ]
+
+
+def _objectives(step_keys: list[str], explanation_code: str) -> list[str]:
+    copy = _learning_copy(explanation_code)
+    return [copy[f"objective_{key}"] for key in step_keys if f"objective_{key}" in copy]
 
 
 def build_learning_path(
@@ -292,38 +425,72 @@ def build_learning_path(
     name = language_name(code)
     pack = starter_pack(code)
     copy = _copy_for(explanation_code)
+    learning_copy = _learning_copy(explanation_code)
     step_keys = _profile_step_keys(current_level)
     titles = {
         "hello": copy["hello_title"],
         "want": copy["want_title"],
         "question": copy["question_title"],
+        "thanks": {
+            "uk": "4. Відреагувати природно",
+            "ru": "4. Отреагировать естественно",
+            "en": "4. React naturally",
+        }.get(explanation_code, "4. React naturally"),
     }
     goals = {
         "hello": copy["hello_goal"],
         "want": copy["want_goal"],
         "question": copy["question_goal"],
+        "thanks": {
+            "uk": "Не мовчати після відповіді співрозмовника.",
+            "ru": "Не молчать после ответа собеседника.",
+            "en": "Avoid going silent after the other person answers.",
+        }.get(explanation_code, "Avoid going silent after the other person answers."),
     }
     notes = {
         "hello": copy["hello_note"],
         "want": copy["want_note"],
         "question": copy["question_note"],
+        "thanks": {
+            "uk": "Реакції роблять діалог живим: подякуй, погодься або попроси продовжити.",
+            "ru": "Реакции делают диалог живым: поблагодари, согласись или попроси продолжить.",
+            "en": "Reactions make dialogue alive: thank them, agree, or invite them to continue.",
+        }.get(explanation_code, "Reactions make dialogue alive: thank them, agree, or invite them to continue."),
     }
     tasks = {
         "hello": copy["hello_task"],
         "want": copy["want_task"],
         "question": copy["question_task"],
+        "thanks": {
+            "uk": "Відповідай після репліки AI: {phrase}",
+            "ru": "Ответь после реплики AI: {phrase}",
+            "en": "Reply after the AI turn: {phrase}",
+        }.get(explanation_code, "Reply after the AI turn: {phrase}"),
     }
     examples = {
         "hello": [_phrase(pack["hello"], "hello", explanation_code)],
         "want": [_phrase(pack["want"], "want", explanation_code), _phrase(pack["thanks"], "thanks", explanation_code)],
         "question": [_phrase(pack["question"], "question", explanation_code)],
+        "thanks": [_phrase(pack["thanks"], "thanks", explanation_code)],
     }
+    first_phrase = pack[step_keys[0]][0]
+    review_phrase = pack["thanks"][0]
     return LearningPathResponse(
         language_code=code,
         language_name=name,
         level=f"{current_level or 'Starter'} -> {target_level or 'A1'} · {_effort_hint(effort_level)}",
         assistant_role=copy["assistant"].format(name=name),
         next_room_prompt=copy["next"].format(phrase=pack["want"][0]),
+        profile_summary=learning_copy["profile"].format(
+            current=current_level or "Starter",
+            target=target_level or "A1",
+            effort=_effort_hint(effort_level),
+        ),
+        coach_tip=_coach_tip(explanation_code, current_level),
+        review_prompt=learning_copy["review"],
+        speaking_drill=learning_copy["drill"].format(phrase=first_phrase),
+        objectives=_objectives(step_keys, explanation_code),
+        daily_plan=_daily_plan(explanation_code, effort_level, first_phrase, review_phrase),
         steps=[
             LearningStep(
                 id=f"{code}-{key}",

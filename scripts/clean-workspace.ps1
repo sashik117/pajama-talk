@@ -33,8 +33,13 @@ function Remove-KnownPath {
     if ($WhatIf) {
         Write-Host "Would remove $RelativePath ($size MB)"
     } else {
-        Remove-Item -LiteralPath $resolved -Recurse -Force
-        Write-Host "Removed $RelativePath ($size MB)"
+        try {
+            Remove-Item -LiteralPath $resolved -Recurse -Force
+            Write-Host "Removed $RelativePath ($size MB)"
+        } catch [System.IO.IOException] {
+            Write-Host "Skipped locked $RelativePath ($size MB)"
+            return 0
+        }
     }
     return $size
 }
@@ -43,6 +48,7 @@ $targets = @(
     ".tmp",
     ".pytest_cache",
     "backend\.pytest_cache",
+    "frontend\.gradle-home",
     "frontend\.gradle",
     "frontend\build",
     "frontend\androidApp\build",

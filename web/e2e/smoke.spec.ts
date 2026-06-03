@@ -111,7 +111,7 @@ test("profile choices refresh the learning path", async ({ page, request }) => {
   await page.getByTestId("profile-effort-Intense").click();
 
   await page.getByTestId("nav-aura").click();
-  await expect(page.getByText(/B1 -> C1/)).toBeVisible();
+  await expect(page.locator(".learning-path-card")).toContainText("B1 -> C1");
 });
 
 test("grammar lab checks an exercise answer", async ({ page, request }) => {

@@ -667,6 +667,12 @@ const pronunciationLabels: Record<UiLocale, string> = {
   zh: "发音"
 };
 
+function minuteLabel(locale: UiLocale, minutes: number): string {
+  if (locale === "uk") return `${minutes} хв`;
+  if (locale === "ru") return `${minutes} мин`;
+  return `${minutes} min`;
+}
+
 function PronunciationGuide({
   value,
   locale,
@@ -1020,7 +1026,7 @@ function HomeScreen({
 }) {
   const contextExamples = contextExamplesByLanguage[learningCode] ?? contextExamplesByLanguage.en;
   const [contextSavedNote, setContextSavedNote] = useState("");
-  const dailyKey = `pajama-daily-${new Date().toISOString().slice(0, 10)}-${learningCode}`;
+  const dailyKey = `pajama-daily-${new Date().toISOString().slice(0, 10)}-${learningCode}-${learningPath?.level ?? "base"}`;
   const [dailyDone, setDailyDone] = useState<Record<string, boolean>>(() => readDailyDone(dailyKey));
 
   useEffect(() => {
@@ -1063,34 +1069,55 @@ function HomeScreen({
     title: string;
     body: string;
     audioText?: string;
+    minutes?: number;
     actionLabel: string;
     action: () => void;
-  }> = [
-    {
-      id: "phrase",
-      title: firstPhrase ?? copy("speak"),
-      body: firstStep?.micro_task ?? copy("dailyFocusSub"),
-      audioText: firstPhrase ?? "",
-      actionLabel: copy("speak"),
-      action: openSpeak,
-    },
-    {
-      id: "context",
-      title: contextExamples[0],
-      body: `${copy("contextTitle")} → ${copy("addWords")}`,
-      audioText: contextExamples[0],
-      actionLabel: copy("analyze"),
-      action: () => setContextText(contextExamples[0]),
-    },
-    {
-      id: "review",
-      title: dueWord ? dueWord.term : copy("reviewEmpty"),
-      body: dueWord ? dueWord.translation : copy("reviewEmpty"),
-      audioText: dueWord?.term ?? "",
-      actionLabel: copy("review"),
-      action: openReview,
-    },
-  ];
+  }> = learningPath?.daily_plan?.length
+    ? learningPath.daily_plan.map((task) => ({
+        id: task.id,
+        title: task.title,
+        body: task.detail,
+        audioText: task.phrase,
+        minutes: task.minutes,
+        actionLabel: task.action === "review" ? copy("review") : task.action === "context" ? copy("analyze") : copy("speak"),
+        action: () => {
+          if (task.action === "review") {
+            openReview();
+            return;
+          }
+          if (task.action === "context") {
+            setContextText(task.phrase || contextExamples[0]);
+            return;
+          }
+          openSpeak();
+        }
+      }))
+    : [
+        {
+          id: "phrase",
+          title: firstPhrase ?? copy("speak"),
+          body: firstStep?.micro_task ?? copy("dailyFocusSub"),
+          audioText: firstPhrase ?? "",
+          actionLabel: copy("speak"),
+          action: openSpeak,
+        },
+        {
+          id: "context",
+          title: contextExamples[0],
+          body: `${copy("contextTitle")} → ${copy("addWords")}`,
+          audioText: contextExamples[0],
+          actionLabel: copy("analyze"),
+          action: () => setContextText(contextExamples[0]),
+        },
+        {
+          id: "review",
+          title: dueWord ? dueWord.term : copy("reviewEmpty"),
+          body: dueWord ? dueWord.translation : copy("reviewEmpty"),
+          audioText: dueWord?.term ?? "",
+          actionLabel: copy("review"),
+          action: openReview,
+        },
+      ];
 
   return (
     <>
@@ -1098,7 +1125,7 @@ function HomeScreen({
         <div className="focus-card card">
           <small>{copy("today")}</small>
           <h2>{copy("dailyFocus")}</h2>
-          <p>{copy("dailyFocusSub")}</p>
+          <p>{learningPath?.profile_summary || copy("dailyFocusSub")}</p>
           <div className="daily-actions">
             <button onClick={openSpeak}>
               <Mic size={16} />
@@ -1138,7 +1165,7 @@ function HomeScreen({
               </button>
               <button className="task-main" onClick={task.action}>
                 <strong>{task.title}</strong>
-                <span>{task.body}</span>
+                <span>{task.minutes ? `${minuteLabel(locale, task.minutes)} · ${task.body}` : task.body}</span>
               </button>
               {task.audioText && (
                 <PronounceButton text={task.audioText} languageCode={learningCode} label={coachLabels.listen} className="task-listen" testId={`listen-task-${task.id}`} />
@@ -1274,13 +1301,34 @@ function LearningPathPanel({
         <div>
           <small>{path.level}</small>
           <h2>{path.language_name}</h2>
-          <p>{path.assistant_role}</p>
+          <p>{path.profile_summary || path.assistant_role}</p>
         </div>
         <button className="soft-action" onClick={openSpeak}>
           <Mic size={17} />
           {copy("speak")}
         </button>
       </div>
+      {(path.objectives?.length > 0 || path.coach_tip) && (
+        <div className="learning-meta">
+          {path.objectives?.length > 0 && (
+            <div className="objective-grid">
+              {path.objectives.map((objective) => (
+                <span key={objective}>
+                  <Check size={13} />
+                  {objective}
+                </span>
+              ))}
+            </div>
+          )}
+          {path.coach_tip && <p className="coach-tip">{path.coach_tip}</p>}
+          {path.speaking_drill && (
+            <div className="coach-tip drill">
+              <Mic size={15} />
+              <span>{path.speaking_drill}</span>
+            </div>
+          )}
+        </div>
+      )}
       <div className="path-steps">
         {path.steps.map((item, index) => (
           <button key={item.id} className={item.id === step.id ? "selected" : ""} onClick={() => selectStep(item.id)}>
@@ -1340,6 +1388,12 @@ function LearningPathPanel({
           <Sparkles size={16} />
           <span>{step.micro_task}</span>
         </div>
+        {path.review_prompt && (
+          <div className="micro-task review-loop">
+            <BookOpen size={16} />
+            <span>{path.review_prompt}</span>
+          </div>
+        )}
       </article>
     </section>
   );

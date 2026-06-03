@@ -124,6 +124,19 @@ export type LearningPathDto = {
   level: string;
   assistant_role: string;
   next_room_prompt: string;
+  profile_summary: string;
+  coach_tip: string;
+  review_prompt: string;
+  speaking_drill: string;
+  objectives: string[];
+  daily_plan: Array<{
+    id: string;
+    title: string;
+    detail: string;
+    action: string;
+    phrase: string;
+    minutes: number;
+  }>;
   steps: Array<{
     id: string;
     title: string;
